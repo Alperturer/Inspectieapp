@@ -1059,7 +1059,13 @@ function saveKeuring() {
     supabaseClient.from("keuringen").upsert(rij).then(function(res) {
       state.syncStatus = res.error ? "" : "opgeslagen";
       render();
-    }).catch(function(){ state.syncStatus = ""; render(); });
+      if (res.error) {
+        alert("Cloud-opslag mislukt (lokaal is het wel bewaard):\n\n" + (res.error.message || JSON.stringify(res.error)));
+      }
+    }).catch(function(err){
+      state.syncStatus = ""; render();
+      alert("Cloud-opslag mislukt (lokaal is het wel bewaard):\n\n" + (err && err.message ? err.message : String(err)));
+    });
   }
 }
 function laadCloudKeuringen(callback) {
