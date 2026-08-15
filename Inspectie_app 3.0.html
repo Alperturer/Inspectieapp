@@ -1054,7 +1054,7 @@ function saveKeuring() {
       klant: (record.object && record.object.klant) || "",
       datum: (record.object && record.object.datum) || null,
       data: { object: record.object, items: record.items, verdelers: record.verdelers, omvormers: record.omvormers, constateringen: record.constateringen },
-      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
     supabaseClient.from("keuringen").upsert(rij).then(function(res) {
       state.syncStatus = res.error ? "" : "opgeslagen";
@@ -1065,7 +1065,7 @@ function saveKeuring() {
 function laadCloudKeuringen(callback) {
   if (!supabaseClient || !state.user) { callback && callback(); return; }
   state.cloudLoading = true; render();
-  supabaseClient.from("keuringen").select("*").eq("user_id", state.user.id).order("updated_at", { ascending: false }).then(function(res) {
+  supabaseClient.from("keuringen").select("*").eq("user_id", state.user.id).order("created_at", { ascending: false }).then(function(res) {
     state.cloudLoading = false;
     if (!res.error && res.data) {
       state.cloudKeuringen = res.data.map(function(rij){
@@ -1225,7 +1225,7 @@ function render() {
       return;
     }
 
-    var saved = state.cloudKeuringen.length > 0 || (supabaseClient && state.user) ? state.cloudKeuringen : loadSaved();
+    var saved = state.cloudKeuringen.length > 0 ? state.cloudKeuringen : loadSaved();
     var html = '<div class="wrap">';
     html += '<div class="header"><div class="header-title" onclick="nieuweKeuring()">⚡ ' + esc(state.object.appNaam || "Keuringen app") + '</div>' +
       '<div class="header-right">' + (state.type ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
