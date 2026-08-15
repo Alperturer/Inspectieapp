@@ -1323,7 +1323,34 @@ function renderSteps() {
 }
 function slaVoortgangOp() {
   persistDraft();
+  var list = loadSaved();
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var idx = list.findIndex(function(r){return r.id===record.id;});
+  if (idx >= 0) list[idx] = record; else list.unshift(record);
+  persistSaved(list);
+  state.savedId = record.id;
   toonToast("Voortgang opgeslagen \u2014 je kunt later gewoon verdergaan");
+
+  if (supabaseClient && state.user) {
+    state.syncStatus = "syncing"; render();
+    var rij = {
+      id: record.id, user_id: state.user.id, type: record.type,
+      klant: (record.object && record.object.klant) || "",
+      datum: (record.object && record.object.datum) || null,
+      data: { object: record.object, items: record.items, verdelers: record.verdelers, omvormers: record.omvormers, constateringen: record.constateringen },
+      created_at: new Date().toISOString(),
+    };
+    supabaseClient.from("keuringen").upsert(rij).then(function(res) {
+      state.syncStatus = res.error ? "" : "opgeslagen";
+      render();
+      if (res.error) {
+        alert("Cloud-opslag mislukt (lokaal is het wel bewaard):\n\n" + (res.error.message || JSON.stringify(res.error)));
+      }
+    }).catch(function(err){
+      state.syncStatus = ""; render();
+      alert("Cloud-opslag mislukt (lokaal is het wel bewaard):\n\n" + (err && err.message ? err.message : String(err)));
+    });
+  }
 }
 function navBtns(label, onclick) {
   return '<div class="nav-btns"><button class="btn-secondary" style="flex:0 0 auto;width:auto;padding:0 18px;white-space:nowrap;" onclick="slaVoortgangOp()">&#128190; Opslaan &amp; pauzeren</button><button class="btn-primary" onclick="' + (onclick || "goNext()") + '">' + label + ' &rarr;</button></div>';
