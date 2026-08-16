@@ -1570,7 +1570,7 @@ function renderKlantForm() {
   var h = '<button class="backbtn" onclick="setState({view:\'klanten\'})">&larr; Terug naar klanten</button>';
   h += '<h1>Klantgegevens</h1>';
   h += '<div class="section-card">';
-  h += '<label class="fl">Naam</label><input class="f" value="' + esc(k.naam) + '" oninput="updateKlantField(\'' + k.id + '\',\'naam\',this.value)" />';
+  h += '<label class="fl">Bedrijfsnaam</label><input class="f" value="' + esc(k.naam) + '" oninput="updateKlantField(\'' + k.id + '\',\'naam\',this.value)" />';
   h += '<label class="fl">Adres</label><input class="f" value="' + esc(k.adres) + '" oninput="updateKlantField(\'' + k.id + '\',\'adres\',this.value)" />';
   h += '<div style="display:flex;gap:10px;">';
   h += '<div style="flex:1;"><label class="fl">Postcode</label><input class="f" value="' + esc(k.postcode) + '" oninput="updateKlantField(\'' + k.id + '\',\'postcode\',this.value)" /></div>';
