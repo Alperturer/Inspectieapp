@@ -1286,8 +1286,19 @@ function kiesKlantVoorKeuring(id) {
   state.object.klant = k.naam; state.object.adres = k.adres; state.object.postcode = k.postcode; state.object.plaats = k.plaats;
   state.object.telefoonInstallatie = k.contactTel; state.object.emailInstallatie = k.contactEmail;
   state.object.installatieverantwoordelijke = k.contactNaam;
-  state.object.contactNaam = k.contactNaam; state.object.contactTel = k.contactTel; state.object.contactEmail = k.contactEmail;
-  state.object.eigenaarNaam = k.eigenaarNaam; state.object.eigenaarAdres = k.eigenaarAdres; state.object.opdrachtgeverNaam = k.opdrachtgeverNaam;
+  // Alleen overschrijven als de klant hier zelf een afwijkende waarde voor heeft opgeslagen;
+  // anders vult de cascade hieronder dit automatisch met de installatiegegevens (via de
+  // bestaande "zelfde als"-vinkjes).
+  if (k.eigenaarNaam) state.object.eigenaarNaam = k.eigenaarNaam;
+  if (k.eigenaarAdres) state.object.eigenaarAdres = k.eigenaarAdres;
+  if (k.opdrachtgeverNaam) state.object.opdrachtgeverNaam = k.opdrachtgeverNaam;
+  // Ketting van automatische overnames opnieuw toepassen: Installatie -> Contactpersoon ->
+  // Eigenaar -> Contactpersoon (eigenaar) -> Opdrachtgever, elk respecterend of het
+  // bijbehorende "zelfde als"-vinkje aan of uit staat.
+  syncContactVanInstallatie();
+  syncEigenaarVanInstallatie();
+  syncEigenaarContactVanInstallatie();
+  syncOpdrachtgeverVanEigenaar();
   persistDraft();
   render();
 }
