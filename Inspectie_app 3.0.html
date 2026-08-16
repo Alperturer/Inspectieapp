@@ -535,12 +535,130 @@ var NEN1010_BEOORDELING_TEKST = {
   "voldoet": "Tijdens de inspectie zijn geen gebreken, afwijkingen of defecten vastgesteld die een risico vormen voor de elektrische veiligheid van de gebruikers en de bedrijfsvoering. De installatie voldoet aan de normering.",
   "gebreken": "Tijdens de inspectie zijn gebreken, afwijkingen en/of defecten vastgesteld die een mogelijk risico vormen voor de elektrische veiligheid van de gebruikers en de bedrijfsvoering. De installatie voldoet niet aan de normering.",
 };
-function newVerdeler() { return { id: uid(), naam: "", locatie: "", typeZekering: "", voorbeveiliging: "", hoofdschakelaar: "", klasse: "", rlo: "", groepen1Fase: "", groepen3Fase: "", aantalAardlek: "", uitwendigeInvloeden: "", ipStof: "", ipWater: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], rloMetingen: [], testspanningRiso: "500" }; }
-function newMeting(circuit) { return { id: uid(), circuit: circuit, waarde: "", kortsluitstroom: "", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
+function newVerdeler() { return { id: uid(), naam: "", locatie: "", typeZekering: "", voorbeveiliging: "", hoofdschakelaar: "", klasse: "", rlo: "", groepen1Fase: "", groepen3Fase: "", aantalAardlek: "", uitwendigeInvloeden: "", ipStof: "", ipWater: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true }; }
+function newMeting(circuit) { return { id: uid(), circuit: circuit, waarde: "", kortsluitstroom: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], beveiligingType: "", klasse: "", nominaleStroom: "", smeltKarakteristiek: "gG", autoBeoordeling: true, autoBeoordelingRiso: true }; }
+// Factor voor installatieautomaten (Ia = In x factor), volgens de gebruikelijke karakteristieken B/C/D.
+var IA_FACTOR = { B: 5, C: 10, D: 20 };
+// Indicatieve minimale uitschakelstroom (Ia, in A) voor gG-smeltveiligheden bij uitschakeltijd <=5s.
+// LET OP: controleer deze tabel tegen de actuele officiële norm/fabrikantopgave voordat je 'm gebruikt in officiële rapporten.
+var SMELT_IA_TABEL = { "2": 10, "4": 17, "6": 25, "10": 42, "16": 65, "20": 85, "25": 110, "32": 150, "35": 160, "40": 190, "50": 250, "63": 320, "80": 425, "100": 580, "125": 715 };
+function berekenVereisteIa(m) {
+  var inWaarde = parseFloat(String(m.nominaleStroom).replace(",", "."));
+  if (isNaN(inWaarde)) return null;
+  if (m.beveiligingType === "automaat" && m.klasse && IA_FACTOR[m.klasse]) {
+    return Math.round(inWaarde * IA_FACTOR[m.klasse] * 10) / 10;
+  }
+  if (m.beveiligingType === "smeltveiligheid") {
+    return SMELT_IA_TABEL[String(inWaarde)] || null;
+  }
+  return null;
+}
+function berekenAutoBeoordeling(m) {
+  var ik = parseFloat(String(m.kortsluitstroom).replace(",", "."));
+  var vereist = berekenVereisteIa(m);
+  if (isNaN(ik) || vereist === null) return null;
+  return ik >= vereist ? "goed" : "serieus";
+}
+// Bepaalt de spanning die bij een circuit hoort: tussen twee fases (L1-L2 e.d.) is dat 400V,
+// tussen fase en nul/aarde (L1-N, L1-PE e.d.) is dat 230V.
+function spanningVoorCircuit(circuit) {
+  var c = String(circuit || "").toUpperCase().replace(/\s+/g, "");
+  if (/^L[123]-L[123]$/.test(c)) return 400;
+  return 230;
+}
+// Weerstand (Ω) en kortsluitstroom (A) zijn met elkaar verbonden via U = I x R.
+// Als je het ene veld invult, wordt het andere automatisch berekend (tenzij je het net zelf hebt aangepast).
+function berekenAnderVeldVanImpedantie(m, gewijzigdVeld) {
+  var u = spanningVoorCircuit(m.circuit);
+  if (gewijzigdVeld === "waarde") {
+    var r = parseFloat(String(m.waarde).replace(",", "."));
+    if (!isNaN(r) && r > 0) m.kortsluitstroom = String(Math.round((u / r) * 100) / 100);
+  } else if (gewijzigdVeld === "kortsluitstroom") {
+    var ik = parseFloat(String(m.kortsluitstroom).replace(",", "."));
+    if (!isNaN(ik) && ik > 0) m.waarde = String(Math.round((u / ik) * 1000) / 1000);
+  }
+}
+function impedantieVeldGewijzigd(vid, listKey, mid, gewijzigdVeld) {
+  var v = state.verdelers.find(function(x){return x.id===vid;}) || state.omvormers.find(function(x){return x.id===vid;});
+  if (!v || !v[listKey]) return;
+  var m = v[listKey].find(function(x){return x.id===mid;});
+  if (!m) return;
+  berekenAnderVeldVanImpedantie(m, gewijzigdVeld);
+  if (m.autoBeoordeling) {
+    var result = berekenAutoBeoordeling(m);
+    if (result) m.classificatie = result;
+  }
+  persistDraft(); render();
+}
+function herbeoordeelMeting(vid, listKey, mid) {
+  var v = state.verdelers.find(function(x){return x.id===vid;}) || state.omvormers.find(function(x){return x.id===vid;});
+  if (!v || !v[listKey]) return;
+  var m = v[listKey].find(function(x){return x.id===mid;});
+  if (!m || m.autoBeoordeling === false) return;
+  var result = berekenAutoBeoordeling(m);
+  if (result) { m.classificatie = result; persistDraft(); render(); }
+}
+// Zorgt dat het toetsenbord niet dichtklapt na een automatische herberekening:
+// zet focus + cursorpositie terug in exact hetzelfde invoerveld.
+function herstelFocus(id, cursorPos) {
+  if (!id) return;
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.focus();
+  if (typeof cursorPos === "number" && el.setSelectionRange) {
+    try { el.setSelectionRange(cursorPos, cursorPos); } catch (e) {}
+  }
+}
+var _herbeoordeelTimers = {};
+function herbeoordeelMetingLive(vid, listKey, mid, gewijzigdVeld, focusId, cursorPos) {
+  var key = vid + "|" + listKey + "|" + mid;
+  if (_herbeoordeelTimers[key]) clearTimeout(_herbeoordeelTimers[key]);
+  _herbeoordeelTimers[key] = setTimeout(function(){
+    impedantieVeldGewijzigd(vid, listKey, mid, gewijzigdVeld);
+    herstelFocus(focusId, cursorPos);
+  }, 350);
+}
+// Riso (isolatieweerstand): minimale norm hangt af van de reden van inspectie.
+function drempelIsolatieweerstand() {
+  return state.object.redenInspectie === "PI" ? 0.5 : 1;
+}
+function berekenRisoAutoBeoordeling(m) {
+  var w = parseFloat(String(m.waarde).replace(",", "."));
+  if (isNaN(w)) return null;
+  return w >= drempelIsolatieweerstand() ? "goed" : "serieus";
+}
+function herbeoordeelRisoMeting(vid, mid) {
+  var v = state.verdelers.find(function(x){return x.id===vid;}) || state.omvormers.find(function(x){return x.id===vid;});
+  if (!v || !v.risoMetingen) return;
+  var m = v.risoMetingen.find(function(x){return x.id===mid;});
+  if (!m || m.autoBeoordelingRiso === false) return;
+  var result = berekenRisoAutoBeoordeling(m);
+  if (result) { m.classificatie = result; persistDraft(); render(); }
+}
+var _risoTimers = {};
+function herbeoordeelRisoMetingLive(vid, mid, focusId, cursorPos) {
+  var key = vid + "|riso|" + mid;
+  if (_risoTimers[key]) clearTimeout(_risoTimers[key]);
+  _risoTimers[key] = setTimeout(function(){
+    herbeoordeelRisoMeting(vid, mid);
+    herstelFocus(focusId, cursorPos);
+  }, 350);
+}
+function pasStandaardRisoBeoordelingToe(soort, id) {
+  var obj = soort === "verdeler" ? state.verdelers.find(function(x){return x.id===id;}) : state.omvormers.find(function(x){return x.id===id;});
+  if (!obj) return;
+  (obj.risoMetingen || []).forEach(function(m){
+    m.autoBeoordelingRiso = obj.defaultAutoBeoordelingRiso;
+    if (!m.autoBeoordelingRiso) return;
+    var result = berekenRisoAutoBeoordeling(m);
+    if (result) m.classificatie = result;
+  });
+  persistDraft(); render();
+}
 var ZS_CIRCUITS = ["L1-PE", "L2-PE", "L3-PE"];
 var ZI_CIRCUITS = ["L1-L2", "L1-L3", "L2-L3", "L1-N", "L2-N", "L3-N"];
 var RISO_CIRCUITS = ["L1-L2", "L1-L3", "L2-L3", "L1-N", "L2-N", "L3-N", "L1-PE", "L2-PE", "L3-PE", "N-PE"];
-function newOmvormer() { return { id: uid(), naam: "", vermogen: "", locatie: "", merk: "", type: "", serienummer: "", voorbeveiliging: "", maxDcSpanning: "", imax: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], strengen: [], rloMetingen: [], testspanningRiso: "500" }; }
+function newOmvormer() { return { id: uid(), naam: "", vermogen: "", locatie: "", merk: "", type: "", serienummer: "", voorbeveiliging: "", maxDcSpanning: "", imax: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], strengen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true }; }
 function newRloMeting(omschrijving) { return { id: uid(), omschrijving: omschrijving || "", waarde: "", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
 function newConstatering() { return { id: uid(), omschrijving: "", classificatie: "opmerking", norm: "", fotos: [] }; }
 var RLO_STANDAARD = ["Aardrail - Omvormer", "Aardrail - 1e deel constructie", "1e deel constructie - 2e deel constructie", "2e deel constructie - 3e deel constructie", "3e deel constructie - 4e deel constructie"];
@@ -901,7 +1019,32 @@ function updateItem(id, patch) { var it = state.items.find(function(i){return i.
 function updateItemField(id, key, val) { var it = state.items.find(function(i){return i.id===id;}); if (it) it[key] = val; persistDraft(); }
 function updateVerdelerField(id, key, val) { var v = state.verdelers.find(function(x){return x.id===id;}); if (v) v[key] = val; persistDraft(); }
 function updateOmvormerField(id, key, val) { var o = state.omvormers.find(function(x){return x.id===id;}); if (o) o[key] = val; persistDraft(); }
-function updateStrengField(oid, sid, key, val) { var o = state.omvormers.find(function(x){return x.id===oid;}); if (!o) return; var s = o.strengen.find(function(x){return x.id===sid;}); if (s) s[key] = val; persistDraft(); }
+function pasStandaardBeveiligingToe(soort, id) {
+  var obj = soort === "verdeler" ? state.verdelers.find(function(x){return x.id===id;}) : state.omvormers.find(function(x){return x.id===id;});
+  if (!obj) return;
+  ["zsMetingen", "ziMetingen"].forEach(function(listKey){
+    (obj[listKey] || []).forEach(function(m){
+      m.autoBeoordeling = obj.defaultAutoBeoordeling;
+      if (!m.autoBeoordeling) return; // handmatig: classificatie blijft zoals de gebruiker 'm zelf zette
+      m.beveiligingType = obj.defaultBeveiligingType;
+      m.klasse = obj.defaultKlasse;
+      m.nominaleStroom = obj.defaultNominaleStroom;
+      m.smeltKarakteristiek = obj.defaultSmeltKarakteristiek;
+      var result = berekenAutoBeoordeling(m);
+      if (result) m.classificatie = result;
+    });
+  });
+  persistDraft(); render();
+}
+var _pasStandaardTimers = {};
+function pasStandaardBeveiligingToeLive(soort, id, focusId, cursorPos) {
+  var key = soort + "|" + id;
+  if (_pasStandaardTimers[key]) clearTimeout(_pasStandaardTimers[key]);
+  _pasStandaardTimers[key] = setTimeout(function(){
+    pasStandaardBeveiligingToe(soort, id);
+    herstelFocus(focusId, cursorPos);
+  }, 350);
+}
 function updateMetingField(vid, listKey, mid, key, val) { var v = state.verdelers.find(function(x){return x.id===vid;}); if (!v || !v[listKey]) return; var m = v[listKey].find(function(x){return x.id===mid;}); if (m) m[key] = val; persistDraft(); }
 function addMetingPhoto(vid, listKey, mid, files) { var v = state.verdelers.find(function(x){return x.id===vid;}); if (!v || !v[listKey]) return; var m = v[listKey].find(function(x){return x.id===mid;}); if (!m) return; filesToDataUrls(files, function(urls){ m.fotos = m.fotos.concat(urls.filter(Boolean)); persistDraft(); render(); }); }
 function removeMetingPhoto(vid, listKey, mid, idx) { var v = state.verdelers.find(function(x){return x.id===vid;}); if (!v || !v[listKey]) return; var m = v[listKey].find(function(x){return x.id===mid;}); if (!m) return; m.fotos.splice(idx,1); persistDraft(); render(); }
@@ -962,7 +1105,7 @@ function vulStandaardAan(verdelerId, listKey) {
   });
   persistDraft(); render();
 }
-function addMeting(verdelerId, listKey) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v[listKey]) v[listKey] = []; v[listKey].push(newMeting("")); persistDraft(); render(); }
+function addMeting(verdelerId, listKey) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v[listKey]) v[listKey] = []; var nieuw = newMeting(""); nieuw.beveiligingType = v.defaultBeveiligingType; nieuw.klasse = v.defaultKlasse; nieuw.nominaleStroom = v.defaultNominaleStroom; nieuw.smeltKarakteristiek = v.defaultSmeltKarakteristiek; v[listKey].push(nieuw); persistDraft(); render(); }
 function removeMeting(verdelerId, listKey, id) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); v[listKey] = v[listKey].filter(function(m){return m.id!==id;}); persistDraft(); render(); }
 function updateMeting(verdelerId, listKey, id, patch) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); var m = v[listKey].find(function(x){return x.id===id;}); if (m) Object.assign(m, patch); persistDraft(); render(); }
 
@@ -986,7 +1129,7 @@ function vulStandaardAanOmvormer(omvormerId, listKey) {
   });
   persistDraft(); render();
 }
-function addMetingOmvormer(omvormerId, listKey) { var o = state.omvormers.find(function(x){return x.id===omvormerId;}); if (!o[listKey]) o[listKey] = []; o[listKey].push(newMeting("")); persistDraft(); render(); }
+function addMetingOmvormer(omvormerId, listKey) { var o = state.omvormers.find(function(x){return x.id===omvormerId;}); if (!o[listKey]) o[listKey] = []; var nieuw = newMeting(""); nieuw.beveiligingType = o.defaultBeveiligingType; nieuw.klasse = o.defaultKlasse; nieuw.nominaleStroom = o.defaultNominaleStroom; nieuw.smeltKarakteristiek = o.defaultSmeltKarakteristiek; o[listKey].push(nieuw); persistDraft(); render(); }
 function removeMetingOmvormer(omvormerId, listKey, id) { var o = state.omvormers.find(function(x){return x.id===omvormerId;}); o[listKey] = o[listKey].filter(function(m){return m.id!==id;}); persistDraft(); render(); }
 function updateMetingOmvormer(omvormerId, listKey, id, patch) { var o = state.omvormers.find(function(x){return x.id===omvormerId;}); var m = o[listKey].find(function(x){return x.id===id;}); if (m) Object.assign(m, patch); persistDraft(); render(); }
 function updateMetingFieldOmvormer(oid, listKey, mid, key, val) { var o = state.omvormers.find(function(x){return x.id===oid;}); if (!o || !o[listKey]) return; var m = o[listKey].find(function(x){return x.id===mid;}); if (m) m[key] = val; persistDraft(); }
@@ -1211,7 +1354,23 @@ function projectFotoWidget() {
 // ---------------------------------------------------------------------
 // RENDER
 // ---------------------------------------------------------------------
+function pasHuisstijlToe() {
+  var kleur = (state.object && state.object.accentColor) || "#0B3B3C";
+  var el = document.getElementById("huisstijl-override");
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "huisstijl-override";
+    document.head.appendChild(el);
+  }
+  el.textContent =
+    ".btn-primary, .print-btn { background:" + kleur + " !important; }" +
+    ".btn-secondary { color:" + kleur + " !important; }" +
+    "input.f:focus, textarea.f:focus, select.f:focus { border-color:" + kleur + " !important; }" +
+    ".card-btn:hover, .keuring-row:hover { border-color:" + kleur + " !important; }" +
+    ".auth-switch a, .auth-switch span { color:" + kleur + " !important; }";
+}
 function render() {
+  pasHuisstijlToe();
   var root = document.getElementById("root");
   try {
     if (state.view === "auth-loading") {
@@ -1538,7 +1697,7 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
   }
   h += '<label class="photo-add">&#128247; Logo uploaden<input type="file" accept="image/*" onchange="handleLogoUpload(this.files)" /></label>';
   h += '</div>';
-  h += '<label class="fl" style="min-height:auto;">Huisstijlkleur rapport (lijnen &amp; koppen)</label>';
+  h += '<label class="fl" style="min-height:auto;">Huisstijlkleur (app &amp; rapport)</label>';
   h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
     '<input type="color" value="' + esc(o.accentColor || "#0D9488") + '" style="width:44px;height:34px;border:1px solid #E0DDD4;border-radius:8px;padding:2px;background:#fff;" onchange="updateObject(\'accentColor\', this.value); render();" />' +
     '<span style="font-size:11.5px;color:#8A8578;">De classificatiekleuren (rood/oranje/geel/blauw) zijn vast en wijzigen hier niet mee.</span></div>';
@@ -1773,8 +1932,8 @@ function renderNen1010Details() {
     (o.steekproeven||[]).forEach(function(s, idx){
       var r = nen1010GeldigCode(s.van, s.tot);
       h += '<div class="item-block"><div class="item-block-head"><input class="item-title-input" placeholder="Onderdeel (bijv. Contactdoos 1)" value="' + esc(s.onderdeel) + '" oninput="updateSteekproef(\'' + s.id + '\',\'onderdeel\',this.value)" /><button class="del-x" onclick="verwijderSteekproef(\'' + s.id + '\')">&times;</button></div>';
-      h += '<div class="grid3"><div><label class="fl">Partij van</label><input class="f" value="' + esc(s.van) + '" oninput="updateSteekproef(\'' + s.id + '\',\'van\',this.value); render();" /></div>';
-      h += '<div><label class="fl">Partij tot</label><input class="f" value="' + esc(s.tot) + '" oninput="updateSteekproef(\'' + s.id + '\',\'tot\',this.value); render();" /></div></div>';
+      h += '<div class="grid3"><div><label class="fl">Partij van</label><input class="f" value="' + esc(s.van) + '" oninput="updateSteekproef(\'' + s.id + '\',\'van\',this.value)" onblur="render();" /></div>';
+      h += '<div><label class="fl">Partij tot</label><input class="f" value="' + esc(s.tot) + '" oninput="updateSteekproef(\'' + s.id + '\',\'tot\',this.value)" onblur="render();" /></div></div>';
       h += r ? '<p class="subtitle" style="margin-top:4px;">Code ' + r.code + ' &mdash; steekproef van ' + r.steekproef + ', max. ' + r.g + ' constateringen voor acceptatie en min. ' + r.f + ' voor afwijzing van de gehele partij.</p>' : '<p class="subtitle" style="margin-top:4px;color:#B23A2F;">Geen exacte match in de standaardtabel &mdash; vul een bereik in zoals 16 tot 25.</p>';
       h += '</div>';
     });
@@ -1902,6 +2061,7 @@ function renderVerdelers() {
       h += vField(v.id, "ipWater", "Aanwezigheid van water (IP-code)", v.ipWater, "bijv. IPX0");
     }
     h += '</div>';
+    h += standaardBeveiligingBlok("verdeler", v);
     h += classRow(v.classificatie, "updateVerdeler('" + v.id + "', {classificatie:");
     if (v.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateVerdelerField('" + v.id + "','norm',vc.norm); updateVerdelerField('" + v.id + "','opmerking',vc.omschrijving);");
@@ -1918,6 +2078,7 @@ function renderVerdelers() {
       h += metingLijst(v, "zsMetingen", "Zs &ndash; lusimpedantie (&Omega;)");
       h += metingLijst(v, "ziMetingen", "Zi &ndash; inwendige impedantie (&Omega;)");
       h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(v.testspanningRiso) + '" oninput="updateVerdelerField(\'' + v.id + '\',\'testspanningRiso\',this.value)" /></div>';
+      h += risoBeoordelingBlok("verdeler", v);
       h += metingLijst(v, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     }
     h += '<h3>RLo-metingen (doorgangsweerstand)</h3><p class="subtitle" style="margin-top:-6px;">Vrij in te vullen &mdash; voeg toe wat je gemeten hebt.</p>';
@@ -1948,19 +2109,87 @@ function renderVerdelers() {
 function vField(id, key, label, val, placeholder) {
   return '<div><label class="fl">' + label + '</label><input class="f" placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateVerdelerField(\'' + id + '\', \'' + key + '\', this.value)" /></div>';
 }
+function risoBeoordelingBlok(soort, obj) {
+  var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
+  var toepasCall = "pasStandaardRisoBeoordelingToe('" + soort + "', '" + obj.id + "')";
+  var drempel = drempelIsolatieweerstand();
+  var redenLabel = state.object.redenInspectie === "PI" ? "PI" : "EBI";
+  var h = '<div style="margin:10px 0;padding:10px 12px;background:#eef5f3;border-radius:10px;border:1px solid #cfe3dd;">';
+  h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B3B3C;">' +
+    '<input type="checkbox" ' + (obj.defaultAutoBeoordelingRiso !== false ? "checked" : "") + ' onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultAutoBeoordelingRiso\', this.checked); ' + toepasCall + '" /> &#9889; Automatisch beoordelen Riso (' + redenLabel + ' &mdash; min. ' + drempel + ' M&Omega;)</label>';
+  h += '<div style="font-size:12px;color:#4d6360;margin-top:4px;">' + (obj.defaultAutoBeoordelingRiso !== false ? "Elke meting hieronder wordt automatisch Goed/Serieus op basis van de ingevulde waarde." : "Uitgeschakeld — je beoordeelt elke Riso-meting hieronder zelf.") + '</div>';
+  h += '</div>';
+  return h;
+}
+function standaardBeveiligingBlok(soort, obj) {
+  var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
+  var toepasCall = "pasStandaardBeveiligingToe('" + soort + "', '" + obj.id + "')";
+  var toepasCallLive = "pasStandaardBeveiligingToeLive('" + soort + "', '" + obj.id + "')";
+  var h = '<div style="margin:10px 0;padding:10px 12px;background:#eef5f3;border-radius:10px;border:1px solid #cfe3dd;">';
+  h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B3B3C;margin-bottom:4px;">' +
+    '<input type="checkbox" ' + (obj.defaultAutoBeoordeling !== false ? "checked" : "") + ' onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultAutoBeoordeling\', this.checked); ' + toepasCall + '" /> &#9889; Automatisch goed/afgekeurd bepalen voor deze ' + (soort === "verdeler" ? "verdeler" : "omvormer") + '</label>';
+  if (obj.defaultAutoBeoordeling === false) {
+    h += '<div style="font-size:12px;color:#4d6360;">Uitgeschakeld — je beoordeelt elke meting hieronder zelf met de Goed/Afgekeurd-knoppen.</div>';
+    h += '</div>';
+    return h;
+  }
+  h += '<div style="font-size:12px;color:#4d6360;margin-bottom:8px;">Vul hier het type en de waarde in — dit wordt automatisch toegepast op alle Zs/Zi-metingen hieronder.</div>';
+  h += '<div style="display:grid;grid-template-columns:1.3fr 0.8fr 0.9fr;gap:8px;">';
+  h += '<div><label class="fl" style="min-height:auto;">Type beveiliging</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultBeveiligingType\', this.value); ' + toepasCall + '">' +
+    '<option value=""' + (obj.defaultBeveiligingType === "" ? " selected" : "") + '>Kies...</option>' +
+    '<option value="automaat"' + (obj.defaultBeveiligingType === "automaat" ? " selected" : "") + '>Installatieautomaat</option>' +
+    '<option value="smeltveiligheid"' + (obj.defaultBeveiligingType === "smeltveiligheid" ? " selected" : "") + '>Smeltveiligheid</option>' +
+    '</select></div>';
+  if (obj.defaultBeveiligingType === "automaat") {
+    h += '<div><label class="fl" style="min-height:auto;">Klasse</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultKlasse\', this.value); ' + toepasCall + '">' +
+      ["", "B", "C", "D"].map(function(k){ return '<option value="' + k + '"' + (obj.defaultKlasse === k ? " selected" : "") + '>' + (k || "Kies...") + '</option>'; }).join("") +
+      '</select></div>';
+    h += '<div><label class="fl" style="min-height:auto;">In (A)</label><input class="f" id="defin-' + obj.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;" placeholder="bijv. 16" value="' + esc(obj.defaultNominaleStroom) + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); pasStandaardBeveiligingToeLive(\'' + soort + '\', \'' + obj.id + '\', this.id, this.selectionStart)" /></div>';
+  } else if (obj.defaultBeveiligingType === "smeltveiligheid") {
+    h += '<div><label class="fl" style="min-height:auto;">Karakteristiek</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultSmeltKarakteristiek\', this.value); ' + toepasCall + '">' +
+      '<option value="gG"' + (obj.defaultSmeltKarakteristiek === "gG" ? " selected" : "") + '>gG (algemeen)</option>' +
+      '<option value="gM"' + (obj.defaultSmeltKarakteristiek === "gM" ? " selected" : "") + '>gM (motorbeveiliging)</option>' +
+      '</select></div>';
+    var inLabelSmelt = obj.defaultSmeltKarakteristiek === "gM" ? "gG-equivalent (2e getal, bijv. bij 16M25 &#8594; 25)" : "In (A)";
+    h += '<div><label class="fl" style="min-height:auto;">' + inLabelSmelt + '</label><input class="f" id="defin-' + obj.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;" placeholder="bijv. 16" value="' + esc(obj.defaultNominaleStroom) + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); pasStandaardBeveiligingToeLive(\'' + soort + '\', \'' + obj.id + '\', this.id, this.selectionStart)" /></div>';
+  } else {
+    h += '<div></div><div></div>';
+  }
+  h += '</div>';
+  h += '</div>';
+  return h;
+}
+function autoBeoordelingBlok(vid, listKey, m) {
+  if (!m.beveiligingType) return "";
+  var typeLabel = m.beveiligingType === "automaat" ? ("Installatieautomaat" + (m.klasse ? " " + m.klasse : "")) : ("Smeltveiligheid " + (m.smeltKarakteristiek || "gG"));
+  var vereist = berekenVereisteIa(m);
+  var h = '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#4d6360;">';
+  h += '&#9889; ' + typeLabel + (m.nominaleStroom ? " " + m.nominaleStroom + "A" : "") + (vereist !== null ? ' \u2014 vereiste minimale kortsluitstroom: <b>' + vereist + ' A</b> (automatisch overgenomen van de instelling bovenaan)' : "");
+  h += '</div>';
+  return h;
+}
 function metingLijst(v, listKey, titel) {
   var toonKortsluitstroom = (listKey === "zsMetingen" || listKey === "ziMetingen");
+  var isRiso = listKey === "risoMetingen";
   var h = '<div style="margin-top:10px;"><label class="fl" style="min-height:auto;">' + titel + '</label>';
   (v[listKey] || []).forEach(function(m){
     h += '<div class="streng-block" style="margin-top:6px;">';
     h += '<div><label class="fl" style="min-height:auto;">Circuit (wat wordt gemeten)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;width:auto;max-width:78px;text-align:center;" placeholder="bijv. L1-PE" value="' + esc(m.circuit) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'circuit\', this.value)" /></div>';
     h += '<div style="display:grid;grid-template-columns:' + (toonKortsluitstroom ? '1fr 1fr 26px' : '1fr 26px') + ';gap:8px;align-items:end;">';
-    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value)" /></div>';
+    var waardeOninput = isRiso
+      ? ('updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value); herbeoordeelRisoMetingLive(\'' + v.id + '\', \'' + m.id + '\', this.id, this.selectionStart)')
+      : ('updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value); herbeoordeelMetingLive(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.id, this.selectionStart)');
+    var waardeOnblur = isRiso
+      ? ('herbeoordeelRisoMeting(\'' + v.id + '\', \'' + m.id + '\')')
+      : ('impedantieVeldGewijzigd(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\')');
+    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" id="mwaarde-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="' + waardeOninput + '" /></div>';
     if (toonKortsluitstroom) {
-      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value)" /></div>';
+      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" id="mik-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value); herbeoordeelMetingLive(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.id, this.selectionStart)" /></div>';
     }
     h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeMeting(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\')">&#128465;</button>';
     h += '</div>';
+    if (toonKortsluitstroom) { h += autoBeoordelingBlok(v.id, listKey, m); }
+    if (isRiso && m.autoBeoordelingRiso !== false) { h += '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#4d6360;">&#9889; Vereiste minimale isolatieweerstand: <b>' + drempelIsolatieweerstand() + ' M&Omega;</b> (' + (state.object.redenInspectie === "PI" ? "PI" : "EBI") + ')</div>'; }
     h += classRow(m.classificatie, "updateMeting('" + v.id + "', '" + listKey + "', '" + m.id + "', {classificatie:");
     if (m.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateMetingField('" + v.id + "','" + listKey + "','" + m.id + "','norm',vc.norm); updateMetingField('" + v.id + "','" + listKey + "','" + m.id + "','opmerking',vc.omschrijving);");
@@ -1977,17 +2206,26 @@ function metingLijst(v, listKey, titel) {
 
 function metingLijstOmvormer(o, listKey, titel) {
   var toonKortsluitstroom = (listKey === "zsMetingen" || listKey === "ziMetingen");
+  var isRiso = listKey === "risoMetingen";
   var h = '<div style="margin-top:10px;"><label class="fl" style="min-height:auto;">' + titel + '</label>';
   (o[listKey] || []).forEach(function(m){
     h += '<div class="streng-block" style="margin-top:6px;">';
     h += '<div><label class="fl" style="min-height:auto;">Circuit (wat wordt gemeten)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;width:auto;max-width:78px;text-align:center;" placeholder="bijv. L1-PE" value="' + esc(m.circuit) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'circuit\', this.value)" /></div>';
     h += '<div style="display:grid;grid-template-columns:' + (toonKortsluitstroom ? '1fr 1fr 26px' : '1fr 26px') + ';gap:8px;align-items:end;">';
-    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value)" /></div>';
+    var waardeOninputO = isRiso
+      ? ('updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value); herbeoordeelRisoMetingLive(\'' + o.id + '\', \'' + m.id + '\', this.id, this.selectionStart)')
+      : ('updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value); herbeoordeelMetingLive(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.id, this.selectionStart)');
+    var waardeOnblurO = isRiso
+      ? ('herbeoordeelRisoMeting(\'' + o.id + '\', \'' + m.id + '\')')
+      : ('impedantieVeldGewijzigd(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\')');
+    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" id="mwaarde-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="' + waardeOninputO + '" /></div>';
     if (toonKortsluitstroom) {
-      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value)" /></div>';
+      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" id="mik-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value); herbeoordeelMetingLive(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.id, this.selectionStart)" /></div>';
     }
     h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeMetingOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\')">&#128465;</button>';
     h += '</div>';
+    if (toonKortsluitstroom) { h += autoBeoordelingBlok(o.id, listKey, m); }
+    if (isRiso && m.autoBeoordelingRiso !== false) { h += '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#4d6360;">&#9889; Vereiste minimale isolatieweerstand: <b>' + drempelIsolatieweerstand() + ' M&Omega;</b> (' + (state.object.redenInspectie === "PI" ? "PI" : "EBI") + ')</div>'; }
     h += classRow(m.classificatie, "updateMetingOmvormer('" + o.id + "', '" + listKey + "', '" + m.id + "', {classificatie:");
     if (m.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateMetingFieldOmvormer('" + o.id + "','" + listKey + "','" + m.id + "','norm',vc.norm); updateMetingFieldOmvormer('" + o.id + "','" + listKey + "','" + m.id + "','opmerking',vc.omschrijving);");
@@ -2019,6 +2257,7 @@ function renderOmvormers() {
     h += oField(o.id,"voorbeveiliging","Voorbeveiliging",o.voorbeveiliging,"bijv. 3 x 16A") + oField(o.id,"maxDcSpanning","Max DC-spanning",o.maxDcSpanning,"bijv. 950");
     h += oField(o.id,"imax","Imax omvormer (A)",o.imax,"bijv. 16");
     h += '</div>';
+    h += standaardBeveiligingBlok("omvormer", o);
     h += classRow(o.classificatie, "updateOmvormer('" + o.id + "', {classificatie:");
     if (o.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateOmvormerField('" + o.id + "','norm',vc.norm); updateOmvormerField('" + o.id + "','opmerking',vc.omschrijving);");
@@ -2035,6 +2274,7 @@ function renderOmvormers() {
       h += metingLijstOmvormer(o, "zsMetingen", "Zs &ndash; lusimpedantie (&Omega;)");
       h += metingLijstOmvormer(o, "ziMetingen", "Zi &ndash; inwendige impedantie (&Omega;)");
       h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(o.testspanningRiso) + '" oninput="updateOmvormerField(\'' + o.id + '\',\'testspanningRiso\',this.value)" /></div>';
+      h += risoBeoordelingBlok("omvormer", o);
       h += metingLijstOmvormer(o, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     }
 
