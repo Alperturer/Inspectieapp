@@ -1299,6 +1299,14 @@ function kiesKlantVoorKeuring(id) {
   syncEigenaarVanInstallatie();
   syncEigenaarContactVanInstallatie();
   syncOpdrachtgeverVanEigenaar();
+  // Extra garantie: als de naam-velden na de ketting nog steeds leeg zijn (en het
+  // bijbehorende "zelfde als"-vinkje aan staat), vul ze alsnog rechtstreeks in.
+  if (!state.object.contactNaam && state.object.contactZelfdeAlsInstallatie) state.object.contactNaam = state.object.installatieverantwoordelijke;
+  if (!state.object.eigenaarNaam && state.object.eigenaarZelfdeAlsInstallatie) state.object.eigenaarNaam = state.object.klant;
+  if (!state.object.eigenaarAdres && state.object.eigenaarZelfdeAlsInstallatie) state.object.eigenaarAdres = state.object.adres;
+  if (!state.object.eigenaarContactNaam && state.object.eigenaarContactZelfde) state.object.eigenaarContactNaam = state.object.contactNaam;
+  if (!state.object.opdrachtgeverNaam && state.object.opdrachtgeverZelfde) state.object.opdrachtgeverNaam = state.object.eigenaarNaam;
+  if (!state.object.opdrachtgeverContactNaam && state.object.opdrachtgeverZelfde) state.object.opdrachtgeverContactNaam = state.object.eigenaarContactNaam;
   persistDraft();
   render();
 }
