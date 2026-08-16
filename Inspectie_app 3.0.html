@@ -919,7 +919,7 @@ function setEigenaarContactZelfde(val) {
   render();
 }
 var INSTALLATIE_EIGENAAR_MAP = {
-  klant: "eigenaarNaam", adres: "eigenaarAdres", postcode: "eigenaarPostcode", plaats: "eigenaarPlaats", telefoonInstallatie: "eigenaarTel",
+  installatieverantwoordelijke: "eigenaarNaam", adres: "eigenaarAdres", postcode: "eigenaarPostcode", plaats: "eigenaarPlaats", telefoonInstallatie: "eigenaarTel",
 };
 function syncEigenaarVanInstallatie() { syncMapIfEnabled(INSTALLATIE_EIGENAAR_MAP, "eigenaarZelfdeAlsInstallatie"); }
 function setEigenaarZelfdeAlsInstallatie(val) {
@@ -1302,7 +1302,7 @@ function kiesKlantVoorKeuring(id) {
   // Extra garantie: als de naam-velden na de ketting nog steeds leeg zijn (en het
   // bijbehorende "zelfde als"-vinkje aan staat), vul ze alsnog rechtstreeks in.
   if (!state.object.contactNaam && state.object.contactZelfdeAlsInstallatie) state.object.contactNaam = state.object.installatieverantwoordelijke;
-  if (!state.object.eigenaarNaam && state.object.eigenaarZelfdeAlsInstallatie) state.object.eigenaarNaam = state.object.klant;
+  if (!state.object.eigenaarNaam && state.object.eigenaarZelfdeAlsInstallatie) state.object.eigenaarNaam = state.object.installatieverantwoordelijke;
   if (!state.object.eigenaarAdres && state.object.eigenaarZelfdeAlsInstallatie) state.object.eigenaarAdres = state.object.adres;
   if (!state.object.eigenaarContactNaam && state.object.eigenaarContactZelfde) state.object.eigenaarContactNaam = state.object.contactNaam;
   if (!state.object.opdrachtgeverNaam && state.object.opdrachtgeverZelfde) state.object.opdrachtgeverNaam = state.object.eigenaarNaam;
