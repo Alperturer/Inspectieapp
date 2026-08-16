@@ -1237,7 +1237,7 @@ function loadKlantenLokaal() { try { var raw = localStorage.getItem(STORAGE_KLAN
 function persistKlantenLokaal() { try { localStorage.setItem(STORAGE_KLANTEN, JSON.stringify(state.klanten)); } catch(e) {} }
 function laadKlanten(callback) {
   if (!supabaseClient || !state.user) { state.klanten = loadKlantenLokaal(); callback && callback(); return; }
-  supabaseClient.from("keuringen_klanten").select("*").eq("user_id", state.user.id).order("updated_at", { ascending: false }).then(function(res) {
+  supabaseClient.from("keuringen_klanten").select("*").eq("user_id", state.user.id).order("created_at", { ascending: false }).then(function(res) {
     if (!res.error && res.data) { state.klanten = res.data.map(function(rij){ return rij.data; }); persistKlantenLokaal(); }
     else { state.klanten = loadKlantenLokaal(); }
     render();
@@ -1246,7 +1246,9 @@ function laadKlanten(callback) {
 }
 function syncKlantNaarCloud(k) {
   if (!supabaseClient || !state.user) return;
-  supabaseClient.from("keuringen_klanten").upsert({ id: k.id, user_id: state.user.id, data: k, updated_at: new Date().toISOString() }).then(function(){});
+  supabaseClient.from("keuringen_klanten").upsert({ id: k.id, user_id: state.user.id, data: k, created_at: new Date().toISOString() }).then(function(res){
+    if (res.error) { alert("Cloud-opslag klant mislukt (lokaal is het wel bewaard):\n\n" + res.error.message); }
+  });
 }
 function nieuweKlant() {
   var k = newKlant();
