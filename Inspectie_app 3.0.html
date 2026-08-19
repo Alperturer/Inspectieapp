@@ -1894,19 +1894,23 @@ function renderInstallatieDetails() {
   h += field("kenmerkInspectieplan","Kenmerk toegepaste inspectieplan",o.kenmerkInspectieplan,"text","","bijv. 20260101-1") + field("datumInspectieplan","Datum toegepaste inspectieplan",o.datumInspectieplan,"date","");
   h += '</div></div>';
   h += '<div class="section-card"><h2>Elektrische installatie</h2><div class="grid2">';
-  h += field("stroomstelsel","Stroomstelsel",o.stroomstelsel,"text","","bijv. TT") + field("netspanning","Netspanning",o.netspanning,"text","","bijv. 400 V ~ 3 fase + N + PE");
-  h += field("netaansluiting","Netaansluiting",o.netaansluiting,"text","","bijv. 3 x 40A") + field("installatieOpmerkingen","Opmerkingen",o.installatieOpmerkingen,"text","","optioneel");
+  h += selectMetVrijeTekst("stroomstelsel","Stroomstelsel",o.stroomstelsel,["TT", "TN", "TN-C", "TN-S", "IT"],"","updateObject") + field("netspanning","Netspanning",o.netspanning,"text","","bijv. 400 V ~ 3 fase + N + PE");
+  h += selectMetVrijeTekst("netaansluiting","Netaansluiting",o.netaansluiting,["1x35A", "3x25A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"],"","updateObject") + field("installatieOpmerkingen","Opmerkingen",o.installatieOpmerkingen,"text","","optioneel");
   h += '</div></div>';
   h += '<div class="section-card"><h2>Normen van toepassing</h2>';
   h += field("typeNen1010","Type NEN 1010",o.typeNen1010,"text","full","bijv. NEN1010:2015+C2:2016");
-  h += '<label class="fl">Normen (één per regel)</label><textarea class="f full" rows="4" placeholder="bijv. NEN 7250:2021&#10;NEN-EN-IEC 61439-1:2021" oninput="updateObject(\'normenLijst\', this.value)">' + esc(o.normenLijst) + '</textarea>';
+  h += '<label class="fl">Normen van toepassing &mdash; kies er één, daarna kun je er nog één kiezen enzovoort</label>';
+  h += '<select class="f" onchange="if(this.value){voegNormToe(this.value); this.value=\'\';}"><option value="">&mdash; Kies een norm om toe te voegen &mdash;</option>' +
+    NORMEN_LIJST.map(function(n){ return '<option value="' + esc(n.naam + ' &mdash; ' + n.uitleg) + '">' + esc(n.naam) + ' &mdash; ' + esc(n.uitleg) + '</option>'; }).join("") +
+    '</select>';
+  h += '<textarea class="f full" rows="5" style="margin-top:6px;" placeholder="Gekozen normen verschijnen hier, één per regel. Je kunt hier ook zelf typen of regels verwijderen." oninput="updateObject(\'normenLijst\', this.value)">' + esc(o.normenLijst) + '</textarea>';
   h += field("wijzeRapporteren","Wijze van rapporteren",o.wijzeRapporteren,"text","full","bijv. Conform SCIOS Technisch Document 18");
   h += field("templateVersie","Template versie",o.templateVersie,"text","","bijv. 2.6.4:2026-04") + field("overigeNormen","Overige normen",o.overigeNormen,"text","","optioneel");
   h += field("aanvullendeEisen","Aanvullende eisen",o.aanvullendeEisen,"text","full","bijv. Geen aanvullende eisen.");
   h += '</div>';
   h += '<div class="section-card"><h2>Inspectie</h2>';
   h += field("betrekkingOp","Deze inspectie heeft betrekking op",o.betrekkingOp,"text","full","bijv. PV-installatie tot en met het fysieke overdrachtspunt netbeheerder");
-  h += field("gebruiksfuncties","Gebruiksfunctie(s)",o.gebruiksfuncties,"text","","bijv. Kantoorfunctie") + field("uitsluitingen","Uitsluitingen in deze inspectie",o.uitsluitingen,"text","","bijv. Overige delen AC-zijdig");
+  h += selectMetVrijeTekst("gebruiksfuncties","Gebruiksfunctie(s)",o.gebruiksfuncties,["Kantoorfunctie", "Opslagfunctie", "Praktijk en woning", "Woning", "Industrie"],"","updateObject") + field("uitsluitingen","Uitsluitingen in deze inspectie",o.uitsluitingen,"text","","bijv. Overige delen AC-zijdig");
   h += field("bijzondereInstallaties","Bijzondere installaties, ruimten en terreinen",o.bijzondereInstallaties,"text","full","bijv. 712 Fotovoltaïsche systemen (PV-systemen)");
   h += field("uitgevoerdMiddels","Deze inspectie is uitgevoerd middels",o.uitgevoerdMiddels,"text","full","bijv. Visuele controle en meting en beproeving");
   h += '</div>';
@@ -1942,8 +1946,8 @@ function renderNen1010Details() {
   h += field("wetgeving","Van toepassing zijnde wet- en regelgeving",o.wetgeving,"text","full","bijv. Bouwbesluit");
   h += '</div></div>';
   h += '<div class="section-card"><h2>Elektrische installatie</h2><div class="grid2">';
-  h += field("stroomstelsel","Stroomstelsel",o.stroomstelsel,"text","","bijv. TT") + field("netspanning","Netspanning",o.netspanning,"text","","bijv. 230 V ~ 1 fase + N");
-  h += field("netaansluiting","Netaansluiting",o.netaansluiting,"text","","bijv. 1 x 20A") + field("installatieOpmerkingen","Opmerkingen",o.installatieOpmerkingen,"text","","optioneel");
+  h += selectMetVrijeTekst("stroomstelsel","Stroomstelsel",o.stroomstelsel,["TT", "TN", "TN-C", "TN-S", "IT"],"","updateObject") + field("netspanning","Netspanning",o.netspanning,"text","","bijv. 230 V ~ 1 fase + N");
+  h += selectMetVrijeTekst("netaansluiting","Netaansluiting",o.netaansluiting,["1x35A", "3x25A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"],"","updateObject") + field("installatieOpmerkingen","Opmerkingen",o.installatieOpmerkingen,"text","","optioneel");
   h += '</div></div>';
   h += '<div class="section-card"><h2>Normen van toepassing</h2>';
   h += field("typeNen1010","Type NEN 1010",o.typeNen1010,"text","full","bijv. NEN 1010:1962+A1:1969");
@@ -1953,7 +1957,7 @@ function renderNen1010Details() {
   h += '</div>';
   h += '<div class="section-card"><h2>Inspectie</h2>';
   h += field("betrekkingOp","Deze inspectie heeft betrekking op",o.betrekkingOp,"text","full","bijv. Thermografische inspectie van de verdeelinrichtingen");
-  h += field("gebruiksfuncties","Gebruiksfunctie(s)",o.gebruiksfuncties,"text","","bijv. Woonfunctie") + field("uitsluitingen","Uitsluitingen in deze inspectie",o.uitsluitingen,"text","","bijv. PV-installatie DC-zijdig");
+  h += selectMetVrijeTekst("gebruiksfuncties","Gebruiksfunctie(s)",o.gebruiksfuncties,["Kantoorfunctie", "Opslagfunctie", "Praktijk en woning", "Woning", "Industrie"],"","updateObject") + field("uitsluitingen","Uitsluitingen in deze inspectie",o.uitsluitingen,"text","","bijv. PV-installatie DC-zijdig");
   h += field("bijzondereInstallaties","Bijzondere installaties, ruimten en terreinen",o.bijzondereInstallaties,"text","full","bijv. Niet van toepassing");
   h += field("uitgevoerdMiddels","Deze inspectie is uitgevoerd middels",o.uitgevoerdMiddels,"text","full","bijv. Visuele controle en meting en beproeving");
   h += '</div>';
@@ -2071,8 +2075,45 @@ function updateControlepunt(idx, val) {
   var lijst = state.type === "nen1010" ? state.object.controlepuntenNen1010 : state.object.controlepunten;
   if (lijst[idx]) { lijst[idx].beoordeling = val; persistDraft(); render(); }
 }
+// Veelgebruikte normen bij SCIOS Scope 8/10/12 en NEN 1010, met korte uitleg waar elke norm voor dient.
+var NORMEN_LIJST = [
+  { naam: "NEN 1010", uitleg: "Veiligheidsbepalingen voor laagspanningsinstallaties (basisnorm elektrische installaties)" },
+  { naam: "NEN 3140", uitleg: "Bedrijfsvoering van elektrische installaties, laagspanning (periodiek onderhoud/keuring)" },
+  { naam: "NEN-EN-IEC 60204-1", uitleg: "Veiligheid van machines &mdash; elektrische uitrusting van machines" },
+  { naam: "NEN-EN-IEC 61439-1", uitleg: "Eisen aan laagspanningsschakel- en verdeelinrichtingen" },
+  { naam: "NPR 8040-1", uitleg: "Praktijkrichtlijn behorend bij NEN 3140" },
+  { naam: "NTA 8220", uitleg: "Praktijkrichtlijn voor keuren en beproeven, gebruikt bij SCIOS Scope 10 en 12" },
+  { naam: "NEN-EN-IEC 62446-1", uitleg: "Documentatie-eisen, inbedrijfstellingstest en inspectie van PV-installaties (relevant bij Scope 12)" },
+  { naam: "SCIOS TD 02", uitleg: "Technisch document behorend bij SCIOS Scope 8" },
+  { naam: "SCIOS TD 14", uitleg: "Technisch document behorend bij SCIOS Scope 10" },
+  { naam: "SCIOS TD 17", uitleg: "Technisch document behorend bij SCIOS Scope 12" },
+  { naam: "NEN-EN-IEC 60364", uitleg: "Internationale (IEC-)variant van NEN 1010" },
+];
+function voegNormToe(regel) {
+  var huidig = state.object.normenLijst || "";
+  var regels = huidig.split("\n").filter(function(r){ return r.trim() !== ""; });
+  if (regels.indexOf(regel) === -1) regels.push(regel);
+  state.object.normenLijst = regels.join("\n");
+  persistDraft();
+  render();
+}
 function field(key, label, val, type, cls, placeholder) {
   return '<div class="' + cls + '"><label class="fl">' + label + '</label><input class="f" type="' + type + '" placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateObject(\'' + key + '\', this.value)" /></div>';
+}
+// Dropdown met vaste opties + "Anders (zelf invullen)" die een los tekstveld toont.
+// updateFnName: naam van de functie die (key, value) bijwerkt, bv. "updateObject" of "updateMetingField" (die laatste heeft extra vaste argumenten ervoor, zie callArgsPrefix).
+function selectMetVrijeTekst(key, label, val, opties, cls, updateFnName, callArgsPrefix) {
+  var prefix = callArgsPrefix ? callArgsPrefix + ", " : "";
+  var isAangepast = val && opties.indexOf(val) === -1;
+  var h = '<div class="' + (cls||"") + '"><label class="fl">' + esc(label) + '</label>';
+  h += '<select class="f" onchange="if(this.value===\'__anders__\'){' + updateFnName + '(' + prefix + '\'' + key + '\', \' \'); this.nextElementSibling.style.display=\'block\'; this.nextElementSibling.focus();} else {' + updateFnName + '(' + prefix + '\'' + key + '\', this.value); this.nextElementSibling.style.display=\'none\';}">';
+  h += '<option value=""' + (val === "" ? " selected" : "") + '>Kies...</option>';
+  opties.forEach(function(opt){ h += '<option value="' + esc(opt) + '"' + (val === opt ? " selected" : "") + '>' + esc(opt) + '</option>'; });
+  h += '<option value="__anders__"' + (isAangepast ? " selected" : "") + '>Anders (zelf invullen)</option>';
+  h += '</select>';
+  h += '<input class="f" style="margin-top:6px;display:' + (isAangepast ? "block" : "none") + ';" placeholder="Vul zelf in" value="' + esc(isAangepast ? val : "") + '" oninput="' + updateFnName + '(' + prefix + '\'' + key + '\', this.value)" />';
+  h += '</div>';
+  return h;
 }
 
 function renderVerdelers() {
@@ -2160,6 +2201,20 @@ function risoBeoordelingBlok(soort, obj) {
   h += '</div>';
   return h;
 }
+var IN_WAARDE_OPTIES = ["16", "20", "25", "32", "40", "50", "63", "80", "100"];
+function inWaardeSelect(obj, updateFn, toepasCall, soort, label) {
+  var huidig = obj.defaultNominaleStroom;
+  var isAangepast = huidig && IN_WAARDE_OPTIES.indexOf(huidig) === -1;
+  var h = '<div><label class="fl" style="min-height:auto;">' + label + '</label>';
+  h += '<select class="f" style="margin-bottom:0;" onchange="if(this.value===\'__anders__\'){' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', \'\'); this.nextElementSibling.style.display=\'block\'; this.nextElementSibling.focus();} else {' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); this.nextElementSibling.style.display=\'none\'; ' + toepasCall + '}">';
+  h += '<option value=""' + (huidig === "" ? " selected" : "") + '>Kies...</option>';
+  IN_WAARDE_OPTIES.forEach(function(v){ h += '<option value="' + v + '"' + (huidig === v ? " selected" : "") + '>' + v + 'A</option>'; });
+  h += '<option value="__anders__"' + (isAangepast ? " selected" : "") + '>Anders (zelf invullen)</option>';
+  h += '</select>';
+  h += '<input class="f" id="defin-' + obj.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-top:6px;margin-bottom:0;display:' + (isAangepast ? "block" : "none") + ';" placeholder="bijv. 25" value="' + esc(isAangepast ? huidig : "") + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); pasStandaardBeveiligingToeLive(\'' + soort + '\', \'' + obj.id + '\', this.id, this.selectionStart)" />';
+  h += '</div>';
+  return h;
+}
 function standaardBeveiligingBlok(soort, obj) {
   var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
   var toepasCall = "pasStandaardBeveiligingToe('" + soort + "', '" + obj.id + "')";
@@ -2180,17 +2235,17 @@ function standaardBeveiligingBlok(soort, obj) {
     '<option value="smeltveiligheid"' + (obj.defaultBeveiligingType === "smeltveiligheid" ? " selected" : "") + '>Smeltveiligheid</option>' +
     '</select></div>';
   if (obj.defaultBeveiligingType === "automaat") {
-    h += '<div><label class="fl" style="min-height:auto;">Klasse</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultKlasse\', this.value); ' + toepasCall + '">' +
+    h += '<div><label class="fl" style="min-height:auto;">Karakteristiek</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultKlasse\', this.value); ' + toepasCall + '">' +
       ["", "B", "C", "D"].map(function(k){ return '<option value="' + k + '"' + (obj.defaultKlasse === k ? " selected" : "") + '>' + (k || "Kies...") + '</option>'; }).join("") +
       '</select></div>';
-    h += '<div><label class="fl" style="min-height:auto;">In (A)</label><input class="f" id="defin-' + obj.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;" placeholder="bijv. 16" value="' + esc(obj.defaultNominaleStroom) + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); pasStandaardBeveiligingToeLive(\'' + soort + '\', \'' + obj.id + '\', this.id, this.selectionStart)" /></div>';
+    h += inWaardeSelect(obj, updateFn, toepasCall, soort, "In (A)");
   } else if (obj.defaultBeveiligingType === "smeltveiligheid") {
     h += '<div><label class="fl" style="min-height:auto;">Karakteristiek</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultSmeltKarakteristiek\', this.value); ' + toepasCall + '">' +
       '<option value="gG"' + (obj.defaultSmeltKarakteristiek === "gG" ? " selected" : "") + '>gG (algemeen)</option>' +
       '<option value="gM"' + (obj.defaultSmeltKarakteristiek === "gM" ? " selected" : "") + '>gM (motorbeveiliging)</option>' +
       '</select></div>';
     var inLabelSmelt = obj.defaultSmeltKarakteristiek === "gM" ? "gG-equivalent (2e getal, bijv. bij 16M25 &#8594; 25)" : "In (A)";
-    h += '<div><label class="fl" style="min-height:auto;">' + inLabelSmelt + '</label><input class="f" id="defin-' + obj.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;" placeholder="bijv. 16" value="' + esc(obj.defaultNominaleStroom) + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); pasStandaardBeveiligingToeLive(\'' + soort + '\', \'' + obj.id + '\', this.id, this.selectionStart)" /></div>';
+    h += inWaardeSelect(obj, updateFn, toepasCall, soort, inLabelSmelt);
   } else {
     h += '<div></div><div></div>';
   }
