@@ -347,7 +347,7 @@ function dedupeInspecteursLijst() {
 
 var STORAGE_DRAFT = "keuring_concept_v2";
 var STORAGE_BEDRIJF = "keuringen_bedrijfsgegevens_v1";
-var BEDRIJF_VELDEN = ["bedrijfNaam", "bedrijfAdres", "bedrijfPostcodePlaats", "bedrijfTel", "bedrijfEmail", "bedrijfCertScope8", "bedrijfCertScope10", "bedrijfCertScope12", "bedrijfCertNen26541", "bedrijfCertNen26542", "logoData", "inspecteur", "accentColor", "meetinstrumenten", "inspecteurs", "appNaam"];
+var BEDRIJF_VELDEN = ["bedrijfNaam", "bedrijfAdres", "bedrijfPostcodePlaats", "bedrijfTel", "bedrijfEmail", "bedrijfCertScope8", "bedrijfCertScope10", "bedrijfCertScope12", "bedrijfCertNen26541", "bedrijfCertNen26542", "logoData", "sciosLogoData", "inspecteur", "accentColor", "meetinstrumenten", "inspecteurs", "appNaam"];
 var STORAGE_SAVED = "keuringen_opgeslagen_v2";
 
 // ---------------------------------------------------------------------
@@ -431,7 +431,7 @@ function emptyObject() {
     opdrachtgeverNaam: "", opdrachtgeverAdres: "", opdrachtgeverPostcode: "", opdrachtgeverPlaats: "", opdrachtgeverTel: "",
     opdrachtgeverContactNaam: "", opdrachtgeverContactTel: "", opdrachtgeverContactEmail: "",
     opdrachtgeverZelfde: true, eigenaarZelfdeAlsInstallatie: true, contactZelfdeAlsInstallatie: true, klantId: "",
-    bedrijfNaam: "", bedrijfAdres: "", bedrijfPostcodePlaats: "", bedrijfTel: "", bedrijfEmail: "", logoData: "", accentColor: "#0D9488",
+    bedrijfNaam: "", bedrijfAdres: "", bedrijfPostcodePlaats: "", bedrijfTel: "", bedrijfEmail: "", logoData: "", sciosLogoData: "", accentColor: "#0D9488",
     inspecteur: "", inspecteurCertificaat: "", geselecteerdeInspecteurId: "", meetinstrumenten: [], inspecteurs: [], appNaam: "Keuringen app",
     rapportnummer: "", redenInspectie: "EBI", datum: new Date().toISOString().slice(0,10),
     installatieverantwoordelijke: "",
@@ -1007,6 +1007,15 @@ function handleLogoUpload(files) {
   if (!files || files.length === 0) return;
   filesToDataUrls([files[0]], function(urls){
     state.object.logoData = urls[0] || "";
+    persistDraft();
+    persistBedrijfsgegevens();
+    render();
+  });
+}
+function handleSciosLogoUpload(files) {
+  if (!files || files.length === 0) return;
+  filesToDataUrls([files[0]], function(urls){
+    state.object.sciosLogoData = urls[0] || "";
     persistDraft();
     persistBedrijfsgegevens();
     render();
@@ -1719,6 +1728,13 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
     h += '<span class="photo-wrap"><img class="photo-thumb" style="width:64px;height:64px;object-fit:contain;background:#fff;" src="' + o.logoData + '" /><button onclick="updateObject(\'logoData\', \'\'); render();">&times;</button></span>';
   }
   h += '<label class="photo-add">&#128247; Logo uploaden<input type="file" accept="image/*" onchange="handleLogoUpload(this.files)" /></label>';
+  h += '</div>';
+  h += '<label class="fl" style="min-height:auto;">SCIOS-logo (rechtsboven op de voorpagina)</label>';
+  h += '<div class="photo-row" style="margin-top:0;margin-bottom:12px;">';
+  if (o.sciosLogoData) {
+    h += '<span class="photo-wrap"><img class="photo-thumb" style="width:64px;height:64px;object-fit:contain;background:#fff;" src="' + o.sciosLogoData + '" /><button onclick="updateObject(\'sciosLogoData\', \'\'); render();">&times;</button></span>';
+  }
+  h += '<label class="photo-add">&#128247; SCIOS-logo uploaden<input type="file" accept="image/*" onchange="handleSciosLogoUpload(this.files)" /></label>';
   h += '</div>';
   h += '<label class="fl" style="min-height:auto;">Huisstijlkleur (app &amp; rapport)</label>';
   h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
@@ -2729,7 +2745,7 @@ function docSec(title, inner, brk) { return '<section class="doc-sec' + (brk ? '
 function docPhotos(fotos, w) {
   if (!fotos || fotos.length === 0) return "";
   var h = '<div class="doc-photos">';
-  fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:' + (w||140) + 'px;height:' + (w||140) + 'px;" />'; });
+  fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:' + (w||220) + 'px;height:auto;" />'; });
   h += '</div>';
   return h;
 }
@@ -2738,7 +2754,7 @@ function docConstatering(idx, classificatie, omschrijving, fotos, norm) {
   var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>Constatering' + (idx!=null ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
   h += '<div class="doc-constatering-body">';
   h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
-  h += docPhotos(fotos, 130);
+  h += docPhotos(fotos, 220);
   h += '</div></div>';
   return h;
 }
@@ -2747,38 +2763,41 @@ function beoordelingBadge(classificatie) { return '<span class="badge" style="ba
 function sharedDocCss(accent) {
   return '' +
   '* { box-sizing:border-box; }' +
-  'body { margin:0; font-family:"Poppins",-apple-system,BlinkMacSystemFont,sans-serif; color:#242220; font-size:11.5px; line-height:1.55; -webkit-font-smoothing:antialiased; }' +
+  'body { margin:0; font-family:"Poppins",-apple-system,BlinkMacSystemFont,sans-serif; color:#242220; font-size:12.5px; line-height:1.6; -webkit-font-smoothing:antialiased; }' +
   '.cover-logo { max-height:190px; max-width:640px; object-fit:contain; display:block; margin-bottom:14px; }' +
+  '.cover-topRow { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px; }' +
+  '.cover-topRow .cover-logo { margin-bottom:0; }' +
+  '.cover-scios-logo { max-height:90px; max-width:180px; object-fit:contain; display:block; }' +
   '.cover-brand { font-size:11px; color:#8A8578; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; }' +
   '.cover-title { font-size:26px; font-weight:800; margin-top:8px; letter-spacing:-0.015em; color:#161513; }' +
   '.cover-sub { font-size:12.5px; font-weight:600; color:' + accent + '; margin-top:4px; letter-spacing:0.01em; }' +
   '.cover-rule { border:none; height:3px; background:linear-gradient(90deg,' + accent + ',' + accent + 'AA,transparent); margin:16px 0 20px; border-radius:3px; }' +
   '.cover-photo { width:100%; height:118mm; object-fit:cover; border-radius:8px; margin-bottom:18px; display:block; box-shadow:0 2px 14px rgba(0,0,0,0.14); }' +
-  '.dl-table { width:100%; border-collapse:collapse; font-size:11.5px; margin-top:6px; }' +
-  '.dl-table td { padding:5px 0; vertical-align:top; border-bottom:1px solid #F4F2EC; }' +
+  '.dl-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px; }' +
+  '.dl-table td { padding:7px 0; vertical-align:top; border-bottom:1px solid #F4F2EC; }' +
   '.dl-table tr:last-child td { border-bottom:none; }' +
   '.dl-table td.dl-k { width:220px; color:#8A8578; font-weight:500; }' +
   '.dl-table td.dl-v { font-weight:600; color:#1c1c1c; }' +
   '.doc-sec { margin-bottom:4px; }' +
   '.doc-sec.brk { break-before: page; }' +
-  '.doc-h { font-size:16.5px; font-weight:800; letter-spacing:0.01em; margin:2px 0 16px; padding-bottom:10px; padding-left:14px; border-bottom:1px solid #EAE7DF; border-left:5px solid ' + accent + '; break-after:avoid; color:#161513; }' +
-  '.doc-sub { font-size:12.5px; font-weight:700; margin:14px 0 6px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
-  '.doc-p { font-size:11px; line-height:1.5; margin:4px 0; color:#3a382f; }' +
-  'table.std-table { width:100%; border-collapse:separate; border-spacing:0; font-size:11px; margin-top:6px; table-layout:fixed; }' +
-  'table.std-table th { text-align:left; font-size:9.5px; color:#6b6659; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; background:#F7F6F1; border-bottom:1.5px solid ' + accent + '44; padding:7px 9px; }' +
+  '.doc-h { font-size:19px; font-weight:800; letter-spacing:0.01em; margin:2px 0 16px; padding-bottom:10px; padding-left:14px; border-bottom:1px solid #EAE7DF; border-left:5px solid ' + accent + '; break-after:avoid; color:#161513; }' +
+  '.doc-sub { font-size:14px; font-weight:700; margin:14px 0 6px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
+  '.doc-p { font-size:12px; line-height:1.55; margin:4px 0; color:#3a382f; }' +
+  'table.std-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; margin-top:6px; table-layout:fixed; }' +
+  'table.std-table th { text-align:left; font-size:10.5px; color:#6b6659; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; background:#F7F6F1; border-bottom:1.5px solid ' + accent + '44; padding:7px 9px; }' +
   'table.std-table th:first-child { border-top-left-radius:6px; }' +
   'table.std-table th:last-child { border-top-right-radius:6px; }' +
   'table.std-table td { padding:6px 9px; border-bottom:1px solid #F2F0EA; vertical-align:top; break-inside:avoid; }' +
   'table.std-table tbody tr:nth-child(even) td { background:#FBFAF7; }' +
   'table.std-table tr { break-inside:avoid; }' +
-  'table.color-table { width:100%; border-collapse:collapse; font-size:11px; margin-top:6px; break-inside:avoid; border-radius:6px; overflow:hidden; }' +
+  'table.color-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; break-inside:avoid; border-radius:6px; overflow:hidden; }' +
   'table.color-table td { padding:7px 10px; vertical-align:top; }' +
   '.doc-table-block { break-inside:avoid; }' +
-  '.badge { display:inline-block; font-size:9.5px; font-weight:800; padding:3.5px 11px; border-radius:999px; color:#fff; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.18); }' +
+  '.badge { display:inline-block; font-size:10.5px; font-weight:800; padding:4.5px 13px; border-radius:999px; color:#fff; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.18); }' +
   '.cp-pill { display:inline-block; font-size:10px; font-weight:700; padding:4.5px 12px; border-radius:999px; white-space:nowrap; }' +
   '.doc-constatering { border:1px solid #EAE7DF; border-radius:8px; margin:9px 0; break-inside:avoid; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }' +
-  '.doc-constatering-head { display:flex; justify-content:space-between; align-items:center; background:#F7F6F1; padding:8px 12px; font-size:10.5px; font-weight:700; gap:8px; border-bottom:1px solid #EAE7DF; }' +
-  '.doc-constatering-body { padding:12px; font-size:11px; }' +
+  '.doc-constatering-head { display:flex; justify-content:space-between; align-items:center; background:#F7F6F1; padding:10px 14px; font-size:11.5px; font-weight:700; gap:8px; border-bottom:1px solid #EAE7DF; }' +
+  '.doc-constatering-body { padding:14px; font-size:12px; }' +
   '.doc-photos { display:flex; gap:7px; flex-wrap:wrap; margin-top:9px; }' +
   '.doc-photos img { object-fit:cover; border-radius:6px; border:1px solid #EAE7DF; box-shadow:0 1px 4px rgba(0,0,0,0.08); }' +
   '.doc-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #F2F0EA; font-size:11px; }' +
@@ -2896,7 +2915,12 @@ function buildScope12Body() {
 
   // PAGINA 1 — VOORPAGINA
   h += '<section class="doc-sec">';
-  if (o.logoData) h += '<img class="cover-logo" src="' + o.logoData + '" />';
+  if (o.logoData || o.sciosLogoData) {
+    h += '<div class="cover-topRow">';
+    h += o.logoData ? ('<img class="cover-logo" src="' + o.logoData + '" />') : '<div></div>';
+    if (o.sciosLogoData) h += '<img class="cover-scios-logo" src="' + o.sciosLogoData + '" />';
+    h += '</div>';
+  }
   h += '<div class="cover-brand">' + esc(o.bedrijfNaam || "Inspectiebedrijf") + '</div>';
   h += '<div class="cover-title">' + t.label + ' | Inspectierapport</div>';
   h += '<div class="cover-sub">' + (o.redenInspectie === "PI" ? "PI (Periodieke Inspectie)" : "EBI (Eerste Bijzondere Inspectie)") + '</div>';
@@ -3012,7 +3036,7 @@ function buildScope12Body() {
     state.verdelers.forEach(function(v, vi){
       vHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
       vHtml += dlTable([["Locatie", v.locatie], ["Type zekering", v.typeZekering], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
-      vHtml += docPhotos(v.fotos, 130);
+      vHtml += docPhotos(v.fotos, 220);
       vHtml += '</div>';
     });
     vHtml += '<div class="doc-sub">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle afwijkende metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
@@ -3041,7 +3065,7 @@ function buildScope12Body() {
     state.omvormers.forEach(function(o2, oi){
       oHtml += '<div class="item-block-wrap"><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>';
       oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer", o2.serienummer], ["Voorbeveiliging", o2.voorbeveiliging], ["Max DC-spanning", o2.maxDcSpanning], ["Nominale stroom AC", o2.imax]]);
-      oHtml += docPhotos(o2.fotos, 130);
+      oHtml += docPhotos(o2.fotos, 220);
       oHtml += '</div>';
     });
     var op = state.object;
@@ -3118,7 +3142,12 @@ function buildNen1010Body() {
   // Lopende koptekst (2 regels tekst) en voettekst (logo + paginanummer)
   // PAGINA 1 — VOORPAGINA
   h += '<section class="doc-sec">';
-  if (o.logoData) h += '<img class="cover-logo" src="' + o.logoData + '" />';
+  if (o.logoData || o.sciosLogoData) {
+    h += '<div class="cover-topRow">';
+    h += o.logoData ? ('<img class="cover-logo" src="' + o.logoData + '" />') : '<div></div>';
+    if (o.sciosLogoData) h += '<img class="cover-scios-logo" src="' + o.sciosLogoData + '" />';
+    h += '</div>';
+  }
   h += '<div class="cover-title">NEN 1010 | Inspectierapport</div>';
   h += '<hr class="cover-rule" />';
   if (o.projectFotos && o.projectFotos.length > 0) h += '<img class="cover-photo" src="' + o.projectFotos[0] + '" />';
@@ -3241,13 +3270,13 @@ function buildNen1010Body() {
       vHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse],
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
-      vHtml += docPhotos(v.fotos, 130);
+      vHtml += docPhotos(v.fotos, 220);
       vHtml += '</div>';
     });
     vHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
     vHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie visuele controle (verdeelinrichting)</div>';
     var vConstateringen = "", vNr = 0;
-    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,130) + '</div></div>'; } });
+    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; } });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
     h += docSec("Bevindingen verdeelinrichtingen", vHtml, false);
   }
@@ -3255,7 +3284,7 @@ function buildNen1010Body() {
   // PAGINA — BEVINDINGEN OVERIGE INSTALLATIEDELEN
   var overigHtml = '<div class="doc-sub">Conclusie overige installatiedelen</div>';
   var overigConst = "", overigNr = 0;
-  state.constateringen.forEach(function(c){ overigNr++; overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(overigNr).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130) + '</div></div>'; });
+  state.constateringen.forEach(function(c){ overigNr++; overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(overigNr).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,220) + '</div></div>'; });
   overigHtml += overigConst ? ('<p class="doc-p">Er zijn afwijkingen geconstateerd:</p>' + overigConst) : '<p class="doc-p">Er zijn geen afwijkingen geconstateerd.</p>';
   h += docSec("Bevindingen overige installatiedelen", overigHtml, !!overigConst);
 
@@ -3305,9 +3334,9 @@ function buildNen1010Body() {
   // PAGINA — OPSOMMING CONSTATERINGEN
   var opsomHtml = "", opsomNr = 0;
   state.verdelers.forEach(function(v){
-    if (v.classificatie !== "goed") { opsomNr++; opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(opsomNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,110) + '</div></div>'; }
+    if (v.classificatie !== "goed") { opsomNr++; opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(opsomNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,200) + '</div></div>'; }
   });
-  state.constateringen.forEach(function(c){ opsomNr++; opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(opsomNr).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,110) + '</div></div>'; });
+  state.constateringen.forEach(function(c){ opsomNr++; opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(opsomNr).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,200) + '</div></div>'; });
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
 
   // PAGINA — BIJLAGE(N)
@@ -3572,6 +3601,7 @@ function normalizeState() {
   var leeg = emptyObject();
   Object.keys(leeg).forEach(function(k){ if (state.object[k] === undefined) state.object[k] = leeg[k]; });
   state.object.logoData = state.object.logoData || "";
+  state.object.sciosLogoData = state.object.sciosLogoData || "";
   state.object.redenInspectie = state.object.redenInspectie || "EBI";
   state.object.projectFotos = state.object.projectFotos || [];
   state.object.meetinstrumenten = (state.object.meetinstrumenten || []).map(function(m){ m.functie = m.functie || "Installatietester"; return m; });
