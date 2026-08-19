@@ -3459,22 +3459,12 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '<span style="font-size:12.5px;font-weight:700;" id="statusLabel">' + esc(label) + ' — bezig met opmaken&hellip;</span>' +
     '<span style="flex-shrink:0;" id="btnRow">' +
     '<button id="printBtn" onclick="window.print()" disabled style="background:#8fa39f;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;">&#128424; Print / Opslaan als PDF</button>' +
-    '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Alternatief: kiest direct een map (indien je browser dit ondersteunt)">&#128190; PDF opslaan als&hellip; (kies map)</button>' +
+    '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:#fff;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Downloadt de PDF; met &#x27;altijd vragen waar te bewaren&#x27; aan in je browserinstellingen kies je zelf een map">&#128190; PDF downloaden</button>' +
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
     '<div id="pagedjs-target" style="margin-top:44px;"></div>' +
     '<script>' +
-    // Als de browser echt een "kies locatie"-dialoog kan tonen (vereist een beveiligde
-    // context: https of localhost — werkt NIET als dit bestand rechtstreeks vanaf schijf
-    // is geopend), maken we die knop de hoofdknop. Anders blijft "Print / Opslaan als PDF"
-    // (werkt overal, ook rechtstreeks vanaf schijf) de hoofdknop.
-    'if (window.showSaveFilePicker) {' +
-    '  document.getElementById("exportBtn").style.background = "#fff";' +
-    '  document.getElementById("exportBtn").style.color = "#0B3B3C";' +
-    '  document.getElementById("exportBtn").title = "";' +
-    '  document.getElementById("printBtn").style.background = "transparent";' +
-    '  document.getElementById("printBtn").style.color = "#fff";' +
-    '  document.getElementById("printBtn").style.border = "1px solid rgba(255,255,255,0.4)";' +
-    '}' +
+    // "PDF downloaden" (jsPDF) en "Print / Opslaan als PDF" (browser-print) zijn allebei
+    // altijd beschikbaar en gelijkwaardig — geen detectie/omkleuren meer nodig.
     'var bestandsnaam = ' + JSON.stringify(filename) + ';' +
     'window.onerror = function(msg){' +
     '  var el = document.getElementById("statusLabel");' +
@@ -3544,22 +3534,6 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '  }' +
     '  btn.disabled = true; btn.style.cursor = "wait";' +
     '  var savedNaam = bestandsnaam.toLowerCase().endsWith(".pdf") ? bestandsnaam : bestandsnaam + ".pdf";' +
-    // BELANGRIJK: de "Opslaan als"-dialoog (showSaveFilePicker) moet DIRECT bij de klik worden
-    // geopend, nog vóórdat het (trage) PDF-genereren begint. Vraagt de browser dit pas ná een
-    // paar seconden canvas-rendering, dan is de "verse gebruikersactie" verlopen en weigert de
-    // browser de dialoog stilletjes. Daarom eerst de locatie kiezen, dán pas renderen.
-    '  var handle = null;' +
-    '  var pickerBeschikbaar = !!window.showSaveFilePicker;' +
-    '  if (pickerBeschikbaar) {' +
-    '    try {' +
-    '      handle = await window.showSaveFilePicker({ suggestedName: savedNaam, types: [{ description: "PDF-bestand", accept: { "application/pdf": [".pdf"] } }] });' +
-    '    } catch (err) {' +
-    '      btn.disabled = false; btn.style.cursor = "pointer";' +
-    '      if (err && err.name === "AbortError") { status.innerHTML = "Opslaan geannuleerd."; return; }' +
-    '      status.innerHTML = "Kon geen opslaanvenster openen: " + err.message + " — probeer de downloadknop.";' +
-    '      return;' +
-    '    }' +
-    '  }' +
     '  var pages = document.querySelectorAll("#pagedjs-target .pagedjs_page");' +
     '  if (!pages.length) { alert("Het rapport is nog niet klaar met opmaken, probeer het zo nogmaals."); btn.disabled = false; btn.style.cursor = "pointer"; return; }' +
     '  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;' +
@@ -3571,31 +3545,12 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '    if (i > 0) pdf.addPage("a4", "portrait");' +
     '    pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");' +
     '  }' +
-    '  var pdfBlob = pdf.output("blob");' +
-    '  if (handle) {' +
-    '    try {' +
-    '      var writable = await handle.createWritable();' +
-    '      await writable.write(pdfBlob);' +
-    '      await writable.close();' +
-    '      status.innerHTML = "&#10003; Opgeslagen als " + savedNaam;' +
-    '      alert("PDF opgeslagen als \\"" + savedNaam + "\\" op de locatie die je zojuist hebt gekozen.");' +
-    '    } catch (err) {' +
-    '      status.innerHTML = "Opslaan mislukt: " + err.message;' +
-    '      alert("Opslaan is mislukt: " + err.message);' +
-    '    }' +
-    '  } else {' +
-    '    var url = URL.createObjectURL(pdfBlob);' +
-    '    var a = document.createElement("a");' +
-    '    a.href = url; a.download = savedNaam;' +
-    '    document.body.appendChild(a); a.click(); document.body.removeChild(a);' +
-    '    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);' +
-    '    status.innerHTML = pickerBeschikbaar' +
-    '      ? "Gedownload als " + savedNaam + "."' +
-    '      : "Gedownload als " + savedNaam + ". Je browser/omgeving ondersteunt geen mapkeuze-dialoog hier (bijv. omdat het bestand rechtstreeks vanaf schijf is geopend, of een oudere browser is) — zet in je browserinstellingen \\u0027altijd vragen waar te bewaren\\u0027 aan, of open deze app via een website (http/https) in plaats van rechtstreeks vanaf schijf.";' +
-    '    alert(pickerBeschikbaar' +
-    '      ? "PDF gedownload als \\"" + savedNaam + "\\". Kijk in je Downloads-map."' +
-    '      : "Je browser ondersteunt hier geen mapkeuze-venster, dus de PDF is direct gedownload als \\"" + savedNaam + "\\" naar je standaard Downloads-map. Wil je wel zelf een map kunnen kiezen: gebruik Chrome of Edge op een computer, en zet in de browserinstellingen \\u0027altijd vragen waar bestanden moeten worden opgeslagen\\u0027 aan.");' +
-    '  }' +
+    // Zelfde, bewezen werkende route als de andere app (boekhoud-app): jsPDF's ingebouwde
+    // save() triggert een gewone browserdownload. Staat in Chrome/Edge "altijd vragen waar
+    // te bewaren" aan, dan toont de browser zelf het "Opslaan als"-venster met mapkeuze —
+    // dat is dan een browserinstelling, geen aparte functie die kan falen.
+    '  pdf.save(savedNaam);' +
+    '  status.innerHTML = "&#10003; PDF gedownload als " + savedNaam + ".";' +
     '  btn.disabled = false; btn.style.cursor = "pointer";' +
     '}' +
     '<\/script>' +
