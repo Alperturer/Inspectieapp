@@ -3463,7 +3463,6 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
     '<div id="pagedjs-target"></div>' +
     '<script>' +
-    'alert("Build 2026-08-19 15:40 \\u2014 nieuwe exportknoppen geladen.");' +
     // "PDF downloaden" (jsPDF) en "Print / Opslaan als PDF" (browser-print) zijn allebei
     // altijd beschikbaar en gelijkwaardig — geen detectie/omkleuren meer nodig.
     'var bestandsnaam = ' + JSON.stringify(filename) + ';' +
@@ -3508,6 +3507,7 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '    var pBtn = document.getElementById("printBtn"); pBtn.disabled = false; pBtn.style.background = "#fff"; pBtn.style.cursor = "pointer";' +
     '    document.getElementById("exportBtn").style.display = "none";' +
     '    document.getElementById("statusLabel").innerHTML = "Vereenvoudigde weergave (" + reden + ") — de opmaak is minder verzorgd, maar \\u0027Print / Opslaan als PDF\\u0027 werkt gewoon. Klik daarop en kies \\u0027Opslaan als PDF\\u0027 om zelf een map te kiezen.";' +
+    '    alert("Het rapport staat klaar (eenvoudige weergave).\\n\\nZo sla je het op:\\n1. Klik op de knop \\u0027Print / Opslaan als PDF\\u0027\\n2. Kies in dat venster bij \\u0027Bestemming\\u0027 de optie \\u0027Opslaan als PDF\\u0027\\n3. Klik op \\u0027Opslaan\\u0027\\n4. Nu opent het venster waar je zelf een map kiest.");' +
     '  }' +
     '  try {' +
     '    if (typeof Paged === "undefined") { toonEenvoudigeFallback("opmaak-bibliotheek niet geladen, controleer je internetverbinding"); return; }' +
@@ -3519,8 +3519,10 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '      var eBtn = document.getElementById("exportBtn"); eBtn.disabled = false; eBtn.style.background = "#fff"; eBtn.style.cursor = "pointer";' +
     '      var pBtn = document.getElementById("printBtn"); pBtn.disabled = false; pBtn.style.background = "#fff"; pBtn.style.cursor = "pointer";' +
     '      document.getElementById("statusLabel").innerHTML = "Klaar — " + flow.total + " pagina\\u0027s. Klik op \\u0027Print / Opslaan als PDF\\u0027 &rarr; kies bij Bestemming \\u0027Opslaan als PDF\\u0027 &rarr; klik Opslaan &rarr; kies daar zelf je map.";' +
+    '      alert("Het rapport staat nu klaar (" + flow.total + " pagina\\u0027s)!\\n\\nZo sla je het op:\\n1. Klik op de knop \\u0027Print / Opslaan als PDF\\u0027\\n2. Kies in dat venster bij \\u0027Bestemming\\u0027 de optie \\u0027Opslaan als PDF\\u0027\\n3. Klik op \\u0027Opslaan\\u0027\\n4. Nu opent het venster waar je zelf een map kiest.");' +
     '    }).catch(function(err){' +
     '      toonEenvoudigeFallback("opmaken mislukt");' +
+    '      alert("Er ging iets mis bij het opmaken van het rapport: " + (err && err.message ? err.message : err) + "\\n\\nGebruik toch de knop \\u0027Print / Opslaan als PDF\\u0027, die werkt nog steeds.");' +
     '    });' +
     '  } catch (err) {' +
     '    toonEenvoudigeFallback("onverwachte fout");' +
