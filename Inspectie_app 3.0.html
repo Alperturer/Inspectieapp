@@ -3459,7 +3459,7 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '<span style="font-size:12.5px;font-weight:700;" id="statusLabel">' + esc(label) + ' — bezig met opmaken&hellip;</span>' +
     '<span style="flex-shrink:0;" id="btnRow">' +
     '<button id="printBtn" onclick="window.print()" disabled style="background:#8fa39f;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;">&#128424; Print / Opslaan als PDF</button>' +
-    '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Alternatief: kiest direct een map (indien je browser dit ondersteunt)">&#128190; Kies locatie</button>' +
+    '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Alternatief: kiest direct een map (indien je browser dit ondersteunt)">&#128190; PDF opslaan als&hellip; (kies map)</button>' +
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
     '<div id="pagedjs-target" style="margin-top:44px;"></div>' +
     '<script>' +
@@ -3578,8 +3578,10 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '      await writable.write(pdfBlob);' +
     '      await writable.close();' +
     '      status.innerHTML = "&#10003; Opgeslagen als " + savedNaam;' +
+    '      alert("PDF opgeslagen als \\"" + savedNaam + "\\" op de locatie die je zojuist hebt gekozen.");' +
     '    } catch (err) {' +
     '      status.innerHTML = "Opslaan mislukt: " + err.message;' +
+    '      alert("Opslaan is mislukt: " + err.message);' +
     '    }' +
     '  } else {' +
     '    var url = URL.createObjectURL(pdfBlob);' +
@@ -3590,6 +3592,9 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '    status.innerHTML = pickerBeschikbaar' +
     '      ? "Gedownload als " + savedNaam + "."' +
     '      : "Gedownload als " + savedNaam + ". Je browser/omgeving ondersteunt geen mapkeuze-dialoog hier (bijv. omdat het bestand rechtstreeks vanaf schijf is geopend, of een oudere browser is) — zet in je browserinstellingen \\u0027altijd vragen waar te bewaren\\u0027 aan, of open deze app via een website (http/https) in plaats van rechtstreeks vanaf schijf.";' +
+    '    alert(pickerBeschikbaar' +
+    '      ? "PDF gedownload als \\"" + savedNaam + "\\". Kijk in je Downloads-map."' +
+    '      : "Je browser ondersteunt hier geen mapkeuze-venster, dus de PDF is direct gedownload als \\"" + savedNaam + "\\" naar je standaard Downloads-map. Wil je wel zelf een map kunnen kiezen: gebruik Chrome of Edge op een computer, en zet in de browserinstellingen \\u0027altijd vragen waar bestanden moeten worden opgeslagen\\u0027 aan.");' +
     '  }' +
     '  btn.disabled = false; btn.style.cursor = "pointer";' +
     '}' +
