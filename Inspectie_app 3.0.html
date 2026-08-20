@@ -2119,6 +2119,30 @@ function selectMetVrijeTekst(key, label, val, opties, cls, updateFnName, callArg
 // Toont "Type" en "Karakteristiek" bovenaan bij verdeler/omvormer, gekoppeld aan dezelfde
 // gegevens (defaultBeveiligingType/defaultKlasse/defaultSmeltKarakteristiek) als het
 // automatische beoordelingsblok verderop bij de metingen — zo blijft alles consistent.
+// Haalt het ampere-getal uit een tekst als "3x40A" of "1x16A" -> "40" / "16".
+function haalAmpereUit(tekst) {
+  var m = String(tekst || "").match(/(\d+(?:[.,]\d+)?)\s*A/i);
+  return m ? m[1].replace(",", ".") : "";
+}
+// Voorbeveiliging-keuzelijst die tegelijk de "In"-waarde (nominale stroom) voor de
+// automatische goed/afgekeurd-beoordeling bijwerkt, zodat je dat niet apart hoeft in te vullen.
+function voorbeveiligingSelect(soort, obj) {
+  var opties = ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"];
+  var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
+  var toepasCall = "pasStandaardBeveiligingToe('" + soort + "', '" + obj.id + "')";
+  var val = obj.voorbeveiliging;
+  var isAangepast = val && opties.indexOf(val) === -1;
+  var onKeuze = "var amp = haalAmpereUit(this.value); if (amp) { " + updateFn + "('" + obj.id + "', 'defaultNominaleStroom', amp); } " + toepasCall + ";";
+  var h = '<div><label class="fl">Voorbeveiliging</label>';
+  h += '<select class="f" onchange="if(this.value===\'__anders__\'){' + updateFn + '(\'' + obj.id + '\', \'voorbeveiliging\', \' \'); this.nextElementSibling.style.display=\'block\'; this.nextElementSibling.focus();} else {' + updateFn + '(\'' + obj.id + '\', \'voorbeveiliging\', this.value); this.nextElementSibling.style.display=\'none\'; ' + onKeuze + '}">';
+  h += '<option value=""' + (val === "" ? " selected" : "") + '>Kies...</option>';
+  opties.forEach(function(opt){ h += '<option value="' + opt + '"' + (val === opt ? " selected" : "") + '>' + opt + '</option>'; });
+  h += '<option value="__anders__"' + (isAangepast ? " selected" : "") + '>Anders (zelf invullen)</option>';
+  h += '</select>';
+  h += '<input class="f" style="margin-top:6px;display:' + (isAangepast ? "block" : "none") + ';" placeholder="Vul zelf in, bijv. 3x40A" value="' + esc(isAangepast ? val : "") + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'voorbeveiliging\', this.value); ' + onKeuze + '" />';
+  h += '</div>';
+  return h;
+}
 function typeKarakteristiekVelden(soort, obj) {
   var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
   var toepasCall = "pasStandaardBeveiligingToe('" + soort + "', '" + obj.id + "')";
@@ -2156,7 +2180,7 @@ function renderVerdelers() {
     h += '<div class="grid2">';
     h += vField(v.id, "locatie", "Locatie", v.locatie, "bijv. BG (begane grond)");
     h += selectMetVrijeTekst("typeZekering", "Type zekering", v.typeZekering, ["Automaat B", "Automaat C", "Automaat D", "Smeltpatroon"], "", "updateVerdelerField", "'" + v.id + "'");
-    h += selectMetVrijeTekst("voorbeveiliging", "Voorbeveiliging", v.voorbeveiliging, ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"], "", "updateVerdelerField", "'" + v.id + "'");
+    h += voorbeveiligingSelect("verdeler", v);
     h += typeKarakteristiekVelden("verdeler", v);
     h += vField(v.id, "hoofdschakelaar", "Hoofdschakelaar", v.hoofdschakelaar, "bijv. 63A");
     h += vField(v.id, "klasse", "Klasse", v.klasse, "bijv. Klasse II (dubbele isolatie)");
@@ -2376,7 +2400,7 @@ function renderOmvormers() {
     h += oField(o.id,"vermogen","Nominaal vermogen (kW)",o.vermogen,"bijv. 4,2") + oField(o.id,"locatie","Locatie",o.locatie,"bijv. 1ste etage, meterkast");
     h += oField(o.id,"merk","Merk",o.merk,"bijv. SolarEdge");
     h += oField(o.id,"type","Type",o.type,"bijv. SE4K") + oField(o.id,"serienummer","Serienummer",o.serienummer,"bijv. 7F123456-7A");
-    h += selectMetVrijeTekst("voorbeveiliging", "Voorbeveiliging", o.voorbeveiliging, ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"], "", "updateOmvormerField", "'" + o.id + "'") + oField(o.id,"maxDcSpanning","Max DC-spanning",o.maxDcSpanning,"bijv. 950");
+    h += voorbeveiligingSelect("omvormer", o) + oField(o.id,"maxDcSpanning","Max DC-spanning",o.maxDcSpanning,"bijv. 950");
     h += typeKarakteristiekVelden("omvormer", o);
     h += oField(o.id,"imax","Imax omvormer (A)",o.imax,"bijv. 16");
     h += '</div>';
