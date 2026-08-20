@@ -1376,6 +1376,60 @@ function photoRow(fotos, addCall, removeCallPrefix) {
   h += '</div>';
   return h;
 }
+// AI-fotoanalyse: volledig optioneel, de inspecteur bepaalt zelf per foto of hij dit gebruikt.
+// Alleen bij Zs-, Zi- en Riso-metingen (AC-zijdig) — niet bij de algemene projectfoto's.
+// De AI geeft alleen een suggestie over wat zichtbaar is op de foto — nooit een goed/afgekeurd-oordeel.
+function aiAnalyseBlokMeting(parentSoort, parentId, listKey, m) {
+  if (!m.fotos || m.fotos.length === 0) return "";
+  if (!supabaseClient) return "";
+  var h = '<div style="margin-top:6px;">';
+  m.fotos.forEach(function(src, i){
+    var key = m.id + "-" + i;
+    var bezig = state.aiAnalyseBezig && state.aiAnalyseBezig[key];
+    var resultaat = m.aiAnalyses && m.aiAnalyses[i];
+    h += '<div style="margin-bottom:6px;padding:8px 10px;background:#F7F6F1;border-radius:8px;font-size:12.5px;">';
+    h += '<div style="display:flex;align-items:center;gap:8px;">';
+    h += '<span style="color:#8A8578;">Foto ' + (i+1) + '</span>';
+    h += '<button type="button" ' + (bezig ? "disabled" : "") + ' onclick="analyseMetingFotoMetAI(\'' + parentSoort + '\', \'' + parentId + '\', \'' + listKey + '\', \'' + m.id + '\', ' + i + ')" style="background:#0B3B3C;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:' + (bezig ? "wait" : "pointer") + ';">' + (bezig ? "Bezig&hellip;" : "&#129302; Analyseer met AI (optioneel)") + '</button>';
+    h += '</div>';
+    if (resultaat) {
+      h += '<div style="margin-top:6px;color:#4d6360;">' + esc(resultaat) + '</div>';
+    }
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+function analyseMetingFotoMetAI(parentSoort, parentId, listKey, mid, fotoIndex) {
+  var lijst = parentSoort === "verdeler" ? state.verdelers : state.omvormers;
+  var obj = lijst.find(function(x){ return x.id === parentId; });
+  if (!obj || !obj[listKey]) return;
+  var m = obj[listKey].find(function(x){ return x.id === mid; });
+  if (!m || !m.fotos || !m.fotos[fotoIndex]) return;
+  var dataUrl = m.fotos[fotoIndex];
+  var match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
+  if (!match) { alert("Kon deze foto niet analyseren (onbekend formaat)."); return; }
+  state.aiAnalyseBezig = state.aiAnalyseBezig || {};
+  var key = m.id + "-" + fotoIndex;
+  state.aiAnalyseBezig[key] = true;
+  render();
+  supabaseClient.functions.invoke("analyseer-foto", { body: { imageBase64: match[2], mediaType: match[1] } }).then(function(res){
+    state.aiAnalyseBezig[key] = false;
+    if (res.error || (res.data && res.data.error)) {
+      alert("AI-analyse mislukt: " + (res.error ? res.error.message : res.data.error));
+      render();
+      return;
+    }
+    m.aiAnalyses = m.aiAnalyses || {};
+    m.aiAnalyses[fotoIndex] = res.data.analyse;
+    persistDraft();
+    render();
+  }).catch(function(err){
+    state.aiAnalyseBezig[key] = false;
+    alert("AI-analyse mislukt: " + err.message);
+    render();
+  });
+}
 function projectFotoWidget() {
   var h = '<div class="section-card"><h2>Projectfoto\'s</h2><p class="subtitle" style="margin-top:-4px;">Algemene foto\'s van de locatie/situatie \u2014 je kunt hier op elk moment tijdens de keuring foto\'s aan toevoegen.</p>';
   h += '<div class="photo-row" style="margin-top:0;">';
@@ -2345,6 +2399,7 @@ function metingLijst(v, listKey, titel) {
       h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'opmerking\', this.value)">' + esc(m.opmerking) + '</textarea>';
     }
     h += photoRow(m.fotos, "addMetingPhoto('" + v.id + "', '" + listKey + "', '" + m.id + "', ", "removeMetingPhoto('" + v.id + "', '" + listKey + "', '" + m.id + "', ");
+    h += aiAnalyseBlokMeting("verdeler", v.id, listKey, m);
     h += '</div>';
   });
   h += '<button class="btn-add" onclick="addMeting(\'' + v.id + '\', \'' + listKey + '\')">+ Meting toevoegen</button>';
@@ -2381,6 +2436,7 @@ function metingLijstOmvormer(o, listKey, titel) {
       h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'opmerking\', this.value)">' + esc(m.opmerking) + '</textarea>';
     }
     h += photoRow(m.fotos, "addMetingPhotoOmvormer('" + o.id + "', '" + listKey + "', '" + m.id + "', ", "removeMetingPhotoOmvormer('" + o.id + "', '" + listKey + "', '" + m.id + "', ");
+    h += aiAnalyseBlokMeting("omvormer", o.id, listKey, m);
     h += '</div>';
   });
   h += '<button class="btn-add" onclick="addMetingOmvormer(\'' + o.id + '\', \'' + listKey + '\')">+ Meting toevoegen</button>';
