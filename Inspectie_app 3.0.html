@@ -2116,6 +2116,32 @@ function selectMetVrijeTekst(key, label, val, opties, cls, updateFnName, callArg
   return h;
 }
 
+// Toont "Type" en "Karakteristiek" bovenaan bij verdeler/omvormer, gekoppeld aan dezelfde
+// gegevens (defaultBeveiligingType/defaultKlasse/defaultSmeltKarakteristiek) als het
+// automatische beoordelingsblok verderop bij de metingen — zo blijft alles consistent.
+function typeKarakteristiekVelden(soort, obj) {
+  var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
+  var toepasCall = "pasStandaardBeveiligingToe('" + soort + "', '" + obj.id + "')";
+  var h = '<div><label class="fl">Type voorbeveiliging</label>';
+  h += '<select class="f" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultBeveiligingType\', this.value); ' + toepasCall + '">';
+  h += '<option value=""' + (obj.defaultBeveiligingType === "" ? " selected" : "") + '>Kies...</option>';
+  h += '<option value="automaat"' + (obj.defaultBeveiligingType === "automaat" ? " selected" : "") + '>Installatieautomaat</option>';
+  h += '<option value="smeltveiligheid"' + (obj.defaultBeveiligingType === "smeltveiligheid" ? " selected" : "") + '>Smeltveiligheid</option>';
+  h += '</select></div>';
+  h += '<div><label class="fl">Karakteristiek</label>';
+  if (obj.defaultBeveiligingType === "smeltveiligheid") {
+    h += '<select class="f" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultSmeltKarakteristiek\', this.value); ' + toepasCall + '">';
+    h += '<option value="gG"' + (obj.defaultSmeltKarakteristiek === "gG" ? " selected" : "") + '>gG (algemeen)</option>';
+    h += '<option value="gM"' + (obj.defaultSmeltKarakteristiek === "gM" ? " selected" : "") + '>gM (motorbeveiliging)</option>';
+    h += '</select></div>';
+  } else {
+    h += '<select class="f" ' + (obj.defaultBeveiligingType === "automaat" ? "" : "disabled") + ' onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultKlasse\', this.value); ' + toepasCall + '">';
+    h += '<option value=""' + (obj.defaultKlasse === "" ? " selected" : "") + '>' + (obj.defaultBeveiligingType === "automaat" ? "Kies..." : "Eerst type kiezen") + '</option>';
+    ["B", "C", "D"].forEach(function(k){ h += '<option value="' + k + '"' + (obj.defaultKlasse === k ? " selected" : "") + '>' + k + '</option>'; });
+    h += '</select></div>';
+  }
+  return h;
+}
 function renderVerdelers() {
   var h = '<button class="backbtn" onclick="goPrev()">&larr; Terug</button>';
   h += projectFotoWidget();
@@ -2131,6 +2157,7 @@ function renderVerdelers() {
     h += vField(v.id, "locatie", "Locatie", v.locatie, "bijv. BG (begane grond)");
     h += selectMetVrijeTekst("typeZekering", "Type zekering", v.typeZekering, ["Automaat B", "Automaat C", "Automaat D", "Smeltpatroon"], "", "updateVerdelerField", "'" + v.id + "'");
     h += selectMetVrijeTekst("voorbeveiliging", "Voorbeveiliging", v.voorbeveiliging, ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"], "", "updateVerdelerField", "'" + v.id + "'");
+    h += typeKarakteristiekVelden("verdeler", v);
     h += vField(v.id, "hoofdschakelaar", "Hoofdschakelaar", v.hoofdschakelaar, "bijv. 63A");
     h += vField(v.id, "klasse", "Klasse", v.klasse, "bijv. Klasse II (dubbele isolatie)");
     h += vField(v.id, "groepen1Fase", "Aantal groepen 1-fase", v.groepen1Fase, "bijv. 8");
@@ -2350,6 +2377,7 @@ function renderOmvormers() {
     h += oField(o.id,"merk","Merk",o.merk,"bijv. SolarEdge");
     h += oField(o.id,"type","Type",o.type,"bijv. SE4K") + oField(o.id,"serienummer","Serienummer",o.serienummer,"bijv. 7F123456-7A");
     h += selectMetVrijeTekst("voorbeveiliging", "Voorbeveiliging", o.voorbeveiliging, ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"], "", "updateOmvormerField", "'" + o.id + "'") + oField(o.id,"maxDcSpanning","Max DC-spanning",o.maxDcSpanning,"bijv. 950");
+    h += typeKarakteristiekVelden("omvormer", o);
     h += oField(o.id,"imax","Imax omvormer (A)",o.imax,"bijv. 16");
     h += '</div>';
     h += standaardBeveiligingBlok("omvormer", o);
