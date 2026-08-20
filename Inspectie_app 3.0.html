@@ -430,7 +430,7 @@ function emptyObject() {
     eigenaarContactNaam: "", eigenaarContactTel: "", eigenaarContactEmail: "", eigenaarContactZelfde: true,
     opdrachtgeverNaam: "", opdrachtgeverAdres: "", opdrachtgeverPostcode: "", opdrachtgeverPlaats: "", opdrachtgeverTel: "",
     opdrachtgeverContactNaam: "", opdrachtgeverContactTel: "", opdrachtgeverContactEmail: "",
-    opdrachtgeverZelfde: true, eigenaarZelfdeAlsInstallatie: true, contactZelfdeAlsInstallatie: true, klantId: "",
+    opdrachtgeverZelfde: true, eigenaarZelfdeAlsInstallatie: true, contactZelfdeAlsInstallatie: true, klantId: "", rapportnaam: "",
     bedrijfNaam: "", bedrijfAdres: "", bedrijfPostcodePlaats: "", bedrijfTel: "", bedrijfEmail: "", logoData: "", sciosLogoData: "", accentColor: "#0D9488",
     inspecteur: "", inspecteurCertificaat: "", geselecteerdeInspecteurId: "", meetinstrumenten: [], inspecteurs: [], appNaam: "Keuringen app",
     rapportnummer: "", redenInspectie: "EBI", datum: new Date().toISOString().slice(0,10),
@@ -823,6 +823,17 @@ function wijzigLicentieStatus(id, nieuweStatus) {
 }
 var LICENTIE_LABEL = { actief: "Actief", inactief: "Wacht op goedkeuring", opgezegd: "Opgezegd", betaling_mislukt: "Betaling mislukt" };
 var LICENTIE_KLEUR = { actief: "#2F7D3A", inactief: "#D9B400", opgezegd: "#8A8578", betaling_mislukt: "#DC3B2E" };
+// ---------------------------------------------------------------------
+// PDF RAPPORTEN — automatische achtergrond-backup van elk geëxporteerd rapport
+// (puur uploaden; geen apart scherm om ze te bekijken/downloaden/verwijderen)
+// ---------------------------------------------------------------------
+// Wordt aangeroepen vanuit het losse rapport-venster zodra een PDF is gegenereerd —
+// slaat er stilletjes een kopie van op in de cloud als backup.
+function ontvangGegenereerdRapport(bestandsnaam, blob) {
+  if (!supabaseClient || !state.user) return;
+  var pad = state.user.id + "/" + bestandsnaam;
+  supabaseClient.storage.from("rapporten").upload(pad, blob, { upsert: true, contentType: "application/pdf" }).catch(function(){});
+}
 function renderBeheer() {
   var h = '<button class="backbtn" onclick="setState({view:\'kies\'})">&larr; Terug</button>';
   h += '<h1>Gebruikersbeheer</h1><p class="subtitle">Keur nieuwe aanmeldingen goed of blokkeer toegang.</p>';
@@ -1088,7 +1099,14 @@ function removePhoto(id, idx) { var it = state.items.find(function(i){return i.i
 
 // Verdelers
 function addVerdeler() { state.verdelers.push(newVerdeler()); persistDraft(); render(); }
-function removeVerdeler(id) { state.verdelers = state.verdelers.filter(function(v){return v.id!==id;}); persistDraft(); render(); }
+function removeVerdeler(id) {
+  var v = state.verdelers.find(function(x){return x.id===id;});
+  var naam = v ? (v.naam || "deze verdeler") : "deze verdeler";
+  vraagBevestiging('"' + naam + '" verwijderen? Alle metingen en foto\'s hierin gaan dan ook verloren.', function(){
+    state.verdelers = state.verdelers.filter(function(x){return x.id!==id;});
+    persistDraft(); render();
+  });
+}
 function updateVerdeler(id, patch) { var v = state.verdelers.find(function(x){return x.id===id;}); if (v) Object.assign(v, patch); persistDraft(); render(); }
 function addVerdelerPhoto(id, files) { var v = state.verdelers.find(function(x){return x.id===id;}); filesToDataUrls(files, function(urls){ v.fotos = v.fotos.concat(urls.filter(Boolean)); persistDraft(); render(); }); }
 function removeVerdelerPhoto(id, idx) { var v = state.verdelers.find(function(x){return x.id===id;}); v.fotos.splice(idx,1); persistDraft(); render(); }
@@ -1147,7 +1165,14 @@ function removeMetingPhotoOmvormer(oid, listKey, mid, idx) { var o = state.omvor
 
 // Omvormers
 function addOmvormer() { state.omvormers.push(newOmvormer()); persistDraft(); render(); }
-function removeOmvormer(id) { state.omvormers = state.omvormers.filter(function(o){return o.id!==id;}); persistDraft(); render(); }
+function removeOmvormer(id) {
+  var o = state.omvormers.find(function(x){return x.id===id;});
+  var naam = o ? (o.naam || "deze omvormer") : "deze omvormer";
+  vraagBevestiging('"' + naam + '" verwijderen? Alle metingen en foto\'s hierin gaan dan ook verloren.', function(){
+    state.omvormers = state.omvormers.filter(function(x){return x.id!==id;});
+    persistDraft(); render();
+  });
+}
 function updateOmvormer(id, patch) { var o = state.omvormers.find(function(x){return x.id===id;}); if (o) Object.assign(o, patch); persistDraft(); render(); }
 function addOmvormerPhoto(id, files) { var o = state.omvormers.find(function(x){return x.id===id;}); filesToDataUrls(files, function(urls){ o.fotos = o.fotos.concat(urls.filter(Boolean)); persistDraft(); render(); }); }
 function removeOmvormerPhoto(id, idx) { var o = state.omvormers.find(function(x){return x.id===id;}); o.fotos.splice(idx,1); persistDraft(); render(); }
@@ -1644,6 +1669,11 @@ function renderGegevens() {
   var o = state.object;
   var h = '<button class="backbtn" onclick="setState({view:\'kies\'})">&larr; Ander type kiezen</button>';
   h += projectFotoWidget();
+  h += '<div class="section-card">';
+  h += '<label class="fl">Rapportnaam</label>';
+  h += '<input class="f" placeholder="bijv. Steenbakkerij17_2913LJ_Scope12" value="' + esc(o.rapportnaam) + '" oninput="updateObject(\'rapportnaam\', this.value)" />';
+  h += '<div style="font-size:11.5px;color:#8A8578;margin-top:4px;">Wordt gebruikt als bestandsnaam van het PDF-rapport en als naam in \u0027Opgeslagen\u0027 &mdash; laat leeg voor een automatisch gegenereerde naam.</div>';
+  h += '</div>';
   if (state.klanten.length > 0) {
     h += '<div class="section-card"><label class="fl">Klant kiezen uit klantenbestand</label>';
     h += '<select class="f" onchange="if(this.value) kiesKlantVoorKeuring(this.value); this.value=\'\';"><option value="">&mdash; Kies een opgeslagen klant &mdash;</option>';
@@ -2812,9 +2842,13 @@ function rConstateringBlock(classificatie, opmerking, fotos, norm) {
   if (classificatie === "goed" && (!fotos || fotos.length === 0) && !opmerking) return "";
   var titel = classificatie === "goed" ? "Foto (bewijs)" : "Constatering";
   var h = '<div class="r-constatering"><div class="r-constatering-head"><span>' + titel + (norm ? ' &mdash; ' + esc(norm) : '') + '</span><span class="badge" style="background:' + CLASS[classificatie].color + '">' + CLASS[classificatie].label + '</span></div>';
-  h += '<div class="r-constatering-body">';
-  h += opmerking ? esc(opmerking) : (classificatie === "goed" ? "" : "—");
-  if (fotos && fotos.length > 0) { h += '<div class="r-photos">'; fotos.forEach(function(src){ h += '<img src="' + src + '" />'; }); h += '</div>'; }
+  h += '<div class="r-constatering-body" style="display:flex;gap:14px;align-items:stretch;">';
+  h += '<div style="flex:1;min-width:0;">' + (opmerking ? esc(opmerking) : (classificatie === "goed" ? "" : "—")) + '</div>';
+  if (fotos && fotos.length > 0) {
+    h += '<div class="r-photos" style="margin-top:0;flex-shrink:0;">';
+    fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:230px;height:auto;max-height:280px;object-fit:cover;" />'; });
+    h += '</div>';
+  }
   h += '</div></div>';
   return h;
 }
@@ -3491,6 +3525,10 @@ function stdMetingTabel(titel, lijst, toonKortsluitstroom) {
   return h;
 }
 
+function o_rapportnaamOfStandaard(typeLabel) {
+  if (state.object.rapportnaam && state.object.rapportnaam.trim()) return state.object.rapportnaam.trim();
+  return "Inspectierapport_" + typeLabel + "_" + (state.object.klant || "klant") + "_" + (state.object.datum || "");
+}
 function sanitizeBestandsnaam(naam) {
   return (naam || "Inspectierapport").trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "_").slice(0, 120) || "Inspectierapport";
 }
@@ -3610,6 +3648,9 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     // te bewaren" aan, dan toont de browser zelf het "Opslaan als"-venster met mapkeuze —
     // dat is dan een browserinstelling, geen aparte functie die kan falen.
     '  pdf.save(savedNaam);' +
+    // Stuurt automatisch een kopie naar de cloud als backup (geen apart scherm) \u2014
+    // werkt alleen als dit venster vanuit de app zelf is geopend.
+    '  try { if (window.opener && window.opener.ontvangGegenereerdRapport) { window.opener.ontvangGegenereerdRapport(savedNaam, pdf.output("blob")); } } catch(e) {}' +
     '  status.innerHTML = "&#10003; PDF gedownload als " + savedNaam + ".";' +
     '  btn.disabled = false; btn.style.cursor = "pointer";' +
     '}' +
@@ -3624,14 +3665,14 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
 }
 
 function openScope12Rapport() {
-  var standaard = sanitizeBestandsnaam("Inspectierapport_Scope12_" + (state.object.klant || "klant") + "_" + (state.object.datum || ""));
+  var standaard = sanitizeBestandsnaam(o_rapportnaamOfStandaard("Scope12"));
   var naam = vraagBestandsnaam(standaard);
   if (naam === null) return;
   openPagedReport(buildScope12Body(), scope12Css(), naam, "Scope 12 inspectierapport", scope12RunningHeaderHtml(), scope12RunningFooterHtml());
 }
 
 function openNen1010Rapport() {
-  var standaard = sanitizeBestandsnaam("Inspectierapport_NEN1010_" + (state.object.klant || "klant") + "_" + (state.object.datum || ""));
+  var standaard = sanitizeBestandsnaam(o_rapportnaamOfStandaard("NEN1010"));
   var naam = vraagBestandsnaam(standaard);
   if (naam === null) return;
   openPagedReport(buildNen1010Body(), nen1010Css(), naam, "NEN 1010 inspectierapport", nen1010RunningHeaderHtml(), nen1010RunningFooterHtml());
