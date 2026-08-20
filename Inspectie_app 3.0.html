@@ -1368,7 +1368,7 @@ function photoRow(fotos, addCall, removeCallPrefix) {
   fotos.forEach(function(src, i){
     h += '<span class="photo-wrap"><img class="photo-thumb" src="' + src + '" /><button onclick="' + removeCallPrefix + i + ')">&times;</button></span>';
   });
-  h += '<label class="photo-add">&#128247; Foto<input type="file" accept="image/*" multiple onchange="' + addCall + 'this.files)" /></label>';
+  h += '<label class="photo-add">&#128247; Foto toevoegen<input type="file" accept="image/*" multiple onchange="' + addCall + 'this.files)" /></label>';
   h += '</div>';
   return h;
 }
@@ -2126,10 +2126,11 @@ function renderVerdelers() {
     h += '<div class="item-block-head"><span class="item-num">' + (idx+1) + '.</span>' +
       '<input class="item-title-input" placeholder="Naam verdeler (bijv. HVK, groepenkast 1e etage)" value="' + esc(v.naam) + '" oninput="updateVerdelerField(\'' + v.id + '\', \'naam\', this.value)" />' +
       '<button class="del-x" onclick="removeVerdeler(\'' + v.id + '\')">&#128465;</button></div>';
+    h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
     h += '<div class="grid2">';
     h += vField(v.id, "locatie", "Locatie", v.locatie, "bijv. BG (begane grond)");
-    h += vField(v.id, "typeZekering", "Type zekering", v.typeZekering, "bijv. Automaat");
-    h += vField(v.id, "voorbeveiliging", "Voorbeveiliging", v.voorbeveiliging, "bijv. 3 x 40A");
+    h += selectMetVrijeTekst("typeZekering", "Type zekering", v.typeZekering, ["Automaat B", "Automaat C", "Automaat D", "Smeltpatroon"], "", "updateVerdelerField", "'" + v.id + "'");
+    h += selectMetVrijeTekst("voorbeveiliging", "Voorbeveiliging", v.voorbeveiliging, ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"], "", "updateVerdelerField", "'" + v.id + "'");
     h += vField(v.id, "hoofdschakelaar", "Hoofdschakelaar", v.hoofdschakelaar, "bijv. 63A");
     h += vField(v.id, "klasse", "Klasse", v.klasse, "bijv. Klasse II (dubbele isolatie)");
     h += vField(v.id, "groepen1Fase", "Aantal groepen 1-fase", v.groepen1Fase, "bijv. 8");
@@ -2148,7 +2149,6 @@ function renderVerdelers() {
       h += '<input class="f" list="normen-lijst" placeholder="Norm / artikelnummer (bijv. NEN 1010:712.513)" value="' + esc(v.norm) + '" oninput="updateVerdelerField(\'' + v.id + '\', \'norm\', this.value)" />';
       h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateVerdelerField(\'' + v.id + '\', \'opmerking\', this.value)">' + esc(v.opmerking) + '</textarea>';
     }
-    h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
 
     var heeftMetingen = (v.zsMetingen && v.zsMetingen.length) || (v.ziMetingen && v.ziMetingen.length) || (v.risoMetingen && v.risoMetingen.length);
     h += '<h3>AC-metingen</h3>';
@@ -2344,11 +2344,12 @@ function renderOmvormers() {
     h += '<div class="item-block-head"><span class="item-num">' + (idx+1) + '.</span>' +
       '<input class="item-title-input" placeholder="Naam omvormer (bijv. PV1 - 1ste etage)" value="' + esc(o.naam) + '" oninput="updateOmvormerField(\'' + o.id + '\', \'naam\', this.value)" />' +
       '<button class="del-x" onclick="removeOmvormer(\'' + o.id + '\')">&#128465;</button></div>';
+    h += photoRow(o.fotos, "addOmvormerPhoto('" + o.id + "', ", "removeOmvormerPhoto('" + o.id + "', ");
     h += '<div class="grid2">';
     h += oField(o.id,"vermogen","Nominaal vermogen (kW)",o.vermogen,"bijv. 4,2") + oField(o.id,"locatie","Locatie",o.locatie,"bijv. 1ste etage, meterkast");
     h += oField(o.id,"merk","Merk",o.merk,"bijv. SolarEdge");
     h += oField(o.id,"type","Type",o.type,"bijv. SE4K") + oField(o.id,"serienummer","Serienummer",o.serienummer,"bijv. 7F123456-7A");
-    h += oField(o.id,"voorbeveiliging","Voorbeveiliging",o.voorbeveiliging,"bijv. 3 x 16A") + oField(o.id,"maxDcSpanning","Max DC-spanning",o.maxDcSpanning,"bijv. 950");
+    h += selectMetVrijeTekst("voorbeveiliging", "Voorbeveiliging", o.voorbeveiliging, ["1x16A", "3x16A", "3x20A", "3x25A", "3x32A", "3x35A", "3x40A", "3x50A", "3x63A", "3x80A", "3x100A"], "", "updateOmvormerField", "'" + o.id + "'") + oField(o.id,"maxDcSpanning","Max DC-spanning",o.maxDcSpanning,"bijv. 950");
     h += oField(o.id,"imax","Imax omvormer (A)",o.imax,"bijv. 16");
     h += '</div>';
     h += standaardBeveiligingBlok("omvormer", o);
@@ -2358,7 +2359,6 @@ function renderOmvormers() {
       h += '<input class="f" list="normen-lijst" placeholder="Norm / artikelnummer (bijv. NEN 1010:712.513)" value="' + esc(o.norm) + '" oninput="updateOmvormerField(\'' + o.id + '\', \'norm\', this.value)" />';
       h += '<textarea class="f" placeholder="Omschrijving constatering (bijv. visuele afwijking)" oninput="updateOmvormerField(\'' + o.id + '\', \'opmerking\', this.value)">' + esc(o.opmerking) + '</textarea>';
     }
-    h += photoRow(o.fotos, "addOmvormerPhoto('" + o.id + "', ", "removeOmvormerPhoto('" + o.id + "', ");
 
     var heeftOmvormerMetingen = (o.zsMetingen && o.zsMetingen.length) || (o.ziMetingen && o.ziMetingen.length) || (o.risoMetingen && o.risoMetingen.length);
     h += '<h3>AC-metingen</h3>';
