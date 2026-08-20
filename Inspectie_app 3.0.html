@@ -1348,6 +1348,10 @@ function deleteSaved(id, ev) {
 function nieuweKeuring() {
   try { localStorage.removeItem(STORAGE_DRAFT); } catch(e) {}
   state.type = null; state.object = emptyObject(); state.items = []; state.verdelers = []; state.omvormers = []; state.savedId = null; state.syncStatus = "";
+  // Bewaarde bedrijfsgegevens (logo, naam, certificaten, huisstijlkleur, inspecteurs) altijd
+  // terugzetten na het wissen — die horen niet elke keer opnieuw ingevuld te worden.
+  var onthouden = loadBedrijfsgegevens();
+  BEDRIJF_VELDEN.forEach(function(k){ if (onthouden[k]) state.object[k] = onthouden[k]; });
   setState({ view: "kies" });
 }
 
