@@ -1376,116 +1376,6 @@ function photoRow(fotos, addCall, removeCallPrefix) {
   h += '</div>';
   return h;
 }
-// AI-fotoanalyse: volledig optioneel, de inspecteur bepaalt zelf per foto of hij dit gebruikt.
-// Alleen bij Zs-, Zi- en Riso-metingen (AC-zijdig) — niet bij de algemene projectfoto's.
-// De AI geeft alleen een suggestie over wat zichtbaar is op de foto — nooit een goed/afgekeurd-oordeel.
-function aiAnalyseBlokMeting(parentSoort, parentId, listKey, m) {
-  if (!m.fotos || m.fotos.length === 0) return "";
-  if (!supabaseClient) return "";
-  var h = '<div style="margin-top:6px;">';
-  m.fotos.forEach(function(src, i){
-    var key = m.id + "-" + i;
-    var bezig = state.aiAnalyseBezig && state.aiAnalyseBezig[key];
-    var resultaat = m.aiAnalyses && m.aiAnalyses[i];
-    h += '<div style="margin-bottom:6px;padding:8px 10px;background:#F7F6F1;border-radius:8px;font-size:12.5px;">';
-    h += '<div style="display:flex;align-items:center;gap:8px;">';
-    h += '<span style="color:#8A8578;">Foto ' + (i+1) + '</span>';
-    h += '<button type="button" ' + (bezig ? "disabled" : "") + ' onclick="analyseMetingFotoMetAI(\'' + parentSoort + '\', \'' + parentId + '\', \'' + listKey + '\', \'' + m.id + '\', ' + i + ')" style="background:#0B3B3C;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:' + (bezig ? "wait" : "pointer") + ';">' + (bezig ? "Bezig&hellip;" : "&#129302; Analyseer met AI (optioneel)") + '</button>';
-    h += '</div>';
-    if (resultaat) {
-      var isWaardeGelezen = /^WAARDE:\s*[\d.,]+/i.test(String(resultaat).split("\n")[0]);
-      if (isWaardeGelezen) {
-        h += '<div style="margin-top:6px;color:#2F7D3A;font-weight:700;">&#10003; Waarde overgenomen in het veld hierboven &mdash; controleer of dit klopt met je meetinstrument.</div>';
-      }
-      h += '<div style="margin-top:4px;color:#4d6360;">' + esc(resultaat) + '</div>';
-    }
-    h += '</div>';
-  });
-  h += '</div>';
-  return h;
-}
-function analyseMetingFotoMetAI(parentSoort, parentId, listKey, mid, fotoIndex, stilzwijgend) {
-  var lijst = parentSoort === "verdeler" ? state.verdelers : state.omvormers;
-  var obj = lijst.find(function(x){ return x.id === parentId; });
-  if (!obj || !obj[listKey]) return Promise.resolve();
-  var m = obj[listKey].find(function(x){ return x.id === mid; });
-  if (!m || !m.fotos || !m.fotos[fotoIndex]) return Promise.resolve();
-  var dataUrl = m.fotos[fotoIndex];
-  var match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/);
-  if (!match) { if (!stilzwijgend) alert("Kon deze foto niet analyseren (onbekend formaat)."); return Promise.resolve(); }
-  state.aiAnalyseBezig = state.aiAnalyseBezig || {};
-  var key = m.id + "-" + fotoIndex;
-  state.aiAnalyseBezig[key] = true;
-  render();
-  return supabaseClient.functions.invoke("analyseer-foto", { body: { imageBase64: match[2], mediaType: match[1] } }).then(function(res){
-    state.aiAnalyseBezig[key] = false;
-    if (res.error || (res.data && res.data.error)) {
-      if (!stilzwijgend) alert("AI-analyse mislukt: " + (res.error ? res.error.message : res.data.error));
-      render();
-      return;
-    }
-    m.aiAnalyses = m.aiAnalyses || {};
-    m.aiAnalyses[fotoIndex] = res.data.analyse;
-    var eersteRegel = String(res.data.analyse || "").split("\n")[0];
-    var waardeMatch = eersteRegel.match(/WAARDE:\s*([\d.,]+)/i);
-    if (waardeMatch) {
-      m.waarde = waardeMatch[1].replace(",", ".");
-      // Dit hergebruikt dezelfde bestaande rekenlogica (Ohm's wet + B/C/D-drempel) die de
-      // beoordeling bepaalt — de AI vult alleen het afgelezen getal in, niet het oordeel.
-      impedantieVeldGewijzigd(parentId, listKey, mid, "waarde");
-    } else {
-      persistDraft();
-      render();
-    }
-  }).catch(function(err){
-    state.aiAnalyseBezig[key] = false;
-    if (!stilzwijgend) alert("AI-analyse mislukt: " + err.message);
-    render();
-  });
-}
-// Analyseert in één keer alle metingfoto's op deze pagina die nog geen AI-resultaat hebben.
-// Nog steeds volledig optioneel — draait alleen als je zelf op deze knop drukt.
-function analyseerAlleMetingenMetAI(soort, objId) {
-  var lijst = soort === "verdeler" ? state.verdelers : state.omvormers;
-  var obj = lijst.find(function(x){ return x.id === objId; });
-  if (!obj) return;
-  var taken = [];
-  ["zsMetingen", "ziMetingen", "risoMetingen"].forEach(function(listKey){
-    (obj[listKey] || []).forEach(function(m){
-      (m.fotos || []).forEach(function(foto, i){
-        if (!(m.aiAnalyses && m.aiAnalyses[i])) taken.push({ listKey: listKey, mid: m.id, fotoIndex: i });
-      });
-    });
-  });
-  if (taken.length === 0) { alert("Niets nieuws om te analyseren \u2014 er zijn geen metingfoto's zonder AI-resultaat gevonden."); return; }
-  state.aiBatchBezig = state.aiBatchBezig || {};
-  state.aiBatchBezig[objId] = { done: 0, total: taken.length };
-  render();
-  var i = 0;
-  var geenWaardeGevonden = 0;
-  function volgende() {
-    if (i >= taken.length) {
-      delete state.aiBatchBezig[objId];
-      render();
-      if (geenWaardeGevonden === taken.length && taken.length > 0) {
-        alert("Klaar, maar er is geen enkele waarde herkend.\n\nDit wijst erop dat de Supabase-functie \u0027analyseer-foto\u0027 nog de OUDE versie draait (die geen cijfers afleest, alleen commentaar geeft).\n\nGa naar Supabase \u2192 Edge Functions \u2192 analyseer-foto, plak de nieuwste code erin (met de instructie 'Lees UITSLUITEND de hoofdmeetwaarde af...'), en klik op Deploy updates. Daarna werkt het automatisch invullen.");
-      } else {
-        alert("Klaar! " + taken.length + " foto('s) geanalyseerd. Controleer de ingevulde waardes zelf.");
-      }
-      return;
-    }
-    var t = taken[i]; i++;
-    analyseMetingFotoMetAI(soort, objId, t.listKey, t.mid, t.fotoIndex, true).then(function(){
-      var mCheck = obj[t.listKey] && obj[t.listKey].find(function(x){ return x.id === t.mid; });
-      var tekst = mCheck && mCheck.aiAnalyses && mCheck.aiAnalyses[t.fotoIndex];
-      if (!tekst || !/^WAARDE:\s*[\d.,]+/i.test(String(tekst).split("\n")[0])) geenWaardeGevonden++;
-      state.aiBatchBezig[objId].done = i;
-      render();
-      volgende();
-    });
-  }
-  volgende();
-}
 function projectFotoWidget() {
   var h = '<div class="section-card"><h2>Projectfoto\'s</h2><p class="subtitle" style="margin-top:-4px;">Algemene foto\'s van de locatie/situatie \u2014 je kunt hier op elk moment tijdens de keuring foto\'s aan toevoegen.</p>';
   h += '<div class="photo-row" style="margin-top:0;">';
@@ -2316,7 +2206,6 @@ function renderVerdelers() {
 
     var heeftMetingen = (v.zsMetingen && v.zsMetingen.length) || (v.ziMetingen && v.ziMetingen.length) || (v.risoMetingen && v.risoMetingen.length);
     h += '<h3>AC-metingen</h3>';
-    h += batchAiKnop("verdeler", v.id);
     if (!heeftMetingen) {
       h += '<button class="btn-add" onclick="genereerStandaardMetingen(\'' + v.id + '\')">&#9889; Genereer standaard metingen (Zs, Zi, Riso)</button>';
     } else {
@@ -2379,14 +2268,6 @@ function inWaardeSelect(obj, updateFn, toepasCall, soort, label) {
   h += '<input class="f" id="defin-' + obj.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-top:6px;margin-bottom:0;display:' + (isAangepast ? "block" : "none") + ';" placeholder="bijv. 25" value="' + esc(isAangepast ? huidig : "") + '" oninput="' + updateFn + '(\'' + obj.id + '\', \'defaultNominaleStroom\', this.value); pasStandaardBeveiligingToeLive(\'' + soort + '\', \'' + obj.id + '\', this.id, this.selectionStart)" />';
   h += '</div>';
   return h;
-}
-// Knop om in één keer alle metingfoto's op deze pagina te laten analyseren — optioneel, de
-// inspecteur moet er zelf op drukken, en kan dit ook gewoon nooit gebruiken.
-function batchAiKnop(soort, objId) {
-  if (!supabaseClient) return "";
-  var bezig = state.aiBatchBezig && state.aiBatchBezig[objId];
-  var tekst = bezig ? ("Bezig&hellip; " + bezig.done + "/" + bezig.total) : "&#129302; Analyseer alle metingfoto's met AI (optioneel)";
-  return '<button type="button" ' + (bezig ? "disabled" : "") + ' onclick="analyseerAlleMetingenMetAI(\'' + soort + '\', \'' + objId + '\')" style="background:#0B3B3C;color:#fff;border:none;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;margin:6px 0 10px;cursor:' + (bezig ? "wait" : "pointer") + ';">' + tekst + '</button>';
 }
 function standaardBeveiligingBlok(soort, obj) {
   var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
@@ -2464,7 +2345,6 @@ function metingLijst(v, listKey, titel) {
       h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'opmerking\', this.value)">' + esc(m.opmerking) + '</textarea>';
     }
     h += photoRow(m.fotos, "addMetingPhoto('" + v.id + "', '" + listKey + "', '" + m.id + "', ", "removeMetingPhoto('" + v.id + "', '" + listKey + "', '" + m.id + "', ");
-    h += aiAnalyseBlokMeting("verdeler", v.id, listKey, m);
     h += '</div>';
   });
   h += '<button class="btn-add" onclick="addMeting(\'' + v.id + '\', \'' + listKey + '\')">+ Meting toevoegen</button>';
@@ -2501,7 +2381,6 @@ function metingLijstOmvormer(o, listKey, titel) {
       h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'opmerking\', this.value)">' + esc(m.opmerking) + '</textarea>';
     }
     h += photoRow(m.fotos, "addMetingPhotoOmvormer('" + o.id + "', '" + listKey + "', '" + m.id + "', ", "removeMetingPhotoOmvormer('" + o.id + "', '" + listKey + "', '" + m.id + "', ");
-    h += aiAnalyseBlokMeting("omvormer", o.id, listKey, m);
     h += '</div>';
   });
   h += '<button class="btn-add" onclick="addMetingOmvormer(\'' + o.id + '\', \'' + listKey + '\')">+ Meting toevoegen</button>';
@@ -2538,7 +2417,6 @@ function renderOmvormers() {
 
     var heeftOmvormerMetingen = (o.zsMetingen && o.zsMetingen.length) || (o.ziMetingen && o.ziMetingen.length) || (o.risoMetingen && o.risoMetingen.length);
     h += '<h3>AC-metingen</h3>';
-    h += batchAiKnop("omvormer", o.id);
     if (!heeftOmvormerMetingen) {
       h += '<button class="btn-add" onclick="genereerStandaardMetingenOmvormer(\'' + o.id + '\')">&#9889; Genereer standaard metingen (Zs, Zi, Riso)</button>';
     } else {
@@ -2932,9 +2810,10 @@ function bijlageActieRij(nrKleur, term, bg, fg, actie, richttermijn) {
 }
 function rConstateringBlock(classificatie, opmerking, fotos, norm) {
   if (classificatie === "goed" && (!fotos || fotos.length === 0) && !opmerking) return "";
-  var h = '<div class="r-constatering"><div class="r-constatering-head"><span>Constatering' + (norm ? ' &mdash; ' + esc(norm) : '') + '</span><span class="badge" style="background:' + CLASS[classificatie].color + '">' + CLASS[classificatie].label + '</span></div>';
+  var titel = classificatie === "goed" ? "Foto (bewijs)" : "Constatering";
+  var h = '<div class="r-constatering"><div class="r-constatering-head"><span>' + titel + (norm ? ' &mdash; ' + esc(norm) : '') + '</span><span class="badge" style="background:' + CLASS[classificatie].color + '">' + CLASS[classificatie].label + '</span></div>';
   h += '<div class="r-constatering-body">';
-  h += esc(opmerking || "—");
+  h += opmerking ? esc(opmerking) : (classificatie === "goed" ? "" : "—");
   if (fotos && fotos.length > 0) { h += '<div class="r-photos">'; fotos.forEach(function(src){ h += '<img src="' + src + '" />'; }); h += '</div>'; }
   h += '</div></div>';
   return h;
@@ -2983,9 +2862,10 @@ function docPhotos(fotos, w) {
 }
 function docConstatering(idx, classificatie, omschrijving, fotos, norm) {
   if (classificatie === "goed" && (!fotos || fotos.length===0) && !omschrijving) return "";
-  var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>Constatering' + (idx!=null ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
+  var titel = classificatie === "goed" ? "Foto (bewijs)" : "Constatering";
+  var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>' + titel + (idx!=null && classificatie !== "goed" ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
   h += '<div class="doc-constatering-body">';
-  h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
+  if (omschrijving || classificatie !== "goed") h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
   h += docPhotos(fotos, 220);
   h += '</div></div>';
   return h;
