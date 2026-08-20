@@ -1462,15 +1462,23 @@ function analyseerAlleMetingenMetAI(soort, objId) {
   state.aiBatchBezig[objId] = { done: 0, total: taken.length };
   render();
   var i = 0;
+  var geenWaardeGevonden = 0;
   function volgende() {
     if (i >= taken.length) {
       delete state.aiBatchBezig[objId];
       render();
-      alert("Klaar! " + taken.length + " foto('s) geanalyseerd. Controleer de ingevulde waardes zelf.");
+      if (geenWaardeGevonden === taken.length && taken.length > 0) {
+        alert("Klaar, maar er is geen enkele waarde herkend.\n\nDit wijst erop dat de Supabase-functie \u0027analyseer-foto\u0027 nog de OUDE versie draait (die geen cijfers afleest, alleen commentaar geeft).\n\nGa naar Supabase \u2192 Edge Functions \u2192 analyseer-foto, plak de nieuwste code erin (met de instructie 'Lees UITSLUITEND de hoofdmeetwaarde af...'), en klik op Deploy updates. Daarna werkt het automatisch invullen.");
+      } else {
+        alert("Klaar! " + taken.length + " foto('s) geanalyseerd. Controleer de ingevulde waardes zelf.");
+      }
       return;
     }
     var t = taken[i]; i++;
     analyseMetingFotoMetAI(soort, objId, t.listKey, t.mid, t.fotoIndex, true).then(function(){
+      var mCheck = obj[t.listKey] && obj[t.listKey].find(function(x){ return x.id === t.mid; });
+      var tekst = mCheck && mCheck.aiAnalyses && mCheck.aiAnalyses[t.fotoIndex];
+      if (!tekst || !/^WAARDE:\s*[\d.,]+/i.test(String(tekst).split("\n")[0])) geenWaardeGevonden++;
       state.aiBatchBezig[objId].done = i;
       render();
       volgende();
