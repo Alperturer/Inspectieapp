@@ -2179,7 +2179,6 @@ function renderVerdelers() {
     h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
     h += '<div class="grid2">';
     h += vField(v.id, "locatie", "Locatie", v.locatie, "bijv. BG (begane grond)");
-    h += selectMetVrijeTekst("typeZekering", "Type zekering", v.typeZekering, ["Automaat B", "Automaat C", "Automaat D", "Smeltpatroon"], "", "updateVerdelerField", "'" + v.id + "'");
     h += voorbeveiligingSelect("verdeler", v);
     h += typeKarakteristiekVelden("verdeler", v);
     h += vField(v.id, "hoofdschakelaar", "Hoofdschakelaar", v.hoofdschakelaar, "bijv. 63A");
@@ -2686,7 +2685,7 @@ function renderRapport() {
     h += '<div class="r-page"><div class="r-h">Verdelers</div>';
     state.verdelers.forEach(function(v){
       h += '<div style="margin-bottom:14px;"><h3>' + esc(v.naam || "Verdeler") + '</h3><div class="r-kv">' +
-        kv("Locatie", v.locatie) + kv("Type zekering", v.typeZekering) + kv("Voorbeveiliging", v.voorbeveiliging) + kv("Hoofdschakelaar", v.hoofdschakelaar) + kv("Klasse", v.klasse) + kv("RLo", v.rlo) + kv("Aantal groepen 1-fase", v.groepen1Fase) + kv("Aantal groepen 3-fase", v.groepen3Fase) + kv("Aantal aardlekschakelaars", v.aantalAardlek) + '</div>';
+        kv("Locatie", v.locatie) + kv("Voorbeveiliging", v.voorbeveiliging) + kv("Hoofdschakelaar", v.hoofdschakelaar) + kv("Klasse", v.klasse) + kv("RLo", v.rlo) + kv("Aantal groepen 1-fase", v.groepen1Fase) + kv("Aantal groepen 3-fase", v.groepen3Fase) + kv("Aantal aardlekschakelaars", v.aantalAardlek) + '</div>';
       h += rConstateringBlock(v.classificatie, v.opmerking, v.fotos, v.norm);
       h += rMetingTabel("Zs-metingen (lusimpedantie, &Omega;)", v.zsMetingen, true);
       h += rMetingTabel("Zi-metingen (inwendige impedantie, &Omega;)", v.ziMetingen, true);
@@ -3142,7 +3141,7 @@ function buildScope12Body() {
     var vHtml = "";
     state.verdelers.forEach(function(v, vi){
       vHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
-      vHtml += dlTable([["Locatie", v.locatie], ["Type zekering", v.typeZekering], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
+      vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
       vHtml += docPhotos(v.fotos, 220);
       vHtml += '</div>';
     });
