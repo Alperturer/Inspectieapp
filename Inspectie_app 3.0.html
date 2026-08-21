@@ -20,13 +20,13 @@
   @media (min-width: 900px) {
     .wrap { padding: 28px 40px 70px; }
   }
-  h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px; letter-spacing:-0.01em; }
-  h2 { font-size: 16.5px; font-weight: 800; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid #0D9488; padding-bottom: 8px; }
-  h3 { font-size: 13.5px; font-weight: 700; margin: 14px 0 8px; color:#3a382f; }
-  .subtitle { font-size: 12.5px; color: #6b6659; margin: 0 0 16px; }
+  h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px; letter-spacing:-0.01em; color:#0B2E2D; }
+  h2 { font-size: 16.5px; font-weight: 800; margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 2px solid #7FD9CB; padding-bottom: 8px; color:#fff; }
+  h3 { font-size: 13.5px; font-weight: 700; margin: 14px 0 8px; color:#DFF3EF; }
+  .subtitle { font-size: 12.5px; color: #4d6360; margin: 0 0 16px; }
   .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
   .header-title { font-weight:800; font-size:17px; cursor:pointer; }
-  .header-badge { font-size:11px; color:#8A8578; }
+  .header-badge { font-size:11px; color:#B8E0D8; }
   .header-right { display:flex; align-items:center; gap:10px; }
   .overzicht-link { font-size:11.5px; font-weight:700; color:#4d493f; background:#fff; border:1px solid #E0DDD4; border-radius:8px; padding:6px 10px; cursor:pointer; }
   .steps { display:flex; gap:4px; margin-bottom:16px; }
@@ -36,12 +36,12 @@
   .card-btn { display:flex; align-items:center; justify-content:space-between; width:100%; text-align:left; border:1px solid #E0DDD4; background:#fff; border-radius:14px; padding:16px 18px; margin-bottom:10px; cursor:pointer; font:inherit; color:inherit; }
   .card-btn:hover { border-color:#0B3B3C; }
   .card-title { font-weight:800; font-size:16.5px; }
-  .card-sub { font-size:11.5px; color:#8A8578; margin-top:3px; }
+  .card-sub { font-size:11.5px; color:#B8E0D8; margin-top:3px; }
   .card-swatch { width:6px; align-self:stretch; border-radius:4px; margin-right:12px; }
   .card-btn-inner { display:flex; align-items:center; flex:1; }
 
-  label.fl { display:flex; align-items:flex-end; min-height:38px; font-size:11px; font-weight:700; color:#6b6659; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.02em; }
-  input.f, select.f, textarea.f { width:100%; border:1px solid #E0DDD4; border-radius:8px; padding:9px 11px; font-size:13.5px; font-family:inherit; margin-bottom:12px; background:#fff; }
+  label.fl { display:flex; align-items:flex-end; min-height:38px; font-size:11px; font-weight:700; color:#B8E0D8; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.02em; }
+  input.f, select.f, textarea.f { width:100%; border:1px solid #cfd8d6; border-radius:8px; padding:9px 11px; font-size:13.5px; font-family:inherit; margin-bottom:12px; background:#fff; color:#0B2E2D; }
   input.f:focus, textarea.f:focus, select.f:focus { outline:2px solid #0B3B3C33; border-color:#0B3B3C; }
   textarea.f { resize:vertical; min-height:48px; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
@@ -49,12 +49,13 @@
   .grid4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:0 10px; }
   .full { grid-column:1/-1; }
 
-  .section-card { background:#fff; border:1px solid #E0DDD4; border-radius:14px; padding:18px; margin-bottom:14px; }
-  .item-block { border:1px solid #E0DDD4; border-radius:12px; padding:14px; margin-bottom:12px; background:#FCFBF9; }
+  .section-card { background:linear-gradient(135deg, #0B2A2B 0%, #1E6E68 100%); border:none; border-radius:14px; padding:18px; margin-bottom:14px; color:#fff; }
+  .item-block { border:none; border-radius:12px; padding:14px; margin-bottom:12px; background:linear-gradient(135deg, #0B2A2B 0%, #1E6E68 100%); color:#fff; }
   .item-block-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px; }
-  .item-num { font-size:11px; color:#8A8578; font-weight:700; padding-top:9px; }
+  .item-num { font-size:11px; color:#B8E0D8; font-weight:700; padding-top:9px; }
   .item-omschrijving { flex:1; border:none; background:transparent; font-size:13.5px; font-weight:600; outline:none; padding:8px 0; }
-  .item-title-input { flex:1; border:none; background:transparent; font-size:14px; font-weight:800; outline:none; padding:4px 0; }
+  .item-title-input { flex:1; border:none; background:transparent; font-size:14px; font-weight:800; outline:none; padding:4px 0; color:#fff; }
+  .item-title-input::placeholder { color:#B8E0D8; }
   .del-x { background:none; border:none; color:#B23A2F; font-size:17px; cursor:pointer; padding:4px 6px; line-height:1; }
 
   .btn-primary { background:#0B3B3C; color:#fff; border:none; border-radius:9px; padding:12px 16px; font-size:13.5px; font-weight:700; cursor:pointer; width:100%; }
@@ -86,18 +87,18 @@
   .print-btn { background:#0B3B3C; color:#fff; border:none; border-radius:9px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; }
 
   .stats-row { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-  .stat-box { flex:1; min-width:70px; background:#fff; border:1px solid #E0DDD4; border-radius:10px; padding:10px 12px; }
-  .stat-num { font-size:22px; font-weight:800; }
-  .stat-label { font-size:10px; color:#8A8578; margin-top:2px; font-weight:600; text-transform:uppercase; letter-spacing:0.02em; }
+  .stat-box { flex:1; min-width:70px; background:linear-gradient(135deg, #0B2A2B 0%, #1E6E68 100%); border:none; border-radius:10px; padding:10px 12px; }
+  .stat-num { font-size:22px; font-weight:800; color:#fff; }
+  .stat-label { font-size:10px; color:#B8E0D8; margin-top:2px; font-weight:600; text-transform:uppercase; letter-spacing:0.02em; }
 
   .keuring-row { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #E0DDD4; border-radius:12px; padding:13px 15px; margin-bottom:8px; cursor:pointer; gap:10px; }
   .keuring-row:hover { border-color:#0B3B3C; }
   .keuring-left { display:flex; flex-direction:column; gap:2px; min-width:0; }
   .keuring-klant { font-weight:700; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .keuring-meta { font-size:11px; color:#8A8578; }
+  .keuring-meta { font-size:11px; color:#B8E0D8; }
   .keuring-del { background:none; border:none; color:#B23A2F; font-size:15px; cursor:pointer; padding:4px; flex-shrink:0; }
-  .empty-state { text-align:center; padding:26px 16px; color:#8A8578; font-size:12.5px; border:1.5px dashed #D8D4CB; border-radius:14px; }
-  .autosave-note { font-size:11px; color:#8A8578; text-align:center; margin-top:10px; }
+  .empty-state { text-align:center; padding:26px 16px; color:#B8E0D8; font-size:12.5px; border:1.5px dashed #D8D4CB; border-radius:14px; }
+  .autosave-note { font-size:11px; color:#B8E0D8; text-align:center; margin-top:10px; }
 
   .streng-block { border:1px solid #E4E9DD; background:#F7F9F4; border-radius:10px; padding:12px; margin-top:10px; }
   .mini-select { width:100%; border:1px solid #E0DDD4; border-radius:7px; padding:8px 9px; font-size:12.5px; font-family:inherit; margin-bottom:10px; background:#fff; }
@@ -132,7 +133,7 @@
   .auth-switch a { color:#0B3B3C; font-weight:700; text-decoration:none; }
   .sync-badge { font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px; }
   .sync-badge.online { background:#EAF6EC; color:#2F7D3A; }
-  .sync-badge.syncing { background:#F5F4EF; color:#8A8578; }
+  .sync-badge.syncing { background:#F5F4EF; color:#B8E0D8; }
 
   @media print {
     body { background:#fff; }
@@ -875,7 +876,7 @@ function renderBeheer() {
   state.alleLicenties.forEach(function(l){
     h += '<div class="section-card" style="margin-bottom:10px;">';
     h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">';
-    h += '<div><b>' + esc(l.email || l.user_id) + '</b>' + (l.is_admin ? ' <span style="font-size:10px;color:#8A8578;">(beheerder)</span>' : '') + '<br/><span style="font-size:11px;color:#8A8578;">Aangemeld: ' + esc((l.aangemaakt_op||"").slice(0,10)) + '</span></div>';
+    h += '<div><b>' + esc(l.email || l.user_id) + '</b>' + (l.is_admin ? ' <span style="font-size:10px;color:#B8E0D8;">(beheerder)</span>' : '') + '<br/><span style="font-size:11px;color:#B8E0D8;">Aangemeld: ' + esc((l.aangemaakt_op||"").slice(0,10)) + '</span></div>';
     h += '<span class="badge" style="background:' + (LICENTIE_KLEUR[l.status]||"#8A8578") + ';">' + (LICENTIE_LABEL[l.status]||l.status) + '</span>';
     h += '</div>';
     if (!l.is_admin) {
@@ -1473,7 +1474,7 @@ function render() {
   var root = document.getElementById("root");
   try {
     if (state.view === "auth-loading") {
-      root.innerHTML = '<div style="text-align:center;padding:80px 20px;color:#8A8578;font-size:13px;">Laden...</div>';
+      root.innerHTML = '<div style="text-align:center;padding:80px 20px;color:#B8E0D8;font-size:13px;">Laden...</div>';
       return;
     }
     if (state.view === "auth") {
@@ -1527,7 +1528,7 @@ function render() {
       '<div style="max-width:480px;margin:60px auto;padding:24px;text-align:center;font-family:sans-serif;">' +
       '<div style="font-size:15px;font-weight:700;margin-bottom:8px;">Er ging iets mis</div>' +
       '<div style="font-size:13px;color:#6b6659;margin-bottom:4px;">' + esc(err && err.message ? err.message : String(err)) + '</div>' +
-      '<div style="font-size:12px;color:#8A8578;margin-bottom:18px;">Probeer terug te gaan, of reset het concept als het probleem blijft.</div>' +
+      '<div style="font-size:12px;color:#B8E0D8;margin-bottom:18px;">Probeer terug te gaan, of reset het concept als het probleem blijft.</div>' +
       '<button style="background:#0B3B3C;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;margin-right:8px;" onclick="setState({view:\'kies\'})">Naar overzicht</button>' +
       '<button style="background:#fff;color:#B23A2F;border:1px solid #E0DDD4;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;" onclick="localStorage.removeItem(\'' + STORAGE_DRAFT + '\'); location.reload();">Concept resetten</button>' +
       '</div>';
@@ -1710,7 +1711,7 @@ function renderGegevens() {
   h += '<div class="section-card">';
   h += '<label class="fl">Rapportnaam</label>';
   h += '<input class="f" placeholder="bijv. Steenbakkerij17_2913LJ_Scope12" value="' + esc(o.rapportnaam) + '" oninput="updateObject(\'rapportnaam\', this.value)" />';
-  h += '<div style="font-size:11.5px;color:#8A8578;margin-top:4px;">Wordt gebruikt als bestandsnaam van het PDF-rapport en als naam in \u0027Opgeslagen\u0027 &mdash; laat leeg voor een automatisch gegenereerde naam.</div>';
+  h += '<div style="font-size:11.5px;color:#B8E0D8;margin-top:4px;">Wordt gebruikt als bestandsnaam van het PDF-rapport en als naam in \u0027Opgeslagen\u0027 &mdash; laat leeg voor een automatisch gegenereerde naam.</div>';
   h += '</div>';
   if (state.klanten.length > 0) {
     h += '<div class="section-card"><label class="fl">Klant kiezen uit klantenbestand</label>';
@@ -1811,7 +1812,7 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
   h += '<label class="fl" style="min-height:auto;">Huisstijlkleur (app &amp; rapport)</label>';
   h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
     '<input type="color" value="' + esc(o.accentColor || "#0D9488") + '" style="width:44px;height:34px;border:1px solid #E0DDD4;border-radius:8px;padding:2px;background:#fff;" onchange="updateObject(\'accentColor\', this.value); render();" />' +
-    '<span style="font-size:11.5px;color:#8A8578;">De classificatiekleuren (rood/oranje/geel/blauw) zijn vast en wijzigen hier niet mee.</span></div>';
+    '<span style="font-size:11.5px;color:#B8E0D8;">De classificatiekleuren (rood/oranje/geel/blauw) zijn vast en wijzigen hier niet mee.</span></div>';
   h += '<div class="grid2">';
   h += field("bedrijfNaam","Naam inspectiebedrijf",o.bedrijfNaam,"text","","bijv. Voorbeeld Inspecties B.V.") + field("bedrijfAdres","Adres inspectiebedrijf",o.bedrijfAdres,"text","","bijv. Bedrijvenweg 10");
   h += field("bedrijfPostcodePlaats","Postcode en plaats",o.bedrijfPostcodePlaats,"text","","bijv. 5678 CD Voorbeeldplaats") + field("bedrijfTel","Telefoonnummer",o.bedrijfTel,"text","","bijv. 010-7654321");
@@ -2319,7 +2320,7 @@ function risoBeoordelingBlok(soort, obj) {
   var h = '<div style="margin:10px 0;padding:10px 12px;background:#eef5f3;border-radius:10px;border:1px solid #cfe3dd;">';
   h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B3B3C;">' +
     '<input type="checkbox" ' + (obj.defaultAutoBeoordelingRiso !== false ? "checked" : "") + ' onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultAutoBeoordelingRiso\', this.checked); ' + toepasCall + '" /> &#9889; Automatisch beoordelen Riso (' + redenLabel + ' &mdash; min. ' + drempel + ' M&Omega;)</label>';
-  h += '<div style="font-size:12px;color:#4d6360;margin-top:4px;">' + (obj.defaultAutoBeoordelingRiso !== false ? "Elke meting hieronder wordt automatisch Goed/Serieus op basis van de ingevulde waarde." : "Uitgeschakeld — je beoordeelt elke Riso-meting hieronder zelf.") + '</div>';
+  h += '<div style="font-size:12px;color:#DFF3EF;margin-top:4px;">' + (obj.defaultAutoBeoordelingRiso !== false ? "Elke meting hieronder wordt automatisch Goed/Serieus op basis van de ingevulde waarde." : "Uitgeschakeld — je beoordeelt elke Riso-meting hieronder zelf.") + '</div>';
   h += '</div>';
   return h;
 }
@@ -2345,11 +2346,11 @@ function standaardBeveiligingBlok(soort, obj) {
   h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0B3B3C;margin-bottom:4px;">' +
     '<input type="checkbox" ' + (obj.defaultAutoBeoordeling !== false ? "checked" : "") + ' onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultAutoBeoordeling\', this.checked); ' + toepasCall + '" /> &#9889; Automatisch goed/afgekeurd bepalen voor deze ' + (soort === "verdeler" ? "verdeler" : "omvormer") + '</label>';
   if (obj.defaultAutoBeoordeling === false) {
-    h += '<div style="font-size:12px;color:#4d6360;">Uitgeschakeld — je beoordeelt elke meting hieronder zelf met de Goed/Afgekeurd-knoppen.</div>';
+    h += '<div style="font-size:12px;color:#DFF3EF;">Uitgeschakeld — je beoordeelt elke meting hieronder zelf met de Goed/Afgekeurd-knoppen.</div>';
     h += '</div>';
     return h;
   }
-  h += '<div style="font-size:12px;color:#4d6360;margin-bottom:8px;">Vul hier het type en de waarde in — dit wordt automatisch toegepast op alle Zs/Zi-metingen hieronder.</div>';
+  h += '<div style="font-size:12px;color:#DFF3EF;margin-bottom:8px;">Vul hier het type en de waarde in — dit wordt automatisch toegepast op alle Zs/Zi-metingen hieronder.</div>';
   h += '<div style="display:grid;grid-template-columns:1.3fr 0.8fr 0.9fr;gap:8px;">';
   h += '<div><label class="fl" style="min-height:auto;">Type beveiliging</label><select class="f" style="margin-bottom:0;" onchange="' + updateFn + '(\'' + obj.id + '\', \'defaultBeveiligingType\', this.value); ' + toepasCall + '">' +
     '<option value=""' + (obj.defaultBeveiligingType === "" ? " selected" : "") + '>Kies...</option>' +
@@ -2379,7 +2380,7 @@ function autoBeoordelingBlok(vid, listKey, m) {
   if (!m.beveiligingType) return "";
   var typeLabel = m.beveiligingType === "automaat" ? ("Installatieautomaat" + (m.klasse ? " " + m.klasse : "")) : ("Smeltveiligheid " + (m.smeltKarakteristiek || "gG"));
   var vereist = berekenVereisteIa(m);
-  var h = '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#4d6360;">';
+  var h = '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#DFF3EF;">';
   h += '&#9889; ' + typeLabel + (m.nominaleStroom ? " " + m.nominaleStroom + "A" : "") + (vereist !== null ? ' \u2014 vereiste minimale kortsluitstroom: <b>' + vereist + ' A</b> (automatisch overgenomen van de instelling bovenaan)' : "");
   h += '</div>';
   return h;
@@ -2405,7 +2406,7 @@ function metingLijst(v, listKey, titel) {
     h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeMeting(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\')">&#128465;</button>';
     h += '</div>';
     if (toonKortsluitstroom) { h += autoBeoordelingBlok(v.id, listKey, m); }
-    if (isRiso && m.autoBeoordelingRiso !== false) { h += '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#4d6360;">&#9889; Vereiste minimale isolatieweerstand: <b>' + drempelIsolatieweerstand() + ' M&Omega;</b> (' + (state.object.redenInspectie === "PI" ? "PI" : "EBI") + ')</div>'; }
+    if (isRiso && m.autoBeoordelingRiso !== false) { h += '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#DFF3EF;">&#9889; Vereiste minimale isolatieweerstand: <b>' + drempelIsolatieweerstand() + ' M&Omega;</b> (' + (state.object.redenInspectie === "PI" ? "PI" : "EBI") + ')</div>'; }
     h += classRow(m.classificatie, "updateMeting('" + v.id + "', '" + listKey + "', '" + m.id + "', {classificatie:");
     if (m.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateMetingField('" + v.id + "','" + listKey + "','" + m.id + "','norm',vc.norm); updateMetingField('" + v.id + "','" + listKey + "','" + m.id + "','opmerking',vc.omschrijving);");
@@ -2441,7 +2442,7 @@ function metingLijstOmvormer(o, listKey, titel) {
     h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeMetingOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\')">&#128465;</button>';
     h += '</div>';
     if (toonKortsluitstroom) { h += autoBeoordelingBlok(o.id, listKey, m); }
-    if (isRiso && m.autoBeoordelingRiso !== false) { h += '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#4d6360;">&#9889; Vereiste minimale isolatieweerstand: <b>' + drempelIsolatieweerstand() + ' M&Omega;</b> (' + (state.object.redenInspectie === "PI" ? "PI" : "EBI") + ')</div>'; }
+    if (isRiso && m.autoBeoordelingRiso !== false) { h += '<div style="margin-top:6px;padding-top:8px;border-top:1px dashed #cfd8d8;font-size:12.5px;color:#DFF3EF;">&#9889; Vereiste minimale isolatieweerstand: <b>' + drempelIsolatieweerstand() + ' M&Omega;</b> (' + (state.object.redenInspectie === "PI" ? "PI" : "EBI") + ')</div>'; }
     h += classRow(m.classificatie, "updateMetingOmvormer('" + o.id + "', '" + listKey + "', '" + m.id + "', {classificatie:");
     if (m.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateMetingFieldOmvormer('" + o.id + "','" + listKey + "','" + m.id + "','norm',vc.norm); updateMetingFieldOmvormer('" + o.id + "','" + listKey + "','" + m.id + "','opmerking',vc.omschrijving);");
@@ -3006,7 +3007,7 @@ function sharedDocCss(accent) {
   '.cover-topRow { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px; }' +
   '.cover-topRow .cover-logo { margin-bottom:0; }' +
   '.cover-scios-logo { max-height:90px; max-width:180px; object-fit:contain; display:block; }' +
-  '.cover-brand { font-size:11px; color:#8A8578; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; }' +
+  '.cover-brand { font-size:11px; color:#B8E0D8; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; }' +
   '.cover-title { font-size:26px; font-weight:800; margin-top:8px; letter-spacing:-0.015em; color:#161513; }' +
   '.cover-sub { font-size:12.5px; font-weight:600; color:' + accent + '; margin-top:4px; letter-spacing:0.01em; }' +
   '.cover-rule { border:none; height:3px; background:linear-gradient(90deg,' + accent + ',' + accent + 'AA,transparent); margin:16px 0 20px; border-radius:3px; }' +
@@ -3014,7 +3015,7 @@ function sharedDocCss(accent) {
   '.dl-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px; }' +
   '.dl-table td { padding:7px 0; vertical-align:top; border-bottom:1px solid #F4F2EC; }' +
   '.dl-table tr:last-child td { border-bottom:none; }' +
-  '.dl-table td.dl-k { width:220px; color:#8A8578; font-weight:500; }' +
+  '.dl-table td.dl-k { width:220px; color:#B8E0D8; font-weight:500; }' +
   '.dl-table td.dl-v { font-weight:600; color:#1c1c1c; }' +
   '.doc-sec { margin-bottom:4px; }' +
   '.doc-sec.brk { break-before: page; }' +
@@ -3172,7 +3173,7 @@ function buildScope12Body() {
     ["Naam", o.klant], ["Adres", o.adres], ["Postcode & plaats", (o.postcode||"")+" "+(o.plaats||"")], ["Land", o.land],
     ["Aanmaakdatum inspectierapport", o.datum], ["Rapportnummer", o.rapportnummer], ["Geldigheidsduur", geldigheidsduurTekst], ["Geldigheidsdatum", geldigheidsdatum]
   ]);
-  h += '<p class="doc-p" style="font-size:10px;color:#8A8578;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
+  h += '<p class="doc-p" style="font-size:10px;color:#B8E0D8;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
   h += '</section>';
 
   // PAGINA 2 — CONCLUSIE
@@ -3354,7 +3355,7 @@ function buildScope12Body() {
   h += docSec("Controlepunten", cpHtml, true);
 
   // PAGINA 24 — BIJLAGE(N)
-  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#8A8578;">Geen bijlagen toegevoegd.</p>', false);
+  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#B8E0D8;">Geen bijlagen toegevoegd.</p>', false);
 
   return h;
 }
@@ -3396,7 +3397,7 @@ function buildNen1010Body() {
     ["Datum(s) inspectie(s)", o.inspectiedatums], ["Aanmaakdatum inspectierapport", o.datum], ["Rapportnummer", o.rapportnummer],
     ["Projectnummer", o.projectnummer], ["Referentienummer", o.referentienummer], ["Geldigheidsduur", o.geldigheidsduur], ["Geldigheidsdatum", o.geldigheidsdatum || berekenGeldigheidsdatum(o.datumAfronding || o.datum, o.geldigheidsduur)]
   ]);
-  h += '<p class="doc-p" style="font-size:10px;color:#8A8578;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
+  h += '<p class="doc-p" style="font-size:10px;color:#B8E0D8;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
   h += '</section>';
 
   // PAGINA 2 — CONCLUSIE
@@ -3475,7 +3476,7 @@ function buildNen1010Body() {
     omvangHtml += '<table class="std-table"><thead><tr><th>Code</th><th>Van</th><th>Tot</th><th>Steekproef</th><th>G*</th><th>F**</th></tr></thead><tbody>';
     STEEKPROEF_TABEL.forEach(function(r){ omvangHtml += '<tr><td>' + r.code + '</td><td>' + r.van + '</td><td>' + r.tot + '</td><td>' + r.steekproef + '</td><td>' + r.g + '</td><td>' + r.f + '</td></tr>'; });
     omvangHtml += '</tbody></table>';
-    omvangHtml += '<p class="doc-p" style="font-size:10px;color:#8A8578;">G* = maximaal aantal defecten voor acceptatie van de gehele partij; F** = minimaal aantal defecten voor afwijzing van de gehele partij.</p>';
+    omvangHtml += '<p class="doc-p" style="font-size:10px;color:#B8E0D8;">G* = maximaal aantal defecten voor acceptatie van de gehele partij; F** = minimaal aantal defecten voor afwijzing van de gehele partij.</p>';
     (o.steekproeven||[]).forEach(function(s, idx){
       var r = nen1010GeldigCode(s.van, s.tot);
       omvangHtml += '<div class="doc-sub">Steekproef ' + (idx+1) + '</div>';
@@ -3499,7 +3500,7 @@ function buildNen1010Body() {
     o.documentatieNen1010.forEach(function(d){ docHtml += '<tr><td>' + esc(d.soort||"—") + '</td><td>' + esc(d.naam||"—") + '</td><td>' + esc(d.datum||"—") + '</td><td>' + esc(d.aanwezigheid||"—") + '</td><td>' + esc(d.afwijking||"Nee") + '</td></tr>'; });
     docHtml += '</tbody></table>';
   } else {
-    docHtml = '<p class="doc-p" style="color:#8A8578;">Geen documenten toegevoegd.</p>';
+    docHtml = '<p class="doc-p" style="color:#B8E0D8;">Geen documenten toegevoegd.</p>';
   }
   h += docSec("Documentatie", docHtml, (o.documentatieNen1010||[]).length > 0);
 
@@ -3580,7 +3581,7 @@ function buildNen1010Body() {
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
 
   // PAGINA — BIJLAGE(N)
-  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#8A8578;">Geen bijlagen toegevoegd.</p>', false);
+  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#B8E0D8;">Geen bijlagen toegevoegd.</p>', false);
 
   return h;
 }
