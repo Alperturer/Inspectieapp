@@ -407,7 +407,7 @@ function filesToDataUrls(files, callback) {
 function esc(s) { var d = document.createElement("div"); d.innerText = s == null ? "" : s; return d.innerHTML; }
 
 function loadSaved() { try { return JSON.parse(localStorage.getItem(STORAGE_SAVED) || "[]"); } catch(e) { return []; } }
-function persistSaved(list) { try { localStorage.setItem(STORAGE_SAVED, JSON.stringify(list)); } catch(e) {} }
+function persistSaved(list) { try { localStorage.setItem(STORAGE_SAVED, JSON.stringify(list)); return true; } catch(e) { return false; } }
 function loadBedrijfsgegevens() { try { return JSON.parse(localStorage.getItem(STORAGE_BEDRIJF) || "{}"); } catch(e) { return {}; } }
 function persistBedrijfsgegevens() {
   try {
@@ -441,7 +441,14 @@ function persistDraft() {
     if (state.type) {
       localStorage.setItem(STORAGE_DRAFT, JSON.stringify({ view: state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen, savedId: state.savedId }));
     } else { localStorage.removeItem(STORAGE_DRAFT); }
-  } catch(e) {}
+  } catch(e) {
+    // Opslagruimte van de browser vol (bijv. door veel foto's) — dit gebeurt bij elke
+    // wijziging, dus waarschuw maar één keer per sessie in plaats van steeds opnieuw.
+    if (!state.draftOpslagWaarschuwingGetoond) {
+      state.draftOpslagWaarschuwingGetoond = true;
+      alert("Let op: de opslagruimte van je browser zit vol, waardoor wijzigingen niet meer lokaal worden bewaard. Klik zo snel mogelijk op 'Opslaan' om te proberen naar de cloud te synchroniseren, en verwijder daarna oude keuringen die je niet meer nodig hebt.");
+    }
+  }
 }
 function loadDraft() { try { var raw = localStorage.getItem(STORAGE_DRAFT); return raw ? JSON.parse(raw) : null; } catch(e) { return null; } }
 
@@ -599,7 +606,7 @@ function berekenAnderVeldVanImpedantie(m, gewijzigdVeld) {
   var u = spanningVoorCircuit(m.circuit);
   if (gewijzigdVeld === "waarde") {
     var r = parseFloat(String(m.waarde).replace(",", "."));
-    if (!isNaN(r) && r > 0) m.kortsluitstroom = String(Math.round((u / r) * 100) / 100);
+    if (!isNaN(r) && r > 0) m.kortsluitstroom = String(Math.round((u / r) / 5) * 5);
   } else if (gewijzigdVeld === "kortsluitstroom") {
     var ik = parseFloat(String(m.kortsluitstroom).replace(",", "."));
     if (!isNaN(ik) && ik > 0) m.waarde = String(Math.round((u / ik) * 1000) / 1000);
@@ -1247,9 +1254,13 @@ function saveKeuring() {
   var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
-  persistSaved(list); // lokale back-up, altijd
+  var lokaalGelukt = persistSaved(list); // lokale back-up
   state.savedId = record.id;
-  toonToast("Keuring opgeslagen" + (record.object && record.object.klant ? " \u2014 " + record.object.klant : ""));
+  if (!lokaalGelukt) {
+    alert("Lokaal opslaan op dit toestel is mislukt \u2014 waarschijnlijk is de opslagruimte van je browser vol (te veel foto's in oude keuringen). Verwijder oude, afgeronde keuringen die je niet meer nodig hebt via het overzicht, en probeer opnieuw. " + (supabaseClient && state.user ? "De cloud-opslag wordt hierna nog wel geprobeerd." : ""));
+  } else {
+    toonToast("Keuring opgeslagen" + (record.object && record.object.klant ? " \u2014 " + record.object.klant : ""));
+  }
 
   if (supabaseClient && state.user) {
     state.syncStatus = "syncing"; render();
@@ -2266,8 +2277,8 @@ function renderVerdelers() {
     if (!heeftMetingen) {
       h += '<button class="btn-add" onclick="genereerStandaardMetingen(\'' + v.id + '\')">&#9889; Genereer standaard metingen (Zs, Zi, Riso)</button>';
     } else {
-      h += metingLijst(v, "zsMetingen", "Zs &ndash; lusimpedantie (&Omega;)");
-      h += metingLijst(v, "ziMetingen", "Zi &ndash; inwendige impedantie (&Omega;)");
+      h += metingLijst(v, "zsMetingen", "Zs &ndash; foutlusimpedantie (&Omega;)");
+      h += metingLijst(v, "ziMetingen", "Zi &ndash; lusimpedantie (&Omega;)");
       h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(v.testspanningRiso) + '" oninput="updateVerdelerField(\'' + v.id + '\',\'testspanningRiso\',this.value)" /></div>';
       h += risoBeoordelingBlok("verdeler", v);
       h += metingLijst(v, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
@@ -2477,8 +2488,8 @@ function renderOmvormers() {
     if (!heeftOmvormerMetingen) {
       h += '<button class="btn-add" onclick="genereerStandaardMetingenOmvormer(\'' + o.id + '\')">&#9889; Genereer standaard metingen (Zs, Zi, Riso)</button>';
     } else {
-      h += metingLijstOmvormer(o, "zsMetingen", "Zs &ndash; lusimpedantie (&Omega;)");
-      h += metingLijstOmvormer(o, "ziMetingen", "Zi &ndash; inwendige impedantie (&Omega;)");
+      h += metingLijstOmvormer(o, "zsMetingen", "Zs &ndash; foutlusimpedantie (&Omega;)");
+      h += metingLijstOmvormer(o, "ziMetingen", "Zi &ndash; lusimpedantie (&Omega;)");
       h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(o.testspanningRiso) + '" oninput="updateOmvormerField(\'' + o.id + '\',\'testspanningRiso\',this.value)" /></div>';
       h += risoBeoordelingBlok("omvormer", o);
       h += metingLijstOmvormer(o, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
@@ -2604,25 +2615,41 @@ function verzamelConstateringenMetBron() {
   var res = [];
   function voegToe(bron, item, omschrijving) {
     if (item.classificatie === "goed") return;
-    res.push({ bron: bron, classificatie: item.classificatie, opmerking: item.opmerking, omschrijving: omschrijving, norm: item.norm, fotos: item.fotos || [] });
+    res.push({ bron: bron, classificatie: item.classificatie, opmerking: item.opmerking, omschrijving: omschrijving, norm: item.norm, fotos: item.fotos || [], origineel: item });
   }
   state.items.forEach(function(it){ voegToe("Algemeen keuringspunt", it, it.omschrijving); });
+  if (state.type === "scope12") {
+    (state.object.documentatie || []).forEach(function(d, idx){
+      var def = DOC_CHECKLIST_DEFS[idx];
+      if (d.beschikbaarheid === "Niet beschikbaar" && def) {
+        voegToe(esc(def.label), d, esc(def.label) + " is niet beschikbaar/aangeleverd.");
+      }
+    });
+  }
   state.constateringen.forEach(function(c){ voegToe("Vrije constatering", c, c.omschrijving); });
   state.verdelers.forEach(function(v){
-    voegToe("Verdeler - " + (v.naam || "onbekend"), v, "");
-    (v.zsMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zs " + (m.circuit||""), m, ""); });
-    (v.ziMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zi " + (m.circuit||""), m, ""); });
-    (v.risoMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Riso " + (m.circuit||""), m, ""); });
+    voegToe("Verdeler - " + (v.naam || "onbekend"), v, v.opmerking);
+    (v.zsMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zs (foutlusimpedantie) " + (m.circuit||""), m, m.opmerking); });
+    (v.ziMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zi (lusimpedantie) " + (m.circuit||""), m, m.opmerking); });
+    (v.risoMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Riso " + (m.circuit||""), m, m.opmerking); });
   });
   state.omvormers.forEach(function(o){
-    voegToe("Omvormer - " + (o.naam || "onbekend"), o, "");
-    (o.zsMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - Zs " + (m.circuit||""), m, ""); });
-    (o.ziMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - Zi " + (m.circuit||""), m, ""); });
-    (o.risoMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - Riso " + (m.circuit||""), m, ""); });
-    (o.strengen||[]).forEach(function(s){ voegToe("Omvormer " + (o.naam||"") + " - Streng " + (s.naam||""), s, ""); });
-    (o.rloMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - RLo " + (m.omschrijving||""), m, ""); });
+    voegToe("Omvormer - " + (o.naam || "onbekend"), o, o.opmerking);
+    (o.zsMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - Zs (foutlusimpedantie) " + (m.circuit||""), m, m.opmerking); });
+    (o.ziMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - Zi (lusimpedantie) " + (m.circuit||""), m, m.opmerking); });
+    (o.risoMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - Riso " + (m.circuit||""), m, m.opmerking); });
+    (o.strengen||[]).forEach(function(s){ voegToe("Omvormer " + (o.naam||"") + " - Streng " + (s.naam||""), s, s.opmerking); });
+    (o.rloMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - RLo " + (m.omschrijving||""), m, m.opmerking); });
   });
   return res;
+}
+// Geeft het doorlopende volgnummer van een item terug, gebaseerd op zijn positie in de
+// centrale, volledige lijst van constateringen — zo krijgt elk onderdeel (documentatie,
+// verdelers, omvormers, vrije constateringen) overal in het rapport hetzelfde, unieke nummer.
+function nummerVoorItem(item) {
+  if (!state._cGenLijst) state._cGenLijst = verzamelConstateringenMetBron();
+  var idx = state._cGenLijst.findIndex(function(x){ return x.origineel === item; });
+  return idx >= 0 ? idx + 1 : null;
 }
 
 function allConstateringen() {
@@ -2745,11 +2772,11 @@ function renderRapport() {
   if (state.verdelers.length > 0) {
     h += '<div class="r-page"><div class="r-h">Verdelers</div>';
     state.verdelers.forEach(function(v){
-      h += '<div style="margin-bottom:14px;"><h3>' + esc(v.naam || "Verdeler") + '</h3><div class="r-kv">' +
+      h += '<div style="margin-bottom:14px;break-inside:avoid;"><h3>' + esc(v.naam || "Verdeler") + '</h3>' + constateringenIndicator(v) + situatieFoto(v.fotos) + '<div class="r-kv">' +
         kv("Locatie", v.locatie) + kv("Voorbeveiliging", v.voorbeveiliging) + kv("Hoofdschakelaar", v.hoofdschakelaar) + kv("Klasse", v.klasse) + kv("RLo", v.rlo) + kv("Aantal groepen 1-fase", v.groepen1Fase) + kv("Aantal groepen 3-fase", v.groepen3Fase) + kv("Aantal aardlekschakelaars", v.aantalAardlek) + '</div>';
-      h += rConstateringBlock(v.classificatie, v.opmerking, v.fotos, v.norm);
-      h += rMetingTabel("Zs-metingen (lusimpedantie, &Omega;)", v.zsMetingen, true);
-      h += rMetingTabel("Zi-metingen (inwendige impedantie, &Omega;)", v.ziMetingen, true);
+      if (v.classificatie !== "goed") h += rConstateringBlock(v.classificatie, v.opmerking, [], v.norm);
+      h += rMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", v.zsMetingen, true);
+      h += rMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", v.ziMetingen, true);
       if (v.risoMetingen && v.risoMetingen.length > 0) h += '<p class="r-note" style="margin-top:12px;margin-bottom:-4px;"><b>Testspanning:</b> ' + esc(v.testspanningRiso || "500") + ' V DC</p>';
       h += rMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;)", v.risoMetingen);
       h += rMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", v.rloMetingen);
@@ -2761,11 +2788,11 @@ function renderRapport() {
   if (state.type === "scope12" && state.omvormers.length > 0) {
     h += '<div class="r-page"><div class="r-h">Omvormers</div>';
     state.omvormers.forEach(function(o2){
-      h += '<div style="margin-bottom:16px;"><h3>' + esc(o2.naam || "Omvormer") + '</h3><div class="r-kv">' +
+      h += '<div style="margin-bottom:16px;break-inside:avoid;"><h3>' + esc(o2.naam || "Omvormer") + '</h3>' + constateringenIndicator(o2) + situatieFoto(o2.fotos) + '<div class="r-kv">' +
         kv("Nominaal vermogen (kW)", o2.vermogen) + kv("Locatie", o2.locatie) + kv("Merk", o2.merk) + kv("Type", o2.type) + kv("Serienummer", o2.serienummer) + kv("Voorbeveiliging", o2.voorbeveiliging) + kv("Max DC-spanning", o2.maxDcSpanning) + kv("Imax omvormer (A)", o2.imax) + '</div>';
-      h += rConstateringBlock(o2.classificatie, o2.opmerking, o2.fotos, o2.norm);
-      h += rMetingTabel("Zs-metingen (lusimpedantie, &Omega;)", o2.zsMetingen, true);
-      h += rMetingTabel("Zi-metingen (inwendige impedantie, &Omega;)", o2.ziMetingen, true);
+      if (o2.classificatie !== "goed") h += rConstateringBlock(o2.classificatie, o2.opmerking, [], o2.norm);
+      h += rMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", o2.zsMetingen, true);
+      h += rMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", o2.ziMetingen, true);
       if (o2.risoMetingen && o2.risoMetingen.length > 0) h += '<p class="r-note" style="margin-top:12px;margin-bottom:-4px;"><b>Testspanning:</b> ' + esc(o2.testspanningRiso || "500") + ' V DC</p>';
       h += rMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;)", o2.risoMetingen);
       if (state.type === "scope12" && o2.strengen.length > 0) {
@@ -2867,13 +2894,25 @@ function bijlageActieRij(nrKleur, term, bg, fg, actie, richttermijn) {
 }
 function rConstateringBlock(classificatie, opmerking, fotos, norm) {
   if (classificatie === "goed" && (!fotos || fotos.length === 0) && !opmerking) return "";
-  var titel = classificatie === "goed" ? "Foto (bewijs)" : "Constatering";
-  var h = '<div class="r-constatering"><div class="r-constatering-head"><span>' + titel + (norm ? ' &mdash; ' + esc(norm) : '') + '</span><span class="badge" style="background:' + CLASS[classificatie].color + '">' + CLASS[classificatie].label + '</span></div>';
+  if (classificatie === "goed") {
+    // Compacte bewijsregel: circuit/omschrijving links, klein fotootje, badge rechts — geen groot kader.
+    var h2 = '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #F0EEE7;">';
+    h2 += '<div style="flex:1;min-width:0;font-size:12px;">' + (opmerking ? esc(opmerking) : "") + '</div>';
+    if (fotos && fotos.length > 0) {
+      h2 += '<div style="display:flex;gap:4px;flex-shrink:0;">';
+      fotos.forEach(function(src){ h2 += '<img src="' + src + '" style="width:64px;height:64px;object-fit:cover;border-radius:6px;" />'; });
+      h2 += '</div>';
+    }
+    h2 += '<span class="badge" style="background:' + CLASS[classificatie].color + ';flex-shrink:0;">' + CLASS[classificatie].label + '</span>';
+    h2 += '</div>';
+    return h2;
+  }
+  var h = '<div class="r-constatering"><div class="r-constatering-head"><span>Constatering' + (norm ? ' &mdash; ' + esc(norm) : '') + '</span><span class="badge" style="background:' + CLASS[classificatie].color + '">' + CLASS[classificatie].label + '</span></div>';
   h += '<div class="r-constatering-body" style="display:flex;gap:14px;align-items:stretch;">';
-  h += '<div style="flex:1;min-width:0;">' + (opmerking ? esc(opmerking) : (classificatie === "goed" ? "" : "—")) + '</div>';
+  h += '<div style="flex:1;min-width:0;">' + esc(opmerking || "—") + '</div>';
   if (fotos && fotos.length > 0) {
     h += '<div class="r-photos" style="margin-top:0;flex-shrink:0;">';
-    fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:230px;height:auto;max-height:280px;object-fit:cover;" />'; });
+    fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:150px;height:auto;max-height:180px;object-fit:cover;" />'; });
     h += '</div>';
   }
   h += '</div></div>';
@@ -2895,6 +2934,25 @@ function rMetingTabel(titel, lijst, toonKortsluitstroom) {
   return h;
 }
 function kv(label, val) { return '<div class="k">' + label + ':</div><div>' + esc(val || "—") + '</div>'; }
+// Overzichtsfoto van een verdeler/omvormer: puur ter illustratie, geen kader/label/badge.
+// Bepaalt automatisch of een verdeler/omvormer constateringen heeft \u2014 gebaseerd op de
+// eigen classificatie én alle onderliggende metingen (Zs/Zi/Riso/RLo/strengen).
+function heeftConstateringen(obj) {
+  if (obj.classificatie !== "goed") return true;
+  var lijsten = [obj.zsMetingen, obj.ziMetingen, obj.risoMetingen, obj.rloMetingen, obj.strengen];
+  return lijsten.some(function(lijst){ return (lijst || []).some(function(m){ return m.classificatie !== "goed"; }); });
+}
+function constateringenIndicator(obj) {
+  var heeft = heeftConstateringen(obj);
+  return '<span class="badge" style="background:' + (heeft ? "#C0472C" : "#2F7D3A") + ';margin-left:8px;">Constateringen: ' + (heeft ? "Ja" : "Nee") + '</span>';
+}
+function situatieFoto(fotos, w) {
+  if (!fotos || fotos.length === 0) return "";
+  var h = '<div style="display:flex;gap:6px;margin:6px 0 10px;flex-wrap:wrap;">';
+  fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:' + (w||150) + 'px;height:auto;border-radius:6px;object-fit:cover;" />'; });
+  h += '</div>';
+  return h;
+}
 
 // =======================================================================
 // SCOPE 12 — EXACT PDF-RAPPORT (paginagrootte A4, lopende koptekst/
@@ -2923,11 +2981,18 @@ function docPhotos(fotos, w) {
 }
 function docConstatering(idx, classificatie, omschrijving, fotos, norm) {
   if (classificatie === "goed" && (!fotos || fotos.length===0) && !omschrijving) return "";
-  var titel = classificatie === "goed" ? "Foto (bewijs)" : "Constatering";
-  var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>' + titel + (idx!=null && classificatie !== "goed" ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
+  if (classificatie === "goed") {
+    var h2 = '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #F0EEE7;">';
+    h2 += '<div style="flex:1;min-width:0;font-size:11.5px;">' + (omschrijving ? esc(omschrijving) : "") + '</div>';
+    h2 += docPhotos(fotos, 64).replace('class="doc-photos"', 'class="doc-photos" style="gap:4px;flex-shrink:0;"').replace(/height:auto;/g, "height:64px;object-fit:cover;border-radius:6px;");
+    h2 += beoordelingBadge(classificatie);
+    h2 += '</div>';
+    return h2;
+  }
+  var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>Constatering' + (idx!=null ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
   h += '<div class="doc-constatering-body">';
-  if (omschrijving || classificatie !== "goed") h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
-  h += docPhotos(fotos, 220);
+  h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
+  h += docPhotos(fotos, 130);
   h += '</div></div>';
   return h;
 }
@@ -3078,6 +3143,7 @@ function buildSamenvattingHtml(counts, afwijkend) {
 }
 
 function buildScope12Body() {
+  state._cGenLijst = null;
   var o = state.object, t = TYPES.scope12;
   var all = allConstateringen();
   var counts = { goed:0, opmerking:0, gering:0, serieus:0, ernstig:0, nader:0 };
@@ -3193,12 +3259,12 @@ function buildScope12Body() {
   var docIntro = '<p class="doc-p">De inspectie is uitgevoerd aan de hand van de door de opdrachtgever beschikbaar gestelde tekeningen en documenten.</p>';
   var docTable = '<div class="doc-sub" style="break-before:page;padding-top:1px;">Documentatie conform NEN-EN-IEC 62446-1</div>';
   docTable += '<table class="std-table"><thead><tr><th>Soort document</th><th>Beschikbaarheid</th><th style="width:80px;">Constatering</th></tr></thead><tbody>';
-  var docConstateringenHtml = "", docNr = 0;
+  var docConstateringenHtml = "";
   (o.documentatie||[]).forEach(function(d, idx){
     var def = DOC_CHECKLIST_DEFS[idx]; if (!def) return;
     var heeftConstatering = d.beschikbaarheid === "Niet beschikbaar";
     docTable += '<tr><td>' + esc(def.label) + '</td><td>' + esc(d.beschikbaarheid) + '</td><td>' + (heeftConstatering ? "Ja" : "Nee") + '</td></tr>';
-    if (heeftConstatering) { docNr++; docConstateringenHtml += docConstatering(docNr, d.classificatie || "gering", "Het document is niet beschikbaar", [], ""); }
+    if (heeftConstatering) { docConstateringenHtml += docConstatering(nummerVoorItem(d), d.classificatie || "gering", esc(def.label) + " is niet beschikbaar/aangeleverd.", [], ""); }
   });
   docTable += '</tbody></table>' + docConstateringenHtml;
   h += docSec("Constateringen documentatie", docIntro + docTable, false);
@@ -3207,15 +3273,15 @@ function buildScope12Body() {
   if (state.verdelers.length > 0) {
     var vHtml = "";
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+      vHtml += '<div class="item-block-wrap" style="break-inside:avoid;"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
-      vHtml += docPhotos(v.fotos, 220);
+      vHtml += docPhotos(v.fotos, 150);
       vHtml += '</div>';
     });
     vHtml += '<div class="doc-sub">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle afwijkende metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
     vHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie visuele controle (verdeelinrichting)</div>';
     var vConstateringen = "";
-    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed" || (v.fotos && v.fotos.length)) vConstateringen += docConstatering(null, v.classificatie, v.opmerking, v.fotos, v.norm); });
+    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") vConstateringen += docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, [], v.norm); });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele constateringen in de verdeelinrichting(en) geconstateerd.</p>';
     h += docSec("Constateringen verdeelinrichtingen", vHtml, false);
 
@@ -3223,8 +3289,8 @@ function buildScope12Body() {
     var meetHtml = "";
     state.verdelers.forEach(function(v){
       meetHtml += '<div class="item-block-wrap"><div class="doc-sub">' + esc(v.naam || "Verdeler") + ' &mdash; ' + esc(v.locatie || "") + '</div>';
-      meetHtml += stdMetingTabel("Zs-metingen (lusimpedantie, &Omega;)", v.zsMetingen, true);
-      meetHtml += stdMetingTabel("Zi-metingen (inwendige impedantie, &Omega;)", v.ziMetingen, true);
+      meetHtml += stdMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", v.zsMetingen, true);
+      meetHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", v.ziMetingen, true);
       meetHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(v.testspanningRiso||"500") + " V DC)", v.risoMetingen, false);
       meetHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (v.rloMetingen||[]).map(function(m){ return { circuit: m.omschrijving, waarde: m.waarde, classificatie: m.classificatie, opmerking: m.opmerking, fotos: m.fotos, norm: m.norm }; }), false);
       meetHtml += '</div>';
@@ -3236,9 +3302,9 @@ function buildScope12Body() {
   if (state.omvormers.length > 0) {
     var oHtml = "";
     state.omvormers.forEach(function(o2, oi){
-      oHtml += '<div class="item-block-wrap"><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>';
+      oHtml += '<div class="item-block-wrap" style="break-inside:avoid;"><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
       oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer", o2.serienummer], ["Voorbeveiliging", o2.voorbeveiliging], ["Max DC-spanning", o2.maxDcSpanning], ["Nominale stroom AC", o2.imax]]);
-      oHtml += docPhotos(o2.fotos, 220);
+      oHtml += docPhotos(o2.fotos, 150);
       oHtml += '</div>';
     });
     var op = state.object;
@@ -3260,8 +3326,8 @@ function buildScope12Body() {
     oHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie visuele controle</div>';
     var oConst = "";
     state.omvormers.forEach(function(o2){
-      if (o2.classificatie !== "goed" || (o2.fotos && o2.fotos.length)) oConst += docConstatering(null, o2.classificatie, o2.opmerking, o2.fotos, o2.norm);
-      (o2.strengen||[]).forEach(function(s){ if (s.classificatie !== "goed" || (s.fotos && s.fotos.length)) oConst += docConstatering(null, s.classificatie, (s.naam?s.naam+": ":"")+s.opmerking, s.fotos, s.norm); });
+      if (o2.classificatie !== "goed") oConst += docConstatering(nummerVoorItem(o2), o2.classificatie, o2.opmerking, [], o2.norm);
+      (o2.strengen||[]).forEach(function(s){ if (s.classificatie !== "goed") oConst += docConstatering(nummerVoorItem(s), s.classificatie, (s.naam?s.naam+": ":"")+s.opmerking, s.fotos, s.norm); });
     });
     oHtml += oConst || '<p class="doc-p">Er zijn geen visuele constateringen bij de omvormers geconstateerd.</p>';
     h += docSec("Constateringen omvormers", oHtml, false);
@@ -3269,7 +3335,7 @@ function buildScope12Body() {
 
   // PAGINA 19 — CONSTATERINGEN OVERIGE INSTALLATIEDELEN
   var overigHtml = "";
-  state.constateringen.forEach(function(c, idx){ overigHtml += docConstatering(idx+1, c.classificatie, c.omschrijving, c.fotos, c.norm); });
+  state.constateringen.forEach(function(c){ if (c.classificatie !== "goed") overigHtml += docConstatering(nummerVoorItem(c), c.classificatie, c.omschrijving, c.fotos, c.norm); });
   h += docSec("Constateringen overige installatiedelen", overigHtml || '<p class="doc-p">Er zijn geen constateringen bij overige installatiedelen.</p>', !!overigHtml);
 
   // PAGINA 20-23 — CONTROLEPUNTEN
@@ -3304,6 +3370,7 @@ function scope12RunningFooterHtml() {
   return '<div class="run-footer"><span class="run-page-num"></span></div>';
 }
 function buildNen1010Body() {
+  state._cGenLijst = null;
   var o = state.object, t = TYPES.nen1010;
   var all = allConstateringen();
   var counts = { goed:0, opmerking:0, gering:0, serieus:0, ernstig:0, nader:0 };
@@ -3440,7 +3507,7 @@ function buildNen1010Body() {
   if (state.verdelers.length > 0) {
     var vHtml = '<p class="doc-p">Er is middels visuele controle, metingen en beproevingen gecontroleerd of de verdeelinrichting(en) voldoen aan de daarvoor gestelde eisen.</p>';
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+      vHtml += '<div class="item-block-wrap" style="break-inside:avoid;"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse],
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
       vHtml += docPhotos(v.fotos, 220);
@@ -3456,8 +3523,8 @@ function buildNen1010Body() {
 
   // PAGINA — BEVINDINGEN OVERIGE INSTALLATIEDELEN
   var overigHtml = '<div class="doc-sub">Conclusie overige installatiedelen</div>';
-  var overigConst = "", overigNr = 0;
-  state.constateringen.forEach(function(c){ overigNr++; overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(overigNr).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,220) + '</div></div>'; });
+  var overigConst = "";
+  state.constateringen.forEach(function(c){ if (c.classificatie !== "goed") overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130) + '</div></div>'; });
   overigHtml += overigConst ? ('<p class="doc-p">Er zijn afwijkingen geconstateerd:</p>' + overigConst) : '<p class="doc-p">Er zijn geen afwijkingen geconstateerd.</p>';
   h += docSec("Bevindingen overige installatiedelen", overigHtml, !!overigConst);
 
@@ -3482,8 +3549,8 @@ function buildNen1010Body() {
   if (state.verdelers.length > 0) {
     state.verdelers.forEach(function(v){
       meetHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "") + '</div><div class="doc-p">Locatie: ' + esc(v.locatie||"—") + '</div>';
-      meetHtml += stdMetingTabel("Zs-metingen (lusimpedantie, &Omega;)", v.zsMetingen, true);
-      meetHtml += stdMetingTabel("Zi-metingen (inwendige impedantie, &Omega;)", v.ziMetingen, true);
+      meetHtml += stdMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", v.zsMetingen, true);
+      meetHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", v.ziMetingen, true);
       meetHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(v.testspanningRiso||"500") + " V DC)", v.risoMetingen, false);
       meetHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (v.rloMetingen||[]).map(function(m){ return { circuit: m.omschrijving, waarde: m.waarde, classificatie: m.classificatie, opmerking: m.opmerking, fotos: m.fotos, norm: m.norm }; }), false);
       if ((!v.zsMetingen || !v.zsMetingen.length) && (!v.ziMetingen || !v.ziMetingen.length) && (!v.risoMetingen || !v.risoMetingen.length)) meetHtml += '<p class="doc-p">De volgende metingen zijn verricht: geen metingen geregistreerd.</p>';
@@ -3505,11 +3572,11 @@ function buildNen1010Body() {
   }
 
   // PAGINA — OPSOMMING CONSTATERINGEN
-  var opsomHtml = "", opsomNr = 0;
+  var opsomHtml = "";
   state.verdelers.forEach(function(v){
-    if (v.classificatie !== "goed") { opsomNr++; opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(opsomNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,200) + '</div></div>'; }
+    if (v.classificatie !== "goed") { opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(nummerVoorItem(v)).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,130) + '</div></div>'; }
   });
-  state.constateringen.forEach(function(c){ opsomNr++; opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(opsomNr).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,200) + '</div></div>'; });
+  state.constateringen.forEach(function(c){ if (c.classificatie !== "goed") opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,130) + '</div></div>'; });
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
 
   // PAGINA — BIJLAGE(N)
