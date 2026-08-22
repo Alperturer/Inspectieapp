@@ -1486,16 +1486,13 @@ function render() {
       root.innerHTML = '<div class="wrap">' + renderWachtOpGoedkeuring() + '</div>';
       return;
     }
-    if (state.view === "beheer") {
-      root.innerHTML = '<div class="wrap">' + renderBeheer() + '</div>';
-      return;
-    }
 
     var saved = state.cloudKeuringen.length > 0 ? state.cloudKeuringen : loadSaved();
     var html = '<div class="wrap">';
-    html += '<div class="header"><div class="header-title" onclick="nieuweKeuring()">⚡ ' + esc(state.object.appNaam || "Keuringen app") + '</div>' +
+    html += '<div class="header"><div class="header-title" onclick="nieuweKeuring()">' + (state.object.logoData ? '<img src="' + state.object.logoData + '" style="height:32px;max-width:160px;object-fit:contain;vertical-align:middle;" />' : '&#9889; ' + esc(state.object.appNaam || "Keuringen app")) + '</div>' +
       '<div class="header-right">' + (state.type ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
       (state.syncStatus === "syncing" ? '<span class="sync-badge syncing">Opslaan...</span>' : state.syncStatus === "opgeslagen" ? '<span class="sync-badge online">&#9729; Opgeslagen</span>' : '') +
+      '<button class="overzicht-link' + (state.view === "kies" ? " actief" : "") + '" onclick="setState({view:\'kies\'})">Dashboard</button>' +
       '<button class="overzicht-link' + (state.view === "overzicht" ? " actief" : "") + '" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen();">Opgeslagen (' + saved.length + ')</button>' +
       '<button class="overzicht-link' + (state.view === "klanten" ? " actief" : "") + '" onclick="setState({view:\'klanten\'})">Klanten (' + state.klanten.length + ')</button>' +
       (state.isAdmin ? '<button class="overzicht-link' + (state.view === "beheer" ? " actief" : "") + '" onclick="setState({view:\'beheer\'}); laadAlleLicenties();">&#128274; Beheer</button>' : '') +
@@ -1503,10 +1500,11 @@ function render() {
       (state.user ? '<button class="overzicht-link" onclick="doLogout()">Uitloggen</button>' : '') +
       '</div></div>';
 
-    if (state.view !== "kies" && state.view !== "overzicht" && state.view !== "klanten" && state.view !== "klant-form" && state.view !== "instellingen" && state.type) html += renderSteps();
+    if (state.view !== "kies" && state.view !== "overzicht" && state.view !== "klanten" && state.view !== "klant-form" && state.view !== "instellingen" && state.view !== "beheer" && state.type) html += renderSteps();
 
     if (state.view === "kies") html += renderKies();
     else if (state.view === "instellingen") html += renderInstellingen();
+    else if (state.view === "beheer") html += renderBeheer();
     else if (state.view === "overzicht") html += renderOverzicht(saved);
     else if (state.view === "klanten") html += renderKlanten();
     else if (state.view === "klant-form") html += renderKlantForm();
@@ -1617,7 +1615,7 @@ function navBtns(label, onclick) {
 }
 
 function renderKies() {
-  var h = '<h1>Nieuwe keuring</h1><p class="subtitle">Kies het type keuring om te starten.</p>';
+  var h = '<h1>Nieuwe inspectie</h1><p class="subtitle">Kies het type keuring om te starten.</p>';
   Object.keys(TYPES).forEach(function(key){
     var t = TYPES[key];
     h += '<button class="card-btn" onclick="startType(\'' + key + '\')">' +
@@ -1645,7 +1643,7 @@ function renderOverzicht(saved) {
         '<button class="keuring-del" onclick="deleteSaved(\'' + r.id + '\', event)">&#128465;</button></div>';
     });
   }
-  h += '<button class="btn-secondary" style="margin-top:14px;" onclick="nieuweKeuring()">+ Nieuwe keuring starten</button>';
+  h += '<button class="btn-secondary" style="margin-top:14px;" onclick="nieuweKeuring()">+ Nieuwe inspectie starten</button>';
   return h;
 }
 
