@@ -109,12 +109,12 @@
   .autosave-note { font-size:11px; color:#8A8578; text-align:center; margin-top:10px; }
 
   .streng-block { border:1px solid #E4E9DD; background:#F7F9F4; border-radius:10px; padding:8px; margin-top:8px; }
-  .streng-block label.fl, .streng-block .subtitle, .streng-block h3 { color:#4d493f; min-height:auto; margin-bottom:2px; }
+  .streng-block label.fl, .streng-block .subtitle, .streng-block h3 { color:#4d493f; min-height:auto; margin-bottom:2px; font-size:9.5px; }
   .streng-block .item-num { color:#8A8578; }
-  .streng-block .photo-add { color:#0B3B3C; border-color:#0D9488; padding:5px 9px; font-size:10px; }
-  .streng-block input.f, .streng-block select.f, .streng-block textarea.f { padding:7px 9px; margin-bottom:8px; font-size:12.5px; }
-  .streng-block .class-chip { padding:5px 9px; font-size:10.5px; }
-  .streng-block .class-row { margin:6px 0 2px; gap:5px; }
+  .streng-block .photo-add { color:#0B3B3C; border-color:#0D9488; padding:4px 8px; font-size:9.5px; }
+  .streng-block input.f, .streng-block select.f, .streng-block textarea.f { padding:7px 9px; margin-bottom:6px; font-size:12.5px; }
+  .streng-block .class-chip { padding:4px 8px; font-size:10px; }
+  .streng-block .class-row { margin:5px 0 2px; gap:4px; }
   .mini-select { width:100%; border:1px solid #E0DDD4; border-radius:7px; padding:8px 9px; font-size:12.5px; font-family:inherit; margin-bottom:10px; background:#fff; }
 
   .r-page { background:#fff; border:1px solid #E0DDD4; padding:30px 32px; margin-bottom:14px; font-family:'Poppins', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -2377,7 +2377,7 @@ function renderVerdelers() {
       h += '<div class="streng-block" style="margin-top:6px;">';
       h += '<div style="display:grid;grid-template-columns:2fr 1fr 26px;gap:8px;align-items:end;">';
       h += '<div><label class="fl" style="min-height:auto;">Wat gemeten</label><input class="f" style="font-weight:700;margin-bottom:0;" placeholder="bijv. Aardrail - HVK" value="' + esc(m.omschrijving) + '" oninput="updateRloMetingFieldVerdeler(\'' + v.id + '\', \'' + m.id + '\', \'omschrijving\', this.value)" /></div>';
-      h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,15" value="' + esc(m.waarde) + '" oninput="updateRloMetingFieldVerdeler(\'' + v.id + '\', \'' + m.id + '\', \'waarde\', this.value)" /></div>';
+      h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" style="margin-bottom:0;font-size:13px;padding:8px 9px;" placeholder="bijv. 0,15" value="' + esc(m.waarde) + '" oninput="updateRloMetingFieldVerdeler(\'' + v.id + '\', \'' + m.id + '\', \'waarde\', this.value)" /></div>';
       h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeRloMetingVerdeler(\'' + v.id + '\', \'' + m.id + '\')">&#128465;</button>';
       h += '</div>';
       h += classRow(m.classificatie, "updateRloMetingVerdeler('" + v.id + "', '" + m.id + "', {classificatie:");
@@ -2477,10 +2477,11 @@ function autoBeoordelingBlok(vid, listKey, m) {
 function metingLijst(v, listKey, titel) {
   var toonKortsluitstroom = (listKey === "zsMetingen" || listKey === "ziMetingen");
   var isRiso = listKey === "risoMetingen";
+  var circuitHint = listKey === "zsMetingen" ? " (Zs, foutlusimpedantie)" : listKey === "ziMetingen" ? " (Zi, lusimpedantie)" : "";
   var h = '<div style="margin-top:10px;"><label class="fl" style="min-height:auto;">' + titel + '</label>';
   (v[listKey] || []).forEach(function(m){
     h += '<div class="streng-block" style="margin-top:6px;">';
-    h += '<div><label class="fl" style="min-height:auto;">Circuit (wat wordt gemeten)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;width:auto;max-width:78px;text-align:center;" placeholder="bijv. L1-PE" value="' + esc(m.circuit) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'circuit\', this.value)" /></div>';
+    h += '<div><label class="fl" style="min-height:auto;">Circuit' + circuitHint + '</label><input class="f" style="margin-bottom:0;font-size:13px;padding:8px 9px;width:auto;max-width:78px;text-align:center;" placeholder="bijv. L1-PE" value="' + esc(m.circuit) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'circuit\', this.value)" /></div>';
     h += '<div style="display:grid;grid-template-columns:' + (toonKortsluitstroom ? '1fr 1fr 26px' : '1fr 26px') + ';gap:8px;align-items:end;">';
     var waardeOninput = isRiso
       ? ('updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value); herbeoordeelRisoMetingLive(\'' + v.id + '\', \'' + m.id + '\', this.id, this.selectionStart)')
@@ -2488,9 +2489,9 @@ function metingLijst(v, listKey, titel) {
     var waardeOnblur = isRiso
       ? ('herbeoordeelRisoMeting(\'' + v.id + '\', \'' + m.id + '\')')
       : ('impedantieVeldGewijzigd(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\')');
-    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" id="mwaarde-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="' + waardeOninput + '" /></div>';
+    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" id="mwaarde-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:13px;padding:8px 9px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="' + waardeOninput + '" /></div>';
     if (toonKortsluitstroom) {
-      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" id="mik-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value); herbeoordeelMetingLive(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.id, this.selectionStart)" /></div>';
+      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" id="mik-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:13px;padding:8px 9px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingField(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value); herbeoordeelMetingLive(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.id, this.selectionStart)" /></div>';
     }
     h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeMeting(\'' + v.id + '\', \'' + listKey + '\', \'' + m.id + '\')">&#128465;</button>';
     h += '</div>';
@@ -2513,10 +2514,11 @@ function metingLijst(v, listKey, titel) {
 function metingLijstOmvormer(o, listKey, titel) {
   var toonKortsluitstroom = (listKey === "zsMetingen" || listKey === "ziMetingen");
   var isRiso = listKey === "risoMetingen";
+  var circuitHint = listKey === "zsMetingen" ? " (Zs, foutlusimpedantie)" : listKey === "ziMetingen" ? " (Zi, lusimpedantie)" : "";
   var h = '<div style="margin-top:10px;"><label class="fl" style="min-height:auto;">' + titel + '</label>';
   (o[listKey] || []).forEach(function(m){
     h += '<div class="streng-block" style="margin-top:6px;">';
-    h += '<div><label class="fl" style="min-height:auto;">Circuit (wat wordt gemeten)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;width:auto;max-width:78px;text-align:center;" placeholder="bijv. L1-PE" value="' + esc(m.circuit) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'circuit\', this.value)" /></div>';
+    h += '<div><label class="fl" style="min-height:auto;">Circuit' + circuitHint + '</label><input class="f" style="margin-bottom:0;font-size:13px;padding:8px 9px;width:auto;max-width:78px;text-align:center;" placeholder="bijv. L1-PE" value="' + esc(m.circuit) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'circuit\', this.value)" /></div>';
     h += '<div style="display:grid;grid-template-columns:' + (toonKortsluitstroom ? '1fr 1fr 26px' : '1fr 26px') + ';gap:8px;align-items:end;">';
     var waardeOninputO = isRiso
       ? ('updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\', this.value); herbeoordeelRisoMetingLive(\'' + o.id + '\', \'' + m.id + '\', this.id, this.selectionStart)')
@@ -2524,9 +2526,9 @@ function metingLijstOmvormer(o, listKey, titel) {
     var waardeOnblurO = isRiso
       ? ('herbeoordeelRisoMeting(\'' + o.id + '\', \'' + m.id + '\')')
       : ('impedantieVeldGewijzigd(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'waarde\')');
-    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" id="mwaarde-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="' + waardeOninputO + '" /></div>';
+    h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" id="mwaarde-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:13px;padding:8px 9px;" placeholder="bijv. 0,18" value="' + esc(m.waarde) + '" oninput="' + waardeOninputO + '" /></div>';
     if (toonKortsluitstroom) {
-      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" id="mik-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value); herbeoordeelMetingLive(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.id, this.selectionStart)" /></div>';
+      h += '<div><label class="fl" style="min-height:auto;">Kortsluitstroom (A)</label><input class="f" id="mik-' + m.id + '" inputmode="decimal" autocomplete="off" autocorrect="off" style="margin-bottom:0;font-size:13px;padding:8px 9px;" placeholder="bijv. 2250" value="' + esc(m.kortsluitstroom) + '" oninput="updateMetingFieldOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.value); herbeoordeelMetingLive(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\', \'kortsluitstroom\', this.id, this.selectionStart)" /></div>';
     }
     h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeMetingOmvormer(\'' + o.id + '\', \'' + listKey + '\', \'' + m.id + '\')">&#128465;</button>';
     h += '</div>';
@@ -2620,7 +2622,7 @@ function renderOmvormers() {
         h += '<div class="streng-block" style="margin-top:6px;">';
         h += '<div style="display:grid;grid-template-columns:2fr 1fr 26px;gap:8px;align-items:end;">';
         h += '<div><label class="fl" style="min-height:auto;">Wat gemeten</label><input class="f" style="font-weight:700;margin-bottom:0;" placeholder="bijv. Aardrail - Omvormer" value="' + esc(m.omschrijving) + '" oninput="updateRloMetingField(\'' + o.id + '\', \'' + m.id + '\', \'omschrijving\', this.value)" /></div>';
-        h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" style="margin-bottom:0;font-size:15px;padding:11px 12px;" placeholder="bijv. 0,15" value="' + esc(m.waarde) + '" oninput="updateRloMetingField(\'' + o.id + '\', \'' + m.id + '\', \'waarde\', this.value)" /></div>';
+        h += '<div><label class="fl" style="min-height:auto;">Waarde (&Omega;)</label><input class="f" style="margin-bottom:0;font-size:13px;padding:8px 9px;" placeholder="bijv. 0,15" value="' + esc(m.waarde) + '" oninput="updateRloMetingField(\'' + o.id + '\', \'' + m.id + '\', \'waarde\', this.value)" /></div>';
         h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="removeRloMeting(\'' + o.id + '\', \'' + m.id + '\')">&#128465;</button>';
         h += '</div>';
         h += classRow(m.classificatie, "updateRloMeting('" + o.id + "', '" + m.id + "', {classificatie:");
