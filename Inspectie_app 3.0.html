@@ -80,7 +80,7 @@
   .photo-thumb { width:52px; height:52px; object-fit:cover; border-radius:7px; border:1px solid #E0DDD4; }
   .photo-wrap { position:relative; }
   .photo-wrap button { position:absolute; top:-6px; right:-6px; width:17px; height:17px; border-radius:999px; background:#0B3B3C; color:#fff; border:2px solid #FCFBF9; font-size:10px; line-height:13px; padding:0; cursor:pointer; }
-  .photo-add { font-size:10.5px; border:1.5px dashed #B7B2A5; border-radius:7px; padding:7px 11px; cursor:pointer; color:#4d493f; font-weight:600; white-space:nowrap; }
+  .photo-add { font-size:10.5px; border:1.5px dashed #7FD9CB; border-radius:7px; padding:7px 11px; cursor:pointer; color:#fff; font-weight:600; white-space:nowrap; }
   .photo-add input { display:none; }
 
   .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:8px; flex-wrap:wrap; }
@@ -1441,7 +1441,7 @@ function photoRow(fotos, addCall, removeCallPrefix) {
   return h;
 }
 function projectFotoWidget() {
-  var h = '<div class="section-card"><h2>Projectfoto\'s</h2><p class="subtitle" style="margin-top:-4px;">Algemene foto\'s van de locatie/situatie \u2014 je kunt hier op elk moment tijdens de keuring foto\'s aan toevoegen.</p>';
+  var h = '<div class="section-card"><h2>Projectfoto\'s</h2><p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">Algemene foto\'s van de locatie/situatie \u2014 je kunt hier op elk moment tijdens de keuring foto\'s aan toevoegen.</p>';
   h += '<div class="photo-row" style="margin-top:0;">';
   (state.object.projectFotos || []).forEach(function(src, i){
     h += '<span class="photo-wrap"><img class="photo-thumb" style="width:64px;height:64px;" src="' + src + '" /><button onclick="removeProjectFoto(' + i + ')">&times;</button></span>';
@@ -1733,7 +1733,7 @@ function renderGegevens() {
     '<input type="checkbox" style="width:16px;height:16px;" ' + (o.contactZelfdeAlsInstallatie ? "checked" : "") + ' onchange="setContactZelfdeAlsInstallatie(this.checked)" />' +
     'Zelfde als installatie (naam, telefoon &amp; e-mail)</label>';
   if (o.contactZelfdeAlsInstallatie) {
-    h += '<p class="subtitle" style="margin-top:-4px;">Naam (eigenaar/verantwoordelijke), telefoonnummer en e-mailadres van hierboven (installatie) worden automatisch overgenomen. Vink uit als de contactpersoon afwijkt.</p>';
+    h += '<p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">Naam (eigenaar/verantwoordelijke), telefoonnummer en e-mailadres van hierboven (installatie) worden automatisch overgenomen. Vink uit als de contactpersoon afwijkt.</p>';
   } else {
     h += '<div class="grid3">';
     h += field("contactNaam","Naam",o.contactNaam,"text","","bijv. J. Jansen") + field("contactTel","Telefoonnummer",o.contactTel,"text","","bijv. 06-12345678") + field("contactEmail","E-mailadres",o.contactEmail,"text","","naam@bedrijf.nl");
@@ -1745,7 +1745,7 @@ function renderGegevens() {
     '<input type="checkbox" style="width:16px;height:16px;" ' + (o.eigenaarZelfdeAlsInstallatie ? "checked" : "") + ' onchange="setEigenaarZelfdeAlsInstallatie(this.checked)" />' +
     'Eigenaar/verantwoordelijke is dezelfde als klant/bedrijf (installatie)</label>';
   if (o.eigenaarZelfdeAlsInstallatie) {
-    h += '<p class="subtitle" style="margin-top:-4px;">Naam, adres, postcode, plaats en telefoonnummer van hierboven (installatie) worden automatisch overgenomen. Vink uit als de eigenaar afwijkt.</p>';
+    h += '<p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">Naam, adres, postcode, plaats en telefoonnummer van hierboven (installatie) worden automatisch overgenomen. Vink uit als de eigenaar afwijkt.</p>';
   } else {
     h += '<div class="grid2">';
     h += field("eigenaarNaam","Naam eigenaar",o.eigenaarNaam,"text","","bijv. Voorbeeldbedrijf B.V.") + field("eigenaarTel","Telefoonnummer",o.eigenaarTel,"text","","bijv. 010-1234567");
@@ -1758,7 +1758,7 @@ function renderGegevens() {
     '<input type="checkbox" style="width:16px;height:16px;" ' + (o.eigenaarContactZelfde ? "checked" : "") + ' onchange="setEigenaarContactZelfde(this.checked)" />' +
     'Zelfde als contactpersoon (installatie)</label>';
   if (o.eigenaarContactZelfde) {
-    h += '<p class="subtitle" style="margin-top:-4px;">De contactgegevens van hierboven (installatie) worden automatisch overgenomen. Vink uit als de contactpersoon van de eigenaar afwijkt.</p>';
+    h += '<p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">De contactgegevens van hierboven (installatie) worden automatisch overgenomen. Vink uit als de contactpersoon van de eigenaar afwijkt.</p>';
   } else {
     h += '<div class="grid3">';
     h += field("eigenaarContactNaam","Naam",o.eigenaarContactNaam,"text","","bijv. J. Jansen") + field("eigenaarContactTel","Telefoonnummer",o.eigenaarContactTel,"text","","bijv. 06-12345678") + field("eigenaarContactEmail","E-mailadres",o.eigenaarContactEmail,"text","","naam@bedrijf.nl");
@@ -1770,7 +1770,7 @@ function renderGegevens() {
     '<input type="checkbox" style="width:16px;height:16px;" ' + (o.opdrachtgeverZelfde ? "checked" : "") + ' onchange="setOpdrachtgeverZelfde(this.checked)" />' +
     'Opdrachtgever is dezelfde als eigenaar</label>';
   if (o.opdrachtgeverZelfde) {
-    h += '<p class="subtitle" style="margin-top:-4px;">De gegevens van de eigenaar worden automatisch overgenomen. Vink uit als de opdrachtgever afwijkt.</p>';
+    h += '<p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">De gegevens van de eigenaar worden automatisch overgenomen. Vink uit als de opdrachtgever afwijkt.</p>';
   } else {
     h += '<div class="grid2">';
     h += field("opdrachtgeverNaam","Naam opdrachtgever",o.opdrachtgeverNaam,"text","","bijv. Voorbeeldbedrijf B.V.") + field("opdrachtgeverTel","Telefoonnummer",o.opdrachtgeverTel,"text","","bijv. 010-1234567");
@@ -1785,7 +1785,7 @@ function renderGegevens() {
   h += field("scioscode","SCIOS identificatiecode",o.scioscode,"text","","bijv. ABC-123-45") + field("inspectiedatums","Inspectiedatum(s)",o.inspectiedatums,"text","","bijv. 16-09-2025 - 18-09-2025");
   h += '<div><label class="fl">Datum afronding inspectiewerkzaamheden</label><input class="f" type="date" value="' + esc(o.datumAfronding) + '" onchange="wijzigDatumAfronding(this.value)" /></div>';
   h += '<div><label class="fl">Geldigheidsduur</label><input class="f" value="' + esc(o.geldigheidsduur) + '" onchange="wijzigGeldigheidsduur(this.value)" /></div>';
-  h += '<div><label class="fl">Geldigheidsdatum</label><input class="f" id="geldigheidsdatumVeld" type="date" style="background:#F5F4EF;color:#4d493f;" value="' + esc(o.geldigheidsdatum) + '" oninput="updateObject(\'geldigheidsdatum\', this.value)" /><p class="subtitle" style="margin-top:-8px;">Automatisch berekend als datum afronding + geldigheidsduur. Pas zo nodig handmatig aan.</p></div>';
+  h += '<div><label class="fl">Geldigheidsdatum</label><input class="f" id="geldigheidsdatumVeld" type="date" style="background:#F5F4EF;color:#4d493f;" value="' + esc(o.geldigheidsdatum) + '" oninput="updateObject(\'geldigheidsdatum\', this.value)" /><p class="subtitle" style="margin-top:-8px;color:#DFF3EF;">Automatisch berekend als datum afronding + geldigheidsduur. Pas zo nodig handmatig aan.</p></div>';
   h += '<div><label class="fl">Reden van inspectie</label><select class="mini-select" style="margin-bottom:0;" onchange="updateObject(\'redenInspectie\', this.value); render();">' +
     '<option value="EBI"' + (o.redenInspectie==="EBI"?" selected":"") + '>EBI &ndash; Eerste Bijzondere Inspectie</option>' +
     '<option value="PI"' + (o.redenInspectie==="PI"?" selected":"") + '>PI &ndash; Periodieke Inspectie</option></select></div>';
@@ -1827,7 +1827,7 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
         '<option value="">&mdash; Kies inspecteur &mdash;</option>' +
         o.inspecteurs.map(function(i){ return '<option value="' + i.id + '"' + (huidigeId && huidigeId.id===i.id?' selected':'') + '>' + esc(i.naam || "Naamloos") + (i.certificaatnummer ? " (" + esc(i.certificaatnummer) + ")" : "") + '</option>'; }).join('') +
         '</select></div>';
-      if (o.inspecteurCertificaat) h += '<p class="subtitle" style="margin-top:-8px;">Certificaatnummer: ' + esc(o.inspecteurCertificaat) + '</p>';
+      if (o.inspecteurCertificaat) h += '<p class="subtitle" style="margin-top:-8px;color:#DFF3EF;">Certificaatnummer: ' + esc(o.inspecteurCertificaat) + '</p>';
     } else {
       h += field("inspecteur","Naam inspecteur (opsteller)",o.inspecteur,"text","","bijv. J. de Vries");
     }
@@ -1839,7 +1839,7 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
   }
   h += '</div>';
   if (!isKeuring) {
-    h += '<h3>Inspecteurs</h3><p class="subtitle" style="margin-top:-4px;">Voeg elke inspecteur toe met eigen certificaatnummer en meetinstrumenten. Bij een keuring kies je hieruit &mdash; naam, certificaat én instrumenten worden dan automatisch ingevuld (kalibratiedatum kun je daarna nog aanpassen).</p>';
+    h += '<h3>Inspecteurs</h3><p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">Voeg elke inspecteur toe met eigen certificaatnummer en meetinstrumenten. Bij een keuring kies je hieruit &mdash; naam, certificaat én instrumenten worden dan automatisch ingevuld (kalibratiedatum kun je daarna nog aanpassen).</p>';
     (o.inspecteurs||[]).forEach(function(i){
       h += '<div class="item-block"><div class="item-block-head"><input class="item-title-input" placeholder="Naam inspecteur" value="' + esc(i.naam) + '" oninput="updateInspecteur(\'' + i.id + '\',\'naam\',this.value)" /><button class="del-x" onclick="verwijderInspecteur(\'' + i.id + '\')">&times;</button></div>';
       h += '<div class="grid2">' +
@@ -1863,7 +1863,7 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
     });
     h += '<button class="btn-add" onclick="voegInspecteurToe()">+ Inspecteur toevoegen</button>';
   } else if ((o.inspecteurs||[]).length > 0) {
-    h += '<p class="subtitle" style="margin-top:-6px;">Inspecteur niet in de lijst, of gegevens aanpassen? Ga naar &#9881; Instellingen.</p>';
+    h += '<p class="subtitle" style="margin-top:-6px;color:#DFF3EF;">Inspecteur niet in de lijst, of gegevens aanpassen? Ga naar &#9881; Instellingen.</p>';
   }
   return h;
 }
@@ -1915,13 +1915,13 @@ function renderInstellingen() {
   h += '<h1>Instellingen</h1><p class="subtitle">Deze gegevens worden opgeslagen en automatisch gebruikt bij elke volgende keuring. Alles wordt al automatisch bewaard terwijl je typt &mdash; de knop hieronder is een extra, duidelijke bevestiging.</p>';
   h += '<div class="section-card"><h2>App</h2>';
   h += '<label class="fl">Naam van de app</label><input class="f" value="' + esc(o.appNaam || "Keuringen app") + '" oninput="updateObject(\'appNaam\', this.value); document.title = this.value || \'Keuringen app\';" onchange="render()" />';
-  h += '<p class="subtitle" style="margin-top:-8px;">Verschijnt linksboven in de app en als titel van het browsertabblad.</p>';
+  h += '<p class="subtitle" style="margin-top:-8px;color:#DFF3EF;">Verschijnt linksboven in de app en als titel van het browsertabblad.</p>';
   h += '</div>';
   h += '<div class="section-card"><h2>Inspectiebedrijf &amp; inspecteur</h2>';
   h += renderBedrijfsgegevensVelden(o, false);
   h += '</div>';
   h += '<div class="section-card"><h2>Back-up van instellingen</h2>';
-  h += '<p class="subtitle" style="margin-top:-4px;">Open je dit bestand ooit vanaf een nieuw gedownload exemplaar (bijv. na een update), dan kan de browser je opgeslagen instellingen niet altijd terugvinden. Maak daarom af en toe een back-upbestandje, dat je bij een nieuwe versie meteen weer kunt inladen.</p>';
+  h += '<p class="subtitle" style="margin-top:-4px;color:#DFF3EF;">Open je dit bestand ooit vanaf een nieuw gedownload exemplaar (bijv. na een update), dan kan de browser je opgeslagen instellingen niet altijd terugvinden. Maak daarom af en toe een back-upbestandje, dat je bij een nieuwe versie meteen weer kunt inladen.</p>';
   h += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
   h += '<button class="btn-secondary" style="width:auto;flex:1;" onclick="exporteerInstellingenBackup()">&#11015; Back-up downloaden</button>';
   h += '<label class="btn-secondary" style="width:auto;flex:1;text-align:center;cursor:pointer;">&#11014; Back-up inladen<input type="file" accept="application/json" style="display:none;" onchange="importeerInstellingenBackup(this.files)" /></label>';
@@ -2044,13 +2044,13 @@ function renderNen1010Details() {
   h += '<div class="section-card"><h2>Inspectieomvang</h2>';
   h += '<div><label class="fl">Inspectieomvang</label><select class="mini-select" onchange="updateObject(\'inspectieomvangType\', this.value); render();"><option' + (o.inspectieomvangType==="Volledig"?' selected':'') + '>Volledig</option><option' + (o.inspectieomvangType==="Steekproef"?' selected':'') + '>Steekproef</option></select></div>';
   if (o.inspectieomvangType === "Steekproef") {
-    h += '<p class="subtitle" style="margin-top:6px;">Voer de omvang van de partij (van&ndash;tot) in &mdash; de steekproefgrootte en acceptatie-/afwijzingscriteria (conform NEN 3140 Bijlage I) worden automatisch bepaald.</p>';
+    h += '<p class="subtitle" style="margin-top:6px;color:#DFF3EF;">Voer de omvang van de partij (van&ndash;tot) in &mdash; de steekproefgrootte en acceptatie-/afwijzingscriteria (conform NEN 3140 Bijlage I) worden automatisch bepaald.</p>';
     (o.steekproeven||[]).forEach(function(s, idx){
       var r = nen1010GeldigCode(s.van, s.tot);
       h += '<div class="item-block"><div class="item-block-head"><input class="item-title-input" placeholder="Onderdeel (bijv. Contactdoos 1)" value="' + esc(s.onderdeel) + '" oninput="updateSteekproef(\'' + s.id + '\',\'onderdeel\',this.value)" /><button class="del-x" onclick="verwijderSteekproef(\'' + s.id + '\')">&times;</button></div>';
       h += '<div class="grid3"><div><label class="fl">Partij van</label><input class="f" value="' + esc(s.van) + '" oninput="updateSteekproef(\'' + s.id + '\',\'van\',this.value)" onblur="render();" /></div>';
       h += '<div><label class="fl">Partij tot</label><input class="f" value="' + esc(s.tot) + '" oninput="updateSteekproef(\'' + s.id + '\',\'tot\',this.value)" onblur="render();" /></div></div>';
-      h += r ? '<p class="subtitle" style="margin-top:4px;">Code ' + r.code + ' &mdash; steekproef van ' + r.steekproef + ', max. ' + r.g + ' constateringen voor acceptatie en min. ' + r.f + ' voor afwijzing van de gehele partij.</p>' : '<p class="subtitle" style="margin-top:4px;color:#B23A2F;">Geen exacte match in de standaardtabel &mdash; vul een bereik in zoals 16 tot 25.</p>';
+      h += r ? '<p class="subtitle" style="margin-top:4px;color:#DFF3EF;">Code ' + r.code + ' &mdash; steekproef van ' + r.steekproef + ', max. ' + r.g + ' constateringen voor acceptatie en min. ' + r.f + ' voor afwijzing van de gehele partij.</p>' : '<p class="subtitle" style="margin-top:4px;color:#B23A2F;">Geen exacte match in de standaardtabel &mdash; vul een bereik in zoals 16 tot 25.</p>';
       h += '</div>';
     });
     h += '<button class="btn-add" onclick="voegSteekproefToe()">+ Steekproef toevoegen</button>';
@@ -2126,7 +2126,7 @@ function renderControlepuntenStap() {
   var groepen = state.type === "nen1010" ? NEN1010_CONTROLEPUNTEN_GROEPEN : CONTROLEPUNTEN_GROEPEN;
   var lijst = state.type === "nen1010" ? o.controlepuntenNen1010 : o.controlepunten;
   var opties = state.type === "nen1010" ? NEN1010_CONTROLEPUNT_OPTIES : CONTROLEPUNT_OPTIES;
-  h += '<p class="subtitle">Beoordeling van de vaste controlepunten. Standaard "' + opties[0] + '" &mdash; wijzig waar van toepassing.</p>';
+  h += '<p class="subtitle" style="color:#DFF3EF;">Beoordeling van de vaste controlepunten. Standaard "' + opties[0] + '" &mdash; wijzig waar van toepassing.</p>';
   var offset = 0;
   groepen.forEach(function(g){
     h += '<div class="section-card"><h2 style="font-size:13px;">' + esc(g.titel) + '</h2>';
@@ -2242,7 +2242,7 @@ function typeKarakteristiekVelden(soort, obj) {
 function renderVerdelers() {
   var h = '<button class="backbtn" onclick="goPrev()">&larr; Terug</button>';
   h += projectFotoWidget();
-  h += '<div class="section-card"><h2>Verdelers</h2><p class="subtitle">Voeg elke verdeler / groepenkast toe die je hebt geïnspecteerd.</p>';
+  h += '<div class="section-card"><h2>Verdelers</h2><p class="subtitle" style="color:#DFF3EF;">Voeg elke verdeler / groepenkast toe die je hebt geïnspecteerd.</p>';
   if (state.verdelers.length === 0) h += '<div class="empty-state">Nog geen verdelers toegevoegd.</div>';
   state.verdelers.forEach(function(v, idx){
     h += '<div class="item-block">';
@@ -2284,7 +2284,7 @@ function renderVerdelers() {
       h += risoBeoordelingBlok("verdeler", v);
       h += metingLijst(v, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     }
-    h += '<h3>RLo-metingen (doorgangsweerstand)</h3><p class="subtitle" style="margin-top:-6px;">Vrij in te vullen &mdash; voeg toe wat je gemeten hebt.</p>';
+    h += '<h3>RLo-metingen (doorgangsweerstand)</h3><p class="subtitle" style="margin-top:-6px;color:#DFF3EF;">Vrij in te vullen &mdash; voeg toe wat je gemeten hebt.</p>';
     (v.rloMetingen||[]).forEach(function(m){
       h += '<div class="streng-block" style="margin-top:6px;">';
       h += '<div style="display:grid;grid-template-columns:2fr 1fr 26px;gap:8px;align-items:end;">';
@@ -2460,7 +2460,7 @@ function metingLijstOmvormer(o, listKey, titel) {
 function renderOmvormers() {
   var h = '<button class="backbtn" onclick="goPrev()">&larr; Terug</button>';
   h += projectFotoWidget();
-  h += '<div class="section-card"><h2>Omvormers</h2><p class="subtitle">' + (state.type === "scope12" ? "Voeg per omvormer de gegevens en eventueel strengen toe met Voc, Isc, Riso en polariteitsmeting." : "Voeg per omvormer/apparaat de gegevens en RLo-metingen toe.") + '</p>';
+  h += '<div class="section-card"><h2>Omvormers</h2><p class="subtitle" style="color:#DFF3EF;">' + (state.type === "scope12" ? "Voeg per omvormer de gegevens en eventueel strengen toe met Voc, Isc, Riso en polariteitsmeting." : "Voeg per omvormer/apparaat de gegevens en RLo-metingen toe.") + '</p>';
   if (state.omvormers.length === 0) h += '<div class="empty-state">Nog geen omvormers toegevoegd.</div>';
   state.omvormers.forEach(function(o, idx){
     h += '<div class="item-block">';
@@ -2593,7 +2593,7 @@ function renderChecklist() {
     h += '</div>';
   }
 
-  h += '<div class="section-card"><h2>Constateringen' + (isExactRapport ? ' &mdash; overige installatiedelen' : ' (vrij)') + '</h2><p class="subtitle">Voeg zoveel constateringen toe als je nodig hebt, elk met eigen uitleg en foto\'s.</p>';
+  h += '<div class="section-card"><h2>Constateringen' + (isExactRapport ? ' &mdash; overige installatiedelen' : ' (vrij)') + '</h2><p class="subtitle" style="color:#DFF3EF;">Voeg zoveel constateringen toe als je nodig hebt, elk met eigen uitleg en foto\'s.</p>';
   state.constateringen.forEach(function(c, idx){
     h += '<div class="item-block">';
     h += '<div class="item-block-head"><span class="item-num">' + (idx+1) + '.</span>' +
