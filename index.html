@@ -456,7 +456,7 @@ function laadBedrijfsgegevensUitCloud(callback) {
 function persistDraft() {
   try {
     if (state.type) {
-      localStorage.setItem(STORAGE_DRAFT, JSON.stringify({ view: state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen, savedId: state.savedId }));
+      localStorage.setItem(STORAGE_DRAFT, JSON.stringify({ view: state.view, laatsteWerkStap: state.laatsteWerkStap, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen, savedId: state.savedId }));
     } else { localStorage.removeItem(STORAGE_DRAFT); }
   } catch(e) {
     // Opslagruimte van de browser vol (bijv. door veel foto's) — dit gebeurt bij elke
@@ -717,6 +717,7 @@ function newStreng() { return { id: uid(), naam: "", aantalPanelen: "", voc: "",
 
 var state = {
   view: "auth-loading", // auth-loading -> auth -> kies -> overzicht -> gegevens -> verdelers -> omvormers(alleen scope12) -> checklist -> conclusie -> rapport
+  laatsteWerkStap: "gegevens",
   type: null,
   object: emptyObject(),
   items: [],
@@ -758,7 +759,7 @@ function goPrev() { var o = getStepOrder(); var i = o.indexOf(state.view); if (i
 function setState(patch) {
   Object.assign(state, patch);
   if (patch.view && getStepOrder().indexOf(patch.view) !== -1 && patch.view !== "rapport") {
-    state.object.laatsteWerkStap = patch.view;
+    state.laatsteWerkStap = patch.view;
   }
   persistDraft();
   render();
@@ -976,7 +977,9 @@ function renderBeheer() {
 function ververConceptUitDraft() {
   var draft = loadDraft();
   if (draft && draft.type) {
-    state.view = draft.view || "gegevens";
+    var hersteldeStap = draft.laatsteWerkStap || draft.view || "gegevens";
+    state.view = hersteldeStap;
+    state.laatsteWerkStap = hersteldeStap;
     state.type = draft.type; state.object = Object.assign(state.object, draft.object); state.items = draft.items;
     state.verdelers = draft.verdelers || []; state.omvormers = draft.omvormers || []; state.constateringen = draft.constateringen || []; state.savedId = draft.savedId || null;
     normalizeState();
@@ -1208,6 +1211,7 @@ function startType(key) {
   state.omvormers = [];
   state.constateringen = [];
   state.savedId = null;
+  state.laatsteWerkStap = "gegevens";
   setState({ view: "gegevens" });
 }
 function addPunt() { state.items.push({ id: uid(), omschrijving: "", classificatie: "goed", opmerking: "", norm: "", fotos: [] }); persistDraft(); render(); }
@@ -1335,7 +1339,7 @@ function removeStrengPhoto(omvormerId, strengId, idx) { var o = state.omvormers.
 // Opslag
 function saveKeuring() {
   var list = loadSaved();
-  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.object.laatsteWerkStap || state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.laatsteWerkStap || state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   var lokaalGelukt = persistSaved(list); // lokale back-up
@@ -1481,6 +1485,7 @@ function openSaved(id) {
   normalizeState();
   var stapOrder = getStepOrder();
   var doelStap = (r.view && stapOrder.indexOf(r.view) !== -1) ? r.view : "gegevens";
+  state.laatsteWerkStap = doelStap;
   setState({ view: doelStap });
 }
 function deleteSaved(id, ev) {
@@ -1666,7 +1671,7 @@ function renderSteps() {
 function slaVoortgangOp() {
   persistDraft();
   var list = loadSaved();
-  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.object.laatsteWerkStap || state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.laatsteWerkStap || state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   persistSaved(list);
