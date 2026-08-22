@@ -755,7 +755,14 @@ function getStepOrder() {
 function goNext() { var o = getStepOrder(); var i = o.indexOf(state.view); if (i < o.length-1) setState({view:o[i+1]}); }
 function goPrev() { var o = getStepOrder(); var i = o.indexOf(state.view); if (i === 0) setState({view:"kies"}); else if (i > 0) setState({view:o[i-1]}); }
 
-function setState(patch) { Object.assign(state, patch); persistDraft(); render(); }
+function setState(patch) {
+  Object.assign(state, patch);
+  if (patch.view && getStepOrder().indexOf(patch.view) !== -1 && patch.view !== "rapport") {
+    state.object.laatsteWerkStap = patch.view;
+  }
+  persistDraft();
+  render();
+}
 
 // ---------------------------------------------------------------------
 // EIGEN BEVESTIGINGSSCHERM (i.p.v. native confirm(), dat in sommige
@@ -1328,7 +1335,7 @@ function removeStrengPhoto(omvormerId, strengId, idx) { var o = state.omvormers.
 // Opslag
 function saveKeuring() {
   var list = loadSaved();
-  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.object.laatsteWerkStap || state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   var lokaalGelukt = persistSaved(list); // lokale back-up
@@ -1659,7 +1666,7 @@ function renderSteps() {
 function slaVoortgangOp() {
   persistDraft();
   var list = loadSaved();
-  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.object.laatsteWerkStap || state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   persistSaved(list);
