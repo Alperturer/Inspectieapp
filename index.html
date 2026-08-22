@@ -1356,7 +1356,7 @@ function saveKeuring() {
       id: record.id, user_id: state.user.id, type: record.type,
       klant: (record.object && record.object.klant) || "",
       datum: (record.object && record.object.datum) || null,
-      data: { object: record.object, items: record.items, verdelers: record.verdelers, omvormers: record.omvormers, constateringen: record.constateringen },
+      data: { object: record.object, items: record.items, verdelers: record.verdelers, omvormers: record.omvormers, constateringen: record.constateringen, laatsteWerkStap: record.view },
       created_at: new Date().toISOString(),
     };
     supabaseClient.from("keuringen").upsert(rij).then(function(res) {
@@ -1378,7 +1378,7 @@ function laadCloudKeuringen(callback) {
     state.cloudLoading = false;
     if (!res.error && res.data) {
       state.cloudKeuringen = res.data.map(function(rij){
-        return { id: rij.id, type: rij.type, object: rij.data.object, items: rij.data.items, verdelers: rij.data.verdelers || [], omvormers: rij.data.omvormers || [], constateringen: rij.data.constateringen || [] };
+        return { id: rij.id, type: rij.type, object: rij.data.object, items: rij.data.items, verdelers: rij.data.verdelers || [], omvormers: rij.data.omvormers || [], constateringen: rij.data.constateringen || [], view: rij.data.laatsteWerkStap || "" };
       });
     }
     render();
@@ -1684,7 +1684,7 @@ function slaVoortgangOp() {
       id: record.id, user_id: state.user.id, type: record.type,
       klant: (record.object && record.object.klant) || "",
       datum: (record.object && record.object.datum) || null,
-      data: { object: record.object, items: record.items, verdelers: record.verdelers, omvormers: record.omvormers, constateringen: record.constateringen },
+      data: { object: record.object, items: record.items, verdelers: record.verdelers, omvormers: record.omvormers, constateringen: record.constateringen, laatsteWerkStap: record.view },
       created_at: new Date().toISOString(),
     };
     supabaseClient.from("keuringen").upsert(rij).then(function(res) {
