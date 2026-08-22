@@ -29,6 +29,7 @@
   .header-badge { font-size:11px; color:#B8E0D8; }
   .header-right { display:flex; align-items:center; gap:10px; }
   .overzicht-link { font-size:11.5px; font-weight:700; color:#4d493f; background:#fff; border:1px solid #E0DDD4; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  .overzicht-link.actief { background:#0B3B3C; color:#fff; border-color:#0B3B3C; }
   .steps { display:flex; gap:4px; margin-bottom:16px; }
   .step-dot { flex:1; height:4px; border-radius:99px; background:#E0DDD4; }
   .step-dot.done { background:#0D9488; }
@@ -1495,10 +1496,10 @@ function render() {
     html += '<div class="header"><div class="header-title" onclick="nieuweKeuring()">⚡ ' + esc(state.object.appNaam || "Keuringen app") + '</div>' +
       '<div class="header-right">' + (state.type ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
       (state.syncStatus === "syncing" ? '<span class="sync-badge syncing">Opslaan...</span>' : state.syncStatus === "opgeslagen" ? '<span class="sync-badge online">&#9729; Opgeslagen</span>' : '') +
-      '<button class="overzicht-link" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen();">Opgeslagen (' + saved.length + ')</button>' +
-      '<button class="overzicht-link" onclick="setState({view:\'klanten\'})">Klanten (' + state.klanten.length + ')</button>' +
-      (state.isAdmin ? '<button class="overzicht-link" onclick="setState({view:\'beheer\'}); laadAlleLicenties();">&#128274; Beheer</button>' : '') +
-      '<button class="overzicht-link" onclick="setState({view:\'instellingen\'})">&#9881; Instellingen</button>' +
+      '<button class="overzicht-link' + (state.view === "overzicht" ? " actief" : "") + '" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen();">Opgeslagen (' + saved.length + ')</button>' +
+      '<button class="overzicht-link' + (state.view === "klanten" ? " actief" : "") + '" onclick="setState({view:\'klanten\'})">Klanten (' + state.klanten.length + ')</button>' +
+      (state.isAdmin ? '<button class="overzicht-link' + (state.view === "beheer" ? " actief" : "") + '" onclick="setState({view:\'beheer\'}); laadAlleLicenties();">&#128274; Beheer</button>' : '') +
+      '<button class="overzicht-link' + (state.view === "instellingen" ? " actief" : "") + '" onclick="setState({view:\'instellingen\'})">&#9881; Instellingen</button>' +
       (state.user ? '<button class="overzicht-link" onclick="doLogout()">Uitloggen</button>' : '') +
       '</div></div>';
 
