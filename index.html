@@ -1328,7 +1328,7 @@ function removeStrengPhoto(omvormerId, strengId, idx) { var o = state.omvormers.
 // Opslag
 function saveKeuring() {
   var list = loadSaved();
-  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   var lokaalGelukt = persistSaved(list); // lokale back-up
@@ -1472,7 +1472,9 @@ function openSaved(id) {
   state.type = r.type; state.object = r.object; state.items = r.items;
   state.verdelers = r.verdelers || []; state.omvormers = r.omvormers || []; state.constateringen = r.constateringen || []; state.savedId = r.id;
   normalizeState();
-  setState({ view: "rapport" });
+  var stapOrder = getStepOrder();
+  var doelStap = (r.view && stapOrder.indexOf(r.view) !== -1) ? r.view : "gegevens";
+  setState({ view: doelStap });
 }
 function deleteSaved(id, ev) {
   if (ev) ev.stopPropagation();
@@ -1657,7 +1659,7 @@ function renderSteps() {
 function slaVoortgangOp() {
   persistDraft();
   var list = loadSaved();
-  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
+  var record = { id: state.savedId || uid(), savedAt: new Date().toISOString(), view: state.view, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen };
   var idx = list.findIndex(function(r){return r.id===record.id;});
   if (idx >= 0) list[idx] = record; else list.unshift(record);
   persistSaved(list);
