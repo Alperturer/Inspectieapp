@@ -1580,7 +1580,7 @@ function render() {
     var html = '<div class="wrap">';
     html += '<div class="header"><div class="header-title" onclick="nieuweKeuring()">' + (state.object.logoData ? '<img src="' + state.object.logoData + '" style="height:32px;max-width:160px;object-fit:contain;vertical-align:middle;" />' : '&#9889; ' + esc(state.object.appNaam || "Keuringen app")) + '</div>' +
       '<div class="header-right">' + (state.type ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
-      (state.syncStatus === "syncing" ? '<span class="sync-badge syncing">Opslaan...</span>' : state.syncStatus === "opgeslagen" ? '<span class="sync-badge online">&#9729; Opgeslagen</span>' : '') +
+      '' +
       '<button class="overzicht-link' + (state.view === "kies" ? " actief" : "") + '" onclick="setState({view:\'kies\'})">Dashboard</button>' +
       '<button class="overzicht-link' + (state.view === "overzicht" ? " actief" : "") + '" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen();">Opgeslagen (' + saved.length + ')</button>' +
       '<button class="overzicht-link' + (state.view === "klanten" ? " actief" : "") + '" onclick="setState({view:\'klanten\'})">Klanten (' + state.klanten.length + ')</button>' +
