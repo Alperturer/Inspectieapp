@@ -860,15 +860,75 @@ function wijzigLicentieStatus(id, nieuweStatus) {
 var LICENTIE_LABEL = { actief: "Actief", inactief: "Wacht op goedkeuring", opgezegd: "Opgezegd", betaling_mislukt: "Betaling mislukt" };
 var LICENTIE_KLEUR = { actief: "#2F7D3A", inactief: "#D9B400", opgezegd: "#8A8578", betaling_mislukt: "#DC3B2E" };
 // ---------------------------------------------------------------------
-// PDF RAPPORTEN — automatische achtergrond-backup van elk geëxporteerd rapport
-// (puur uploaden; geen apart scherm om ze te bekijken/downloaden/verwijderen)
+// PDF RAPPORTEN — elk geëxporteerd rapport wordt automatisch bewaard in de cloud,
+// en is hier terug te vinden, downloaden of te delen — op elk toestel.
 // ---------------------------------------------------------------------
-// Wordt aangeroepen vanuit het losse rapport-venster zodra een PDF is gegenereerd —
-// slaat er stilletjes een kopie van op in de cloud als backup.
 function ontvangGegenereerdRapport(bestandsnaam, blob) {
   if (!supabaseClient || !state.user) return;
   var pad = state.user.id + "/" + bestandsnaam;
-  supabaseClient.storage.from("rapporten").upload(pad, blob, { upsert: true, contentType: "application/pdf" }).catch(function(){});
+  supabaseClient.storage.from("rapporten").upload(pad, blob, { upsert: true, contentType: "application/pdf" }).then(function(res){
+    if (!res.error && state.view === "rapporten") laadOpgeslagenRapporten();
+  }).catch(function(){});
+}
+function laadOpgeslagenRapporten() {
+  if (!supabaseClient || !state.user) { state.opgeslagenRapporten = []; render(); return; }
+  state.rapportenLoading = true; render();
+  supabaseClient.storage.from("rapporten").list(state.user.id, { sortBy: { column: "created_at", order: "desc" } }).then(function(res){
+    state.rapportenLoading = false;
+    state.opgeslagenRapporten = (!res.error && res.data) ? res.data.filter(function(f){ return f.name; }) : [];
+    render();
+  }).catch(function(){ state.rapportenLoading = false; state.opgeslagenRapporten = []; render(); });
+}
+function downloadOpgeslagenRapport(naam) {
+  var pad = state.user.id + "/" + naam;
+  supabaseClient.storage.from("rapporten").download(pad).then(function(res){
+    if (res.error || !res.data) { alert("Downloaden mislukt: " + (res.error ? res.error.message : "onbekende fout")); return; }
+    var url = URL.createObjectURL(res.data);
+    var a = document.createElement("a");
+    a.href = url; a.download = naam;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }).catch(function(err){ alert("Downloaden mislukt: " + err.message); });
+}
+function verstuurOpgeslagenRapportViaMail(naam) {
+  var pad = state.user.id + "/" + naam;
+  supabaseClient.storage.from("rapporten").download(pad).then(function(res){
+    if (res.error || !res.data) { alert("Ophalen mislukt: " + (res.error ? res.error.message : "onbekende fout")); return; }
+    if (!navigator.share) { alert("Je toestel/browser ondersteunt geen deelfunctie. Gebruik de downloadknop en verstuur het bestand handmatig."); return; }
+    var file = new File([res.data], naam, { type: "application/pdf" });
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) { alert("Bijlages delen wordt hier niet ondersteund."); return; }
+    navigator.share({ files: [file], title: naam }).catch(function(){});
+  }).catch(function(err){ alert("Ophalen mislukt: " + err.message); });
+}
+function verwijderOpgeslagenRapport(naam) {
+  var typed = prompt('Dit verwijdert "' + naam + '" definitief en onherstelbaar uit de cloud.\n\nTyp ter bevestiging het woord VERWIJDER:');
+  if (typed !== "VERWIJDER") { if (typed !== null) alert("Niet verwijderd \u2014 je moest exact 'VERWIJDER' typen."); return; }
+  var pad = state.user.id + "/" + naam;
+  supabaseClient.storage.from("rapporten").remove([pad]).then(function(res){
+    if (res.error) { alert("Verwijderen mislukt: " + res.error.message); return; }
+    laadOpgeslagenRapporten();
+  }).catch(function(err){ alert("Verwijderen mislukt: " + err.message); });
+}
+function renderRapporten() {
+  var h = '<button class="backbtn" onclick="setState({view:\'kies\'})">&larr; Terug</button>';
+  h += '<h1>PDF Rapporten</h1>';
+  h += '<p class="subtitle">Elk rapport dat je exporteert, wordt hier automatisch bewaard \u2014 op elk toestel terug te vinden, te downloaden of direct te versturen.</p>';
+  if (state.rapportenLoading) { h += '<div class="empty-state">Laden&hellip;</div>'; return h; }
+  var lijst = state.opgeslagenRapporten || [];
+  if (lijst.length === 0) { h += '<div class="empty-state">Nog geen rapporten opgeslagen. Exporteer een rapport vanuit een keuring \u2014 die verschijnt daarna hier.</div>'; return h; }
+  h += '<div class="section-card">';
+  lijst.forEach(function(f){
+    var datum = f.created_at ? new Date(f.created_at).toLocaleString("nl-NL") : "";
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.2);">';
+    h += '<div><div style="font-weight:700;color:#fff;">' + esc(f.name) + '</div><div style="font-size:11.5px;color:#DFF3EF;">' + esc(datum) + '</div></div>';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    h += '<button class="btn-secondary" style="width:auto;padding:8px 14px;" onclick="downloadOpgeslagenRapport(\'' + esc(f.name).replace(/'/g,"\\'") + '\')">&#128190; Download</button>';
+    h += '<button class="btn-secondary" style="width:auto;padding:8px 14px;" onclick="verstuurOpgeslagenRapportViaMail(\'' + esc(f.name).replace(/'/g,"\\'") + '\')">&#128231; Mail</button>';
+    h += '<button class="del-x" onclick="verwijderOpgeslagenRapport(\'' + esc(f.name).replace(/'/g,"\\'") + '\')">&#128465;</button>';
+    h += '</div></div>';
+  });
+  h += '</div>';
+  return h;
 }
 function renderBeheer() {
   var h = '<button class="backbtn" onclick="setState({view:\'kies\'})">&larr; Terug</button>';
@@ -3654,7 +3714,7 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '<span style="flex-shrink:0;" id="btnRow">' +
     '<button id="printBtn" onclick="window.print()" disabled style="background:#8fa39f;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;">&#128424; Print / Opslaan als PDF</button>' +
     '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:#fff;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Downloadt de PDF; met &#x27;altijd vragen waar te bewaren&#x27; aan in je browserinstellingen kies je zelf een map">&#128190; PDF downloaden</button>' +
-    '<button id="mailBtn" onclick="verstuurAlsMail()" disabled style="background:#fff;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Opent het deelmenu van je toestel, met de PDF als bijlage">&#128231; Verstuur via mail</button>' +
+    '<button id="mailBtn" onclick="verstuurAlsMail()" disabled style="background:#E8952E;color:#fff;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Opent het deelmenu van je toestel, met de PDF als bijlage">&#128231; Verstuur via mail</button>' +
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
     '<div id="pagedjs-target"></div>' +
     '<script>' +
@@ -3714,9 +3774,9 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '      plaatsKopEnVoettekst(flow);' +
     '      var eBtn = document.getElementById("exportBtn"); eBtn.disabled = false; eBtn.style.background = "#fff"; eBtn.style.cursor = "pointer";' +
     '      var pBtn = document.getElementById("printBtn"); pBtn.disabled = false; pBtn.style.background = "#fff"; pBtn.style.cursor = "pointer";' +
-    '      var mBtn = document.getElementById("mailBtn"); if (navigator.share) { mBtn.disabled = false; mBtn.style.background = "#fff"; mBtn.style.cursor = "pointer"; } else { mBtn.style.display = "none"; }' +
+    '      var mBtn = document.getElementById("mailBtn"); if (navigator.share) { mBtn.disabled = false; mBtn.style.cursor = "pointer"; } else { mBtn.style.display = "none"; }' +
     '      document.getElementById("statusLabel").innerHTML = "Klaar — " + flow.total + " pagina\\u0027s. Klik op \\u0027Print / Opslaan als PDF\\u0027 &rarr; kies bij Bestemming \\u0027Opslaan als PDF\\u0027 &rarr; klik Opslaan &rarr; kies daar zelf je map.";' +
-    '      alert("Het rapport staat nu klaar (" + flow.total + " pagina\\u0027s)!\\n\\nZo sla je het op:\\n1. Klik op de knop \\u0027Print / Opslaan als PDF\\u0027\\n2. Kies in dat venster bij \\u0027Bestemming\\u0027 de optie \\u0027Opslaan als PDF\\u0027\\n3. Klik op \\u0027Opslaan\\u0027\\n4. Nu opent het venster waar je zelf een map kiest.");' +
+    '      alert("Het rapport staat nu klaar (" + flow.total + " pagina\\u0027s)!\\n\\nBEN JE OP JE TELEFOON EN WIL JE HET MAILEN?\\nKlik op de knop \\u0027Verstuur via mail\\u0027 hierboven \\u2014 die opent direct het deelmenu met de PDF als bijlage.\\n\\nWil je het alleen opslaan?\\n1. Klik op \\u0027Print / Opslaan als PDF\\u0027\\n2. Kies bij \\u0027Bestemming\\u0027 de optie \\u0027Opslaan als PDF\\u0027\\n3. Klik op \\u0027Opslaan\\u0027");' +
     '    }).catch(function(err){' +
     '      toonEenvoudigeFallback("opmaken mislukt");' +
     '      alert("Er ging iets mis bij het opmaken van het rapport: " + (err && err.message ? err.message : err) + "\\n\\nGebruik toch de knop \\u0027Print / Opslaan als PDF\\u0027, die werkt nog steeds.");' +
