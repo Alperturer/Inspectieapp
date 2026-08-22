@@ -3780,8 +3780,7 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     // dat voelt sneller, en op telefoons is het bovendien nodig: het delen-venster
     // mag alleen direct na een klik geopend worden, niet pas na een paar seconden wachten.
     '      getPdf(document.getElementById("statusLabel"));' +
-    '      document.getElementById("statusLabel").innerHTML = "Klaar — " + flow.total + " pagina\\u0027s. Klik op \\u0027Print / Opslaan als PDF\\u0027 &rarr; kies bij Bestemming \\u0027Opslaan als PDF\\u0027 &rarr; klik Opslaan &rarr; kies daar zelf je map.";' +
-    '      alert("Het rapport staat nu klaar (" + flow.total + " pagina\\u0027s)!\\n\\nBEN JE OP JE TELEFOON EN WIL JE HET MAILEN?\\nKlik op de knop \\u0027Verstuur via mail\\u0027 hierboven. Werkt het deelmenu van je toestel niet, dan wordt de PDF gedownload en je mailprogramma geopend \\u2014 dan hoef je het bestand alleen nog toe te voegen als bijlage.\\n\\nWil je het alleen opslaan?\\n1. Klik op \\u0027Print / Opslaan als PDF\\u0027\\n2. Kies bij \\u0027Bestemming\\u0027 de optie \\u0027Opslaan als PDF\\u0027\\n3. Klik op \\u0027Opslaan\\u0027");' +
+    '      document.getElementById("statusLabel").innerHTML = "Klaar — " + flow.total + " pagina\\u0027s. Tik op \\u0027Verstuur via mail\\u0027 voor Mail/WhatsApp/etc., of op \\u0027PDF downloaden\\u0027.";' +
     '    }).catch(function(err){' +
     '      toonEenvoudigeFallback("opmaken mislukt");' +
     '      alert("Er ging iets mis bij het opmaken van het rapport: " + (err && err.message ? err.message : err) + "\\n\\nGebruik toch de knop \\u0027Print / Opslaan als PDF\\u0027, die werkt nog steeds.");' +
@@ -3869,12 +3868,15 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '}' +
     '<\/script>' +
     '</body></html>';
-  // Betrouwbaarder dan document.write() (verouderd en door sommige browsers
-  // deels geblokkeerd voor asynchroon geladen content): het volledige
-  // rapport wordt als Blob-URL geladen, zoals een normale webpagina.
-  var htmlBlob = new Blob([doc], { type: "text/html" });
-  var htmlUrl = URL.createObjectURL(htmlBlob);
-  win.location.href = htmlUrl;
+  // BELANGRIJK: hier bewust GEEN Blob-URL meer gebruiken om het venster te vullen.
+  // Een blob:-URL krijgt in sommige browsers (met name Safari op iPhone) een eigen,
+  // beperkte oorsprong — daardoor weigert de deelfunctie (navigator.share, ofwel het
+  // "Verstuur via mail"-deelmenu naar Mail/WhatsApp/etc.) om te werken, ook al staat
+  // de PDF verder prima klaar. Door direct in het al-geopende venster te schrijven,
+  // houdt dat venster dezelfde oorsprong/rechten als de hoofdapp, en werkt delen wél.
+  win.document.open();
+  win.document.write(doc);
+  win.document.close();
 }
 
 function openScope12Rapport() {
