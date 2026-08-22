@@ -60,6 +60,10 @@
   .item-omschrijving { flex:1; border:none; background:transparent; font-size:13.5px; font-weight:600; outline:none; padding:8px 0; }
   .item-title-input { flex:1; border:none; background:transparent; font-size:14px; font-weight:800; outline:none; padding:4px 0; color:#fff; }
   .item-title-input::placeholder { color:#B8E0D8; }
+  .item-block-light { color:#0B2E2D; }
+  .item-block-light .item-title-input, .item-block-light label.fl { color:#0B2E2D; }
+  .item-block-light .item-title-input::placeholder { color:#8A8578; }
+  .item-block-light .item-num { color:#6b6659; }
   .del-x { background:none; border:none; color:#B23A2F; font-size:17px; cursor:pointer; padding:4px 6px; line-height:1; }
 
   .btn-primary { background:#0B3B3C; color:#fff; border:none; border-radius:9px; padding:12px 16px; font-size:13.5px; font-weight:700; cursor:pointer; width:100%; }
@@ -1913,7 +1917,7 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
         '</div>';
       h += '<h3 style="margin-top:4px;">Meetinstrumenten van ' + esc(i.naam || "deze inspecteur") + '</h3>';
       (i.meetinstrumenten||[]).forEach(function(m){
-        h += '<div class="item-block" style="background:#F4F7F7;"><div class="item-block-head"><input class="item-title-input" placeholder="Merk (bijv. Nieaf Smitt)" value="' + esc(m.merk) + '" oninput="updateInspecteurMeetinstrument(\'' + i.id + '\',\'' + m.id + '\',\'merk\',this.value)" /><button class="del-x" onclick="verwijderInspecteurMeetinstrument(\'' + i.id + '\',\'' + m.id + '\')">&times;</button></div>';
+        h += '<div class="item-block item-block-light" style="background:#F4F7F7;"><div class="item-block-head"><input class="item-title-input" placeholder="Merk (bijv. Nieaf Smitt)" value="' + esc(m.merk) + '" oninput="updateInspecteurMeetinstrument(\'' + i.id + '\',\'' + m.id + '\',\'merk\',this.value)" /><button class="del-x" onclick="verwijderInspecteurMeetinstrument(\'' + i.id + '\',\'' + m.id + '\')">&times;</button></div>';
         h += '<div class="grid2">' +
           '<div><label class="fl">Type</label><input class="f" placeholder="bijv. Instaltest XB" value="' + esc(m.type) + '" oninput="updateInspecteurMeetinstrument(\'' + i.id + '\',\'' + m.id + '\',\'type\',this.value)" /></div>' +
           '<div><label class="fl">Functie</label><select class="f" onchange="updateInspecteurMeetinstrument(\'' + i.id + '\',\'' + m.id + '\',\'functie\',this.value)">' +
@@ -2239,7 +2243,15 @@ function voegNormToe(regel) {
   render();
 }
 function field(key, label, val, type, cls, placeholder) {
-  return '<div class="' + cls + '"><label class="fl">' + label + '</label><input class="f" type="' + type + '" placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateObject(\'' + key + '\', this.value)" /></div>';
+  var lk = key.toLowerCase();
+  var extraAttrs = "";
+  if (type === "text") {
+    if (lk.indexOf("email") !== -1) { type = "email"; extraAttrs = ' autocapitalize="none" autocorrect="off"'; }
+    else if (lk.indexOf("tel") !== -1 || lk.indexOf("phone") !== -1) { type = "tel"; }
+    else if (lk.indexOf("postcode") !== -1) { extraAttrs = ' autocapitalize="characters"'; }
+    else if (lk.indexOf("bagid") !== -1 || lk === "imax" || lk.indexOf("vermogen") !== -1 || lk.indexOf("aantal") !== -1 || lk.indexOf("groepen") !== -1) { extraAttrs = ' inputmode="numeric"'; }
+  }
+  return '<div class="' + cls + '"><label class="fl">' + label + '</label><input class="f" type="' + type + '"' + extraAttrs + ' placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateObject(\'' + key + '\', this.value)" /></div>';
 }
 // Dropdown met vaste opties + "Anders (zelf invullen)" die een los tekstveld toont.
 // updateFnName: naam van de functie die (key, value) bijwerkt, bv. "updateObject" of "updateMetingField" (die laatste heeft extra vaste argumenten ervoor, zie callArgsPrefix).
@@ -2378,7 +2390,8 @@ function renderVerdelers() {
   return h;
 }
 function vField(id, key, label, val, placeholder) {
-  return '<div><label class="fl">' + label + '</label><input class="f" placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateVerdelerField(\'' + id + '\', \'' + key + '\', this.value)" /></div>';
+  var extra = /aantal|groepen/i.test(key) ? ' inputmode="numeric"' : "";
+  return '<div><label class="fl">' + label + '</label><input class="f"' + extra + ' placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateVerdelerField(\'' + id + '\', \'' + key + '\', this.value)" /></div>';
 }
 function risoBeoordelingBlok(soort, obj) {
   var updateFn = soort === "verdeler" ? "updateVerdelerField" : "updateOmvormerField";
@@ -2633,8 +2646,14 @@ function renderOmvormers() {
   h += '</div>';
   return h;
 }
-function oField(id, key, label, val, placeholder) { return '<div><label class="fl">' + label + '</label><input class="f" placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateOmvormerField(\'' + id + '\', \'' + key + '\', this.value)" /></div>'; }
-function sField(oid, sid, key, label, val, placeholder) { return '<div><label class="fl">' + label + '</label><input class="f" placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateStrengField(\'' + oid + '\', \'' + sid + '\', \'' + key + '\', this.value)" /></div>'; }
+function oField(id, key, label, val, placeholder) {
+  var extra = /vermogen|imax|spanning/i.test(key) ? ' inputmode="decimal"' : "";
+  return '<div><label class="fl">' + label + '</label><input class="f"' + extra + ' placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateOmvormerField(\'' + id + '\', \'' + key + '\', this.value)" /></div>';
+}
+function sField(oid, sid, key, label, val, placeholder) {
+  var extra = /vermogen|imax|spanning|stroom|vmp|voc|isc|impp/i.test(key) ? ' inputmode="decimal"' : "";
+  return '<div><label class="fl">' + label + '</label><input class="f"' + extra + ' placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateStrengField(\'' + oid + '\', \'' + sid + '\', \'' + key + '\', this.value)" /></div>';
+}
 
 function renderChecklist() {
   var t = TYPES[state.type];
