@@ -349,7 +349,7 @@ function dedupeInspecteursLijst() {
 
 var STORAGE_DRAFT = "keuring_concept_v2";
 var STORAGE_BEDRIJF = "keuringen_bedrijfsgegevens_v1";
-var BEDRIJF_VELDEN = ["bedrijfNaam", "bedrijfAdres", "bedrijfPostcodePlaats", "bedrijfTel", "bedrijfEmail", "bedrijfCertScope8", "bedrijfCertScope10", "bedrijfCertScope12", "bedrijfCertNen26541", "bedrijfCertNen26542", "logoData", "sciosLogoData", "inspecteur", "accentColor", "meetinstrumenten", "inspecteurs", "appNaam"];
+var BEDRIJF_VELDEN = ["bedrijfNaam", "bedrijfAdres", "bedrijfPostcode", "bedrijfPlaats", "bedrijfTel", "bedrijfEmail", "bedrijfCertScope8", "bedrijfCertScope10", "bedrijfCertScope12", "bedrijfCertNen26541", "bedrijfCertNen26542", "logoData", "sciosLogoData", "inspecteur", "accentColor", "meetinstrumenten", "inspecteurs", "appNaam"];
 var STORAGE_SAVED = "keuringen_opgeslagen_v2";
 
 // ---------------------------------------------------------------------
@@ -467,7 +467,7 @@ function emptyObject() {
     opdrachtgeverNaam: "", opdrachtgeverAdres: "", opdrachtgeverPostcode: "", opdrachtgeverPlaats: "", opdrachtgeverTel: "",
     opdrachtgeverContactNaam: "", opdrachtgeverContactTel: "", opdrachtgeverContactEmail: "",
     opdrachtgeverZelfde: true, eigenaarZelfdeAlsInstallatie: true, contactZelfdeAlsInstallatie: true, klantId: "", rapportnaam: "",
-    bedrijfNaam: "", bedrijfAdres: "", bedrijfPostcodePlaats: "", bedrijfTel: "", bedrijfEmail: "", logoData: "", sciosLogoData: "", accentColor: "#0D9488",
+    bedrijfNaam: "", bedrijfAdres: "", bedrijfPostcode: "", bedrijfPlaats: "", bedrijfTel: "", bedrijfEmail: "", logoData: "", sciosLogoData: "", accentColor: "#0D9488",
     inspecteur: "", inspecteurCertificaat: "", geselecteerdeInspecteurId: "", meetinstrumenten: [], inspecteurs: [], appNaam: "Keuringen app",
     rapportnummer: "", redenInspectie: "EBI", datum: new Date().toISOString().slice(0,10),
     installatieverantwoordelijke: "",
@@ -1814,7 +1814,8 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
     '<span style="font-size:11.5px;color:#B8E0D8;">De classificatiekleuren (rood/oranje/geel/blauw) zijn vast en wijzigen hier niet mee.</span></div>';
   h += '<div class="grid2">';
   h += field("bedrijfNaam","Naam inspectiebedrijf",o.bedrijfNaam,"text","","bijv. Voorbeeld Inspecties B.V.") + field("bedrijfAdres","Adres inspectiebedrijf",o.bedrijfAdres,"text","","bijv. Bedrijvenweg 10");
-  h += field("bedrijfPostcodePlaats","Postcode en plaats",o.bedrijfPostcodePlaats,"text","","bijv. 5678 CD Voorbeeldplaats") + field("bedrijfTel","Telefoonnummer",o.bedrijfTel,"text","","bijv. 010-7654321");
+  h += field("bedrijfPostcode","Postcode *",o.bedrijfPostcode,"text","","bijv. 5678 CD") + field("bedrijfPlaats","Plaats *",o.bedrijfPlaats,"text","","bijv. Voorbeeldplaats");
+  h += field("bedrijfTel","Telefoonnummer",o.bedrijfTel,"text","","bijv. 010-7654321");
   h += field("bedrijfEmail","E-mailadres",o.bedrijfEmail,"text","","naam@bedrijf.nl");
   h += field("bedrijfCertScope8","Bedrijfscertificaat SCOPE 8",o.bedrijfCertScope8,"text","","bijv. K-0000000/0") + field("bedrijfCertScope10","Bedrijfscertificaat SCOPE 10",o.bedrijfCertScope10,"text","","bijv. K-0000000/0");
   h += field("bedrijfCertScope12","Bedrijfscertificaat SCOPE 12",o.bedrijfCertScope12,"text","","bijv. K-0000000/0") + field("bedrijfCertNen26541","Bedrijfscertificaat NEN 2654-1",o.bedrijfCertNen26541,"text","","bijv. K-0000000/0");
@@ -1903,6 +1904,10 @@ function huidigeInspecteurMeetinstrumenten() {
   return i ? (i.meetinstrumenten || []) : [];
 }
 function opslaanInstellingen() {
+  if (!state.object.bedrijfPostcode || !state.object.bedrijfPlaats) {
+    alert("Postcode en Plaats zijn verplicht \u2014 vul deze eerst in voordat je de instellingen opslaat.");
+    return;
+  }
   persistBedrijfsgegevens();
   toonToast("&#10003; Instellingen opgeslagen — je gaat terug naar het hoofdmenu&hellip;");
   setTimeout(function(){ setState({ view: "kies" }); }, 1400);
@@ -3210,7 +3215,7 @@ function buildScope12Body() {
   gegevensHtml += '<div class="doc-sub">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
   gegevensHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Inspectiebedrijf</div>' + dlTable([
-    ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode en plaats", o.bedrijfPostcodePlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail], ["Bedrijfscertificaat Scope 12", o.bedrijfCertScope12], ["Opsteller inspectierapport", o.inspecteur + (o.inspecteurCertificaat ? (" (" + o.inspecteurCertificaat + ")") : "")]
+    ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail], ["Bedrijfscertificaat Scope 12", o.bedrijfCertScope12], ["Opsteller inspectierapport", o.inspecteur + (o.inspecteurCertificaat ? (" (" + o.inspecteurCertificaat + ")") : "")]
   ]);
   var meetinstrumentenVoorRapport = huidigeInspecteurMeetinstrumenten();
   if (meetinstrumentenVoorRapport.length > 0) {
@@ -3430,7 +3435,7 @@ function buildNen1010Body() {
   gegevensHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
   gegevensHtml += '<div class="doc-sub">Inspectiebedrijf</div>' + dlTable([
-    ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode en plaats", o.bedrijfPostcodePlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail],
+    ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail],
     ["Bedrijfscertificaat SCOPE 8", o.bedrijfCertScope8], ["Bedrijfscertificaat SCOPE 10", o.bedrijfCertScope10], ["Bedrijfscertificaat SCOPE 12", o.bedrijfCertScope12],
     ["Bedrijfscertificaat NEN 2654-1", o.bedrijfCertNen26541], ["Bedrijfscertificaat NEN 2654-2", o.bedrijfCertNen26542],
     ["Opsteller inspectierapport", o.inspecteur + (o.inspecteurCertificaat ? (" (" + o.inspecteurCertificaat + ")") : "")], ["Opsteller inspectieplan", o.opstellerInspectieplan]
