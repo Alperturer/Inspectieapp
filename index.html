@@ -27,7 +27,9 @@
   .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; flex-wrap:wrap; row-gap:10px; }
   .header-title { font-weight:800; font-size:17px; cursor:pointer; }
   .header-badge { font-size:11px; color:#B8E0D8; }
-  .header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; row-gap:8px; flex-basis:100%; justify-content:flex-start; }
+  .header-right { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px; flex-basis:100%; }
+  .header-right .overzicht-link, .header-right .header-badge { width:100%; box-sizing:border-box; text-align:center; }
+  .header-right .header-badge { display:flex; align-items:center; justify-content:center; }
   .overzicht-link { font-size:11.5px; font-weight:700; color:#4d493f; background:#fff; border:1px solid #E0DDD4; border-radius:8px; padding:6px 10px; cursor:pointer; }
   .overzicht-link.actief { background:#0B3B3C; color:#fff; border-color:#0B3B3C; }
   .steps { display:flex; gap:4px; margin-bottom:16px; }
@@ -1628,11 +1630,11 @@ var STEP_LABELS = {
 function renderSteps() {
   var order = getStepOrder(), idx = order.indexOf(state.view);
   var h = '<div class="steps" style="display:flex;flex-direction:column;gap:8px;">';
-  h += '<div class="step-tabs" style="display:flex;flex-wrap:wrap;gap:6px;">';
+  h += '<div class="step-tabs" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:6px;">';
   order.forEach(function(s, i){
     var actief = s === state.view;
     var label = (s === "checklist" && (state.type === "scope12" || state.type === "nen1010")) ? "Constateringen" : STEP_LABELS[s];
-    h += '<button onclick="setState({view:\'' + s + '\'})" style="white-space:nowrap;border-radius:999px;padding:7px 13px;font-size:11.5px;font-weight:700;cursor:pointer;border:1px solid ' + (actief ? '#0B3B3C' : (i < idx ? '#B7CFC9' : '#E0DDD4')) + ';background:' + (actief ? '#0B3B3C' : (i < idx ? '#EAF2EF' : '#fff')) + ';color:' + (actief ? '#fff' : (i < idx ? '#0B3B3C' : '#8A8578')) + ';">' + (i+1) + '. ' + label + '</button>';
+    h += '<button onclick="setState({view:\'' + s + '\'})" style="width:100%;box-sizing:border-box;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:999px;padding:7px 13px;font-size:11.5px;font-weight:700;cursor:pointer;border:1px solid ' + (actief ? '#0B3B3C' : (i < idx ? '#B7CFC9' : '#E0DDD4')) + ';background:' + (actief ? '#0B3B3C' : (i < idx ? '#EAF2EF' : '#fff')) + ';color:' + (actief ? '#fff' : (i < idx ? '#0B3B3C' : '#8A8578')) + ';">' + (i+1) + '. ' + label + '</button>';
   });
   h += '</div>';
   if (state.view !== "rapport") h += '<div><button class="overzicht-link" style="white-space:nowrap;" onclick="slaVoortgangOp()">&#128190; Voortgang opslaan</button></div>';
