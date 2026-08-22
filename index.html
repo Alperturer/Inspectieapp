@@ -1843,6 +1843,7 @@ function renderGegevens() {
     h += '</div>';
   }
   h += '</div>';
+  h += '<div class="section-card"><h2>Inspectiebedrijf &amp; rapportgegevens</h2>';
   h += renderBedrijfsgegevensVelden(o, true);
   h += field("scioscode","SCIOS identificatiecode",o.scioscode,"text","","bijv. ABC-123-45") + field("inspectiedatums","Inspectiedatum(s)",o.inspectiedatums,"text","","bijv. 16-09-2025 - 18-09-2025");
   h += '<div><label class="fl">Datum afronding inspectiewerkzaamheden</label><input class="f" type="date" value="' + esc(o.datumAfronding) + '" onchange="wijzigDatumAfronding(this.value)" /></div>';
