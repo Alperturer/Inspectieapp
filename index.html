@@ -1429,7 +1429,7 @@ function opslaanKlant(id) {
   if (k) syncKlantNaarCloud(k);
   persistKlantenLokaal();
   toonToast('Klant "' + (k ? k.naam || "Naamloos" : "") + '" opgeslagen');
-  setState({ view: "klanten" });
+  setTimeout(function(){ setState({ view: "klanten" }); }, 2000);
 }
 function verwijderKlant(id) {
   vraagBevestiging("Deze klant definitief verwijderen?", function(){
@@ -1677,6 +1677,7 @@ function slaVoortgangOp() {
   persistSaved(list);
   state.savedId = record.id;
   toonToast("Voortgang opgeslagen \u2014 je kunt later gewoon verdergaan");
+  setTimeout(function(){ setState({ view: "overzicht" }); laadCloudKeuringen(); }, 2000);
 
   if (supabaseClient && state.user) {
     state.syncStatus = "syncing"; render();
