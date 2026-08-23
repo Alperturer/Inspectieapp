@@ -1520,7 +1520,7 @@ function voegMedewerkerToe() {
     }).then(function(r){ return r.json(); }).then(function(json) {
       state.teamBusy = false;
       if (!json.ok) { state.teamFout = json.error || "Onbekende fout"; render(); return; }
-      toonToast("Medewerker uitgenodigd \u2014 " + email + " krijgt een e-mail om een wachtwoord in te stellen.");
+      toonToast(json.heractiveerd ? ("Bestaand account heractiveerd \u2014 " + email + " krijgt een nieuwe e-mail om een wachtwoord in te stellen.") : ("Medewerker uitgenodigd \u2014 " + email + " krijgt een e-mail om een wachtwoord in te stellen."));
       document.getElementById("nieuweMedewerkerEmail").value = "";
       laadTeam();
     }).catch(function(){ state.teamBusy = false; state.teamFout = "Kon geen verbinding maken."; render(); });
