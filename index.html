@@ -1036,6 +1036,7 @@ function renderTeam() {
     h += '<div style="display:flex;gap:8px;margin-top:10px;">';
     if (l.status === "actief") h += '<button class="del-x" style="flex:1;" onclick="wijzigLicentieStatus(\'' + l.id + '\',\'opgezegd\')">Toegang intrekken</button>';
     else h += '<button class="btn-add" style="flex:1;" onclick="wijzigLicentieStatus(\'' + l.id + '\',\'actief\')">&#10003; Toegang herstellen</button>';
+    h += '<button class="del-x" style="flex:1;" onclick="verwijderMedewerker(\'' + l.user_id + '\', \'' + esc(l.email).replace(/'/g, "") + '\')">&#128465; Verwijderen</button>';
     h += '</div></div>';
   });
   h += '</div>';
@@ -1493,7 +1494,7 @@ function voegMedewerkerToe() {
     fetch(EDGE_FUNCTION_URL_MEDEWERKER, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-      body: JSON.stringify({ email: email }),
+      body: JSON.stringify({ actie: "toevoegen", email: email }),
     }).then(function(r){ return r.json(); }).then(function(json) {
       state.teamBusy = false;
       if (!json.ok) { state.teamFout = json.error || "Onbekende fout"; render(); return; }
@@ -1501,6 +1502,24 @@ function voegMedewerkerToe() {
       document.getElementById("nieuweMedewerkerEmail").value = "";
       laadTeam();
     }).catch(function(){ state.teamBusy = false; state.teamFout = "Kon geen verbinding maken."; render(); });
+  });
+}
+function verwijderMedewerker(medewerkerUserId, naam) {
+  vraagBevestiging('Weet je zeker dat je "' + naam + '" helemaal wilt verwijderen? Dit account bestaat daarna niet meer en kan niet ongedaan worden gemaakt.', function() {
+    state.teamBusy = true; state.teamFout = ""; render();
+    supabaseClient.auth.getSession().then(function(res) {
+      var token = res.data.session ? res.data.session.access_token : "";
+      fetch(EDGE_FUNCTION_URL_MEDEWERKER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ actie: "verwijderen", medewerkerUserId: medewerkerUserId }),
+      }).then(function(r){ return r.json(); }).then(function(json) {
+        state.teamBusy = false;
+        if (!json.ok) { state.teamFout = json.error || "Onbekende fout"; render(); return; }
+        toonToast("Medewerker verwijderd.");
+        laadTeam();
+      }).catch(function(){ state.teamBusy = false; state.teamFout = "Kon geen verbinding maken."; render(); });
+    });
   });
 }
 
