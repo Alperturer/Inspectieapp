@@ -941,6 +941,17 @@ function wijzigLicentieStatus(id, nieuweStatus) {
     else toonToast("Kon status niet wijzigen");
   }).catch(function(){ toonToast("Kon status niet wijzigen"); });
 }
+function wijzigTeamLidStatus(id, nieuweStatus, naam) {
+  if (!supabaseClient) return;
+  supabaseClient.from("licenties").update({ status: nieuweStatus, bijgewerkt_op: new Date().toISOString() }).eq("id", id).then(function(res) {
+    if (!res.error) {
+      toonToast(nieuweStatus === "actief" ? "Toegang van " + naam + " hersteld." : "Toegang van " + naam + " ingetrokken.");
+      laadTeam();
+    } else {
+      toonToast("Kon status niet wijzigen: " + (res.error.message || "onbekende fout"));
+    }
+  }).catch(function(){ toonToast("Kon geen verbinding maken."); });
+}
 var LICENTIE_LABEL = { actief: "Actief", inactief: "Wacht op goedkeuring", opgezegd: "Opgezegd", betaling_mislukt: "Betaling mislukt" };
 var LICENTIE_KLEUR = { actief: "#2F7D3A", inactief: "#D9B400", opgezegd: "#8A8578", betaling_mislukt: "#DC3B2E" };
 // ---------------------------------------------------------------------
@@ -1034,8 +1045,8 @@ function renderTeam() {
     h += '<span class="badge" style="background:' + (LICENTIE_KLEUR[l.status]||"#8A8578") + ';">' + (LICENTIE_LABEL[l.status]||l.status) + '</span>';
     h += '</div>';
     h += '<div style="display:flex;gap:8px;margin-top:10px;">';
-    if (l.status === "actief") h += '<button class="del-x" style="flex:1;" onclick="wijzigLicentieStatus(\'' + l.id + '\',\'opgezegd\')">Toegang intrekken</button>';
-    else h += '<button class="btn-add" style="flex:1;" onclick="wijzigLicentieStatus(\'' + l.id + '\',\'actief\')">&#10003; Toegang herstellen</button>';
+    if (l.status === "actief") h += '<button class="del-x" style="flex:1;" onclick="wijzigTeamLidStatus(\'' + l.id + '\',\'opgezegd\', \'' + esc(l.email).replace(/'/g, "") + '\')">Toegang intrekken</button>';
+    else h += '<button class="btn-add" style="flex:1;" onclick="wijzigTeamLidStatus(\'' + l.id + '\',\'actief\', \'' + esc(l.email).replace(/'/g, "") + '\')">&#10003; Toegang herstellen</button>';
     h += '<button class="del-x" style="flex:1;" onclick="verwijderMedewerker(\'' + l.user_id + '\', \'' + esc(l.email).replace(/'/g, "") + '\')">&#128465; Verwijderen</button>';
     h += '</div></div>';
   });
