@@ -180,6 +180,11 @@
   <option value="Fabrikantvoorschrift &ndash; Installatie-instructie niet gevolgd">
 </datalist>
 <script>
+// Dit MOET de allereerste regel zijn die uitgevoerd wordt: Supabase leest en
+// verwijdert de uitnodigings-/hersteltoken uit de URL zodra de Supabase-client
+// hieronder wordt aangemaakt. Als we dit vlaggetje pas later in het script
+// zouden vastleggen, is de informatie al weg.
+var kwamViaUitnodigingOfHerstel = (window.location.hash.indexOf("type=invite") !== -1) || (window.location.hash.indexOf("type=recovery") !== -1) || (window.location.search.indexOf("type=invite") !== -1) || (window.location.search.indexOf("type=recovery") !== -1);
 // ---------------------------------------------------------------------
 // DATA
 // ---------------------------------------------------------------------
@@ -884,25 +889,31 @@ function checkLicentie(callback) {
 function renderWachtwoordInstellen() {
   var h = '<div style="max-width:340px;margin:60px auto;text-align:center;">';
   h += '<h1 style="margin-bottom:6px;">Welkom!</h1>';
-  h += '<p class="subtitle" style="margin-bottom:20px;">Stel eerst je eigen wachtwoord in, dan kan je daarna gewoon zelf inloggen.</p>';
+  h += '<p class="subtitle" style="margin-bottom:20px;">Vul je naam in en stel een wachtwoord in, dan kan je daarna gewoon zelf inloggen.</p>';
+  h += '<input class="f" id="nieuweVoornaam" type="text" placeholder="Voornaam" style="text-align:left;" />';
+  h += '<input class="f" id="nieuweAchternaam" type="text" placeholder="Achternaam" style="text-align:left;" />';
   h += '<input class="f" id="nieuwWachtwoord1" type="password" placeholder="Nieuw wachtwoord" style="text-align:left;" />';
   h += '<input class="f" id="nieuwWachtwoord2" type="password" placeholder="Herhaal wachtwoord" style="text-align:left;" />';
   if (state.wachtwoordFout) h += '<div style="color:#B23A2F;font-size:12.5px;margin-bottom:8px;">' + esc(state.wachtwoordFout) + '</div>';
-  h += '<button class="btn-add" style="width:100%;" ' + (state.wachtwoordBusy ? "disabled" : "") + ' onclick="stelWachtwoordIn()">' + (state.wachtwoordBusy ? "Bezig..." : "Wachtwoord instellen") + '</button>';
+  h += '<button class="btn-add" style="width:100%;" ' + (state.wachtwoordBusy ? "disabled" : "") + ' onclick="stelWachtwoordIn()">' + (state.wachtwoordBusy ? "Bezig..." : "Bevestigen") + '</button>';
   h += '</div>';
   return h;
 }
 function stelWachtwoordIn() {
+  var voornaam = ((document.getElementById("nieuweVoornaam") || {}).value || "").trim();
+  var achternaam = ((document.getElementById("nieuweAchternaam") || {}).value || "").trim();
   var p1 = (document.getElementById("nieuwWachtwoord1") || {}).value || "";
   var p2 = (document.getElementById("nieuwWachtwoord2") || {}).value || "";
-  if (p1.length < 6) { state.wachtwoordFout = "Minimaal 6 tekens."; render(); return; }
+  if (!voornaam || !achternaam) { state.wachtwoordFout = "Vul je voornaam en achternaam in."; render(); return; }
+  if (p1.length < 6) { state.wachtwoordFout = "Wachtwoord: minimaal 6 tekens."; render(); return; }
   if (p1 !== p2) { state.wachtwoordFout = "De wachtwoorden komen niet overeen."; render(); return; }
   state.wachtwoordBusy = true; state.wachtwoordFout = ""; render();
-  supabaseClient.auth.updateUser({ password: p1 }).then(function(res) {
+  supabaseClient.auth.updateUser({ password: p1, data: { voornaam: voornaam, achternaam: achternaam } }).then(function(res) {
     state.wachtwoordBusy = false;
     if (res.error) { state.wachtwoordFout = res.error.message || "Kon wachtwoord niet instellen."; render(); return; }
     state.moetWachtwoordInstellen = false;
-    toonToast("Wachtwoord ingesteld \u2014 je bent nu ingelogd.");
+    supabaseClient.from("licenties").update({ voornaam: voornaam, achternaam: achternaam }).eq("user_id", state.user.id).then(function(){});
+    toonToast("Welkom " + voornaam + "! Je bent nu ingelogd.");
     naLogin();
   }).catch(function(){ state.wachtwoordBusy = false; state.wachtwoordFout = "Kon geen verbinding maken."; render(); });
 }
@@ -1041,7 +1052,7 @@ function renderTeam() {
   medewerkers.forEach(function(l){
     h += '<div class="item-block">';
     h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">';
-    h += '<div><b>' + esc(l.email || l.user_id) + '</b><br/><span style="font-size:11px;color:#6b6659;">Toegevoegd: ' + esc((l.aangemaakt_op||"").slice(0,10)) + '</span></div>';
+    h += '<div><b>' + esc((l.voornaam ? (l.voornaam + " " + (l.achternaam||"")) : (l.email || l.user_id))) + '</b><br/><span style="font-size:11px;color:#6b6659;">' + esc(l.email||"") + ' &middot; Toegevoegd: ' + esc((l.aangemaakt_op||"").slice(0,10)) + '</span></div>';
     h += '<span class="badge" style="background:' + (LICENTIE_KLEUR[l.status]||"#8A8578") + ';">' + (LICENTIE_LABEL[l.status]||l.status) + '</span>';
     h += '</div>';
     h += '<div style="display:flex;gap:8px;margin-top:10px;">';
@@ -4175,7 +4186,7 @@ function normalizeState() {
     // geklikt (Supabase logt zo iemand meteen in zonder ooit een wachtwoord te
     // vragen) — dat vlaggetje moet VOOR checkSession() vastgelegd worden, want
     // Supabase haalt deze info uit de URL en maakt de URL daarna weer schoon.
-    state.moetWachtwoordInstellen = (window.location.hash.indexOf("type=invite") !== -1) || (window.location.hash.indexOf("type=recovery") !== -1);
+    state.moetWachtwoordInstellen = kwamViaUitnodigingOfHerstel;
     checkSession();
   } catch (err) {
     document.getElementById("root").innerHTML =
