@@ -372,6 +372,7 @@ var STORAGE_SAVED = "keuringen_opgeslagen_v2";
 // ---------------------------------------------------------------------
 var SUPABASE_URL = "https://lrieolazetnhcizaqlhx.supabase.co";
 var SUPABASE_KEY = "sb_publishable_wnTd6K9xyI41FdjHJzpJuw_diuWnbyg";
+var EDGE_FUNCTION_URL_MEDEWERKER = "https://lrieolazetnhcizaqlhx.supabase.co/functions/v1/smart-service";
 var supabaseClient = (typeof window.supabase !== "undefined")
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
@@ -736,6 +737,11 @@ var state = {
   licentieStatus: null,
   isAdmin: false,
   alleLicenties: [],
+  mijnRol: "eigenaar",
+  companyId: null,
+  teamLeden: [],
+  teamBusy: false,
+  teamFout: "",
   huidigeKlantId: null,
   bevestigModal: null,
   toast: null,
@@ -838,21 +844,25 @@ function naLogin() {
   });
 }
 function checkLicentie(callback) {
-  if (!supabaseClient || !state.user) { state.licentieStatus = "actief"; state.isAdmin = false; callback(); return; }
+  if (!supabaseClient || !state.user) { state.licentieStatus = "actief"; state.isAdmin = false; state.mijnRol = "eigenaar"; state.companyId = null; callback(); return; }
   supabaseClient.from("licenties").select("*").eq("user_id", state.user.id).maybeSingle().then(function(res) {
     if (res.data) {
       state.licentieStatus = res.data.status;
       state.isAdmin = !!res.data.is_admin;
+      state.mijnRol = res.data.rol || "eigenaar";
+      state.companyId = res.data.company_id || state.user.id;
       callback();
     } else {
       // Eerste keer voor deze gebruiker: automatisch een aanvraag aanmaken (altijd "inactief").
-      supabaseClient.from("licenties").insert({ user_id: state.user.id, email: state.user.email, status: "inactief" }).then(function() {
+      supabaseClient.from("licenties").insert({ user_id: state.user.id, email: state.user.email, status: "inactief", rol: "eigenaar", company_id: state.user.id }).then(function() {
         state.licentieStatus = "inactief";
         state.isAdmin = false;
+        state.mijnRol = "eigenaar";
+        state.companyId = state.user.id;
         callback();
-      }).catch(function(){ state.licentieStatus = "inactief"; state.isAdmin = false; callback(); });
+      }).catch(function(){ state.licentieStatus = "inactief"; state.isAdmin = false; state.mijnRol = "eigenaar"; state.companyId = state.user.id; callback(); });
     }
-  }).catch(function(){ state.licentieStatus = "inactief"; state.isAdmin = false; callback(); });
+  }).catch(function(){ state.licentieStatus = "inactief"; state.isAdmin = false; state.mijnRol = "eigenaar"; state.companyId = state.user.id; callback(); });
 }
 function renderWachtOpGoedkeuring() {
   var tekst = state.licentieStatus === "opgezegd" ? "Je toegang is opgezegd."
@@ -948,6 +958,33 @@ function renderRapporten() {
     h += '<button class="btn-secondary" style="width:auto;padding:8px 14px;" onclick="downloadOpgeslagenRapport(\'' + esc(f.name).replace(/'/g,"\\'") + '\')">&#128190; Download</button>';
     h += '<button class="btn-secondary" style="width:auto;padding:8px 14px;" onclick="verstuurOpgeslagenRapportViaMail(\'' + esc(f.name).replace(/'/g,"\\'") + '\')">&#128231; Mail</button>';
     h += '<button class="del-x" onclick="verwijderOpgeslagenRapport(\'' + esc(f.name).replace(/'/g,"\\'") + '\')">&#128465;</button>';
+    h += '</div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+function renderTeam() {
+  var h = '<button class="backbtn" onclick="setState({view:\'kies\'})">&larr; Terug</button>';
+  h += '<h1>Mijn team</h1><p class="subtitle">Voeg medewerkers toe die hun eigen inspecties invullen. Jij ziet als hoofdgebruiker altijd alle inspecties van je hele team; medewerkers zien alleen hun eigen inspecties.</p>';
+  h += '<div class="section-card">';
+  h += '<h2>Medewerker toevoegen</h2>';
+  h += '<label class="fl">E-mailadres medewerker</label><input class="f" id="nieuweMedewerkerEmail" type="email" inputmode="email" placeholder="bijv. collega@bedrijf.nl" />';
+  if (state.teamFout) h += '<div style="color:#B23A2F;font-size:12.5px;margin-bottom:8px;">' + esc(state.teamFout) + '</div>';
+  h += '<button class="btn-add" ' + (state.teamBusy ? "disabled" : "") + ' onclick="voegMedewerkerToe()">' + (state.teamBusy ? "Bezig..." : "+ Uitnodigen") + '</button>';
+  h += '<p class="subtitle" style="margin-top:10px;margin-bottom:0;">De medewerker krijgt een e-mail om zelf een wachtwoord in te stellen, en kan daarna meteen inloggen.</p>';
+  h += '</div>';
+  h += '<div class="section-card"><h2>Huidige medewerkers</h2>';
+  var medewerkers = (state.teamLeden || []).filter(function(l){ return l.rol === "medewerker"; });
+  if (!medewerkers.length) h += '<div class="empty-state">Nog geen medewerkers toegevoegd.</div>';
+  medewerkers.forEach(function(l){
+    h += '<div class="item-block">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">';
+    h += '<div><b>' + esc(l.email || l.user_id) + '</b><br/><span style="font-size:11px;color:#6b6659;">Toegevoegd: ' + esc((l.aangemaakt_op||"").slice(0,10)) + '</span></div>';
+    h += '<span class="badge" style="background:' + (LICENTIE_KLEUR[l.status]||"#8A8578") + ';">' + (LICENTIE_LABEL[l.status]||l.status) + '</span>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    if (l.status === "actief") h += '<button class="del-x" style="flex:1;" onclick="wijzigLicentieStatus(\'' + l.id + '\',\'opgezegd\')">Toegang intrekken</button>';
+    else h += '<button class="btn-add" style="flex:1;" onclick="wijzigLicentieStatus(\'' + l.id + '\',\'actief\')">&#10003; Toegang herstellen</button>';
     h += '</div></div>';
   });
   h += '</div>';
@@ -1374,16 +1411,46 @@ function saveKeuring() {
 function laadCloudKeuringen(callback) {
   if (!supabaseClient || !state.user) { callback && callback(); return; }
   state.cloudLoading = true; render();
-  supabaseClient.from("keuringen").select("*").eq("user_id", state.user.id).order("created_at", { ascending: false }).then(function(res) {
+  // Geen .eq("user_id", ...) filter meer hier: welke rijen je terugkrijgt wordt nu bepaald
+  // door de RLS-policy in Supabase (eigen keuringen, en als je "eigenaar" bent ook die van
+  // je medewerkers). Zonder de juiste RLS-policy in Supabase krijgt iedereen dus alleen
+  // zijn eigen rijen (standaardgedrag), tenzij de eigenaar-policy actief is.
+  supabaseClient.from("keuringen").select("*").order("created_at", { ascending: false }).then(function(res) {
     state.cloudLoading = false;
     if (!res.error && res.data) {
       state.cloudKeuringen = res.data.map(function(rij){
-        return { id: rij.id, type: rij.type, object: rij.data.object, items: rij.data.items, verdelers: rij.data.verdelers || [], omvormers: rij.data.omvormers || [], constateringen: rij.data.constateringen || [], view: rij.data.laatsteWerkStap || "" };
+        return { id: rij.id, type: rij.type, object: rij.data.object, items: rij.data.items, verdelers: rij.data.verdelers || [], omvormers: rij.data.omvormers || [], constateringen: rij.data.constateringen || [], view: rij.data.laatsteWerkStap || "", eigenaarUserId: rij.user_id };
       });
     }
     render();
     callback && callback();
   }).catch(function(){ state.cloudLoading = false; render(); callback && callback(); });
+}
+function laadTeam() {
+  if (!supabaseClient || !state.user || !state.companyId) return;
+  supabaseClient.from("licenties").select("*").eq("company_id", state.companyId).order("aangemaakt_op", { ascending: false }).then(function(res) {
+    state.teamLeden = (!res.error && res.data) ? res.data : [];
+    render();
+  });
+}
+function voegMedewerkerToe() {
+  var email = (document.getElementById("nieuweMedewerkerEmail") || {}).value;
+  if (!email || email.indexOf("@") === -1) { alert("Vul een geldig e-mailadres in."); return; }
+  state.teamBusy = true; state.teamFout = ""; render();
+  supabaseClient.auth.getSession().then(function(res) {
+    var token = res.data.session ? res.data.session.access_token : "";
+    fetch(EDGE_FUNCTION_URL_MEDEWERKER, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ email: email }),
+    }).then(function(r){ return r.json(); }).then(function(json) {
+      state.teamBusy = false;
+      if (!json.ok) { state.teamFout = json.error || "Onbekende fout"; render(); return; }
+      toonToast("Medewerker uitgenodigd \u2014 " + email + " krijgt een e-mail om een wachtwoord in te stellen.");
+      document.getElementById("nieuweMedewerkerEmail").value = "";
+      laadTeam();
+    }).catch(function(){ state.teamBusy = false; state.teamFout = "Kon geen verbinding maken."; render(); });
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -1582,8 +1649,9 @@ function render() {
       '<div class="header-right">' + (state.type ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
       '' +
       '<button class="overzicht-link' + (state.view === "kies" ? " actief" : "") + '" onclick="setState({view:\'kies\'})">Dashboard</button>' +
-      '<button class="overzicht-link' + (state.view === "overzicht" ? " actief" : "") + '" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen();">Opgeslagen (' + saved.length + ')</button>' +
+      '<button class="overzicht-link' + (state.view === "overzicht" ? " actief" : "") + '" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen(); if (state.mijnRol===\'eigenaar\') laadTeam();">Opgeslagen (' + saved.length + ')</button>' +
       '<button class="overzicht-link' + (state.view === "klanten" ? " actief" : "") + '" onclick="setState({view:\'klanten\'})">Klanten (' + state.klanten.length + ')</button>' +
+      ((state.mijnRol === "eigenaar" && state.licentieStatus === "actief") ? '<button class="overzicht-link' + (state.view === "team" ? " actief" : "") + '" onclick="setState({view:\'team\'}); laadTeam();">&#128101; Mijn team</button>' : '') +
       (state.isAdmin ? '<button class="overzicht-link' + (state.view === "beheer" ? " actief" : "") + '" onclick="setState({view:\'beheer\'}); laadAlleLicenties();">&#128274; Beheer</button>' : '') +
       '<button class="overzicht-link' + (state.view === "instellingen" ? " actief" : "") + '" onclick="setState({view:\'instellingen\'})">&#9881; Instellingen</button>' +
       (state.user ? '<button class="overzicht-link" onclick="doLogout()">Uitloggen</button>' : '') +
@@ -1594,6 +1662,7 @@ function render() {
     if (state.view === "kies") html += renderKies();
     else if (state.view === "instellingen") html += renderInstellingen();
     else if (state.view === "beheer") html += renderBeheer();
+    else if (state.view === "team") html += renderTeam();
     else if (state.view === "overzicht") html += renderOverzicht(saved);
     else if (state.view === "klanten") html += renderKlanten();
     else if (state.view === "klant-form") html += renderKlantForm();
@@ -1726,9 +1795,14 @@ function renderOverzicht(saved) {
     saved.forEach(function(r){
       var t = TYPES[r.type];
       var afwijkend = r.items.filter(function(i){return i.classificatie!=="goed";}).length;
+      var vanTeamlid = "";
+      if (r.eigenaarUserId && state.user && r.eigenaarUserId !== state.user.id) {
+        var lid = (state.teamLeden || []).find(function(l){ return l.user_id === r.eigenaarUserId; });
+        vanTeamlid = " &middot; " + esc(lid ? lid.email : "teamlid");
+      }
       h += '<div class="keuring-row" onclick="openSaved(\'' + r.id + '\')">' +
         '<div class="keuring-left"><div class="keuring-klant">' + esc(r.object.klant || "Onbekende klant") + '</div>' +
-        '<div class="keuring-meta">' + t.label + ' &middot; ' + esc(r.object.datum) + '</div></div>' +
+        '<div class="keuring-meta">' + t.label + ' &middot; ' + esc(r.object.datum) + vanTeamlid + '</div></div>' +
         '<span class="badge" style="background:' + (afwijkend?"#E8952E":"#2F7D3A") + '">' + (afwijkend? afwijkend+" afw." : "OK") + '</span>' +
         '<button class="keuring-del" onclick="deleteSaved(\'' + r.id + '\', event)">&#128465;</button></div>';
     });
