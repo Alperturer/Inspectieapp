@@ -846,6 +846,13 @@ function naLogin() {
 function checkLicentie(callback) {
   if (!supabaseClient || !state.user) { state.licentieStatus = "actief"; state.isAdmin = false; state.mijnRol = "eigenaar"; state.companyId = null; callback(); return; }
   supabaseClient.from("licenties").select("*").eq("user_id", state.user.id).maybeSingle().then(function(res) {
+    if (res.error) {
+      // Een ECHTE fout (bv. tijdelijke storing) — nooit aannemen dat de gebruiker
+      // nieuw is en dus nooit een tweede account proberen aan te maken.
+      state.licentieStatus = "fout";
+      callback();
+      return;
+    }
     if (res.data) {
       state.licentieStatus = res.data.status;
       state.isAdmin = !!res.data.is_admin;
@@ -853,18 +860,29 @@ function checkLicentie(callback) {
       state.companyId = res.data.company_id || state.user.id;
       callback();
     } else {
-      // Eerste keer voor deze gebruiker: automatisch een aanvraag aanmaken (altijd "inactief").
-      supabaseClient.from("licenties").insert({ user_id: state.user.id, email: state.user.email, status: "inactief", rol: "eigenaar", company_id: state.user.id }).then(function() {
+      // Hier weten we zeker dat er geen fout was EN geen rij bestaat: pas dan
+      // is dit echt de eerste keer voor deze gebruiker.
+      supabaseClient.from("licenties").insert({ user_id: state.user.id, email: state.user.email, status: "inactief", rol: "eigenaar", company_id: state.user.id }).then(function(insertRes) {
+        if (insertRes.error) { state.licentieStatus = "fout"; callback(); return; }
         state.licentieStatus = "inactief";
         state.isAdmin = false;
         state.mijnRol = "eigenaar";
         state.companyId = state.user.id;
         callback();
-      }).catch(function(){ state.licentieStatus = "inactief"; state.isAdmin = false; state.mijnRol = "eigenaar"; state.companyId = state.user.id; callback(); });
+      }).catch(function(){ state.licentieStatus = "fout"; callback(); });
     }
-  }).catch(function(){ state.licentieStatus = "inactief"; state.isAdmin = false; state.mijnRol = "eigenaar"; state.companyId = state.user.id; callback(); });
+  }).catch(function(){ state.licentieStatus = "fout"; callback(); });
 }
 function renderWachtOpGoedkeuring() {
+  if (state.licentieStatus === "fout") {
+    var h2 = '<div style="text-align:center;padding:60px 20px;">';
+    h2 += '<h1 style="margin-bottom:10px;">Even geen verbinding</h1>';
+    h2 += '<p class="subtitle" style="max-width:340px;margin:0 auto 20px;">Er ging iets mis bij het controleren van je account. Dit zegt niets over je toegang zelf \u2014 probeer het gewoon nogmaals.</p>';
+    h2 += '<button class="btn-add" style="width:auto;padding:10px 20px;display:inline-block;" onclick="checkLicentie(function(){ render(); })">&#8635; Opnieuw proberen</button> ';
+    h2 += '<button class="btn-secondary" style="width:auto;padding:10px 20px;display:inline-block;" onclick="doLogout()">Uitloggen</button>';
+    h2 += '</div>';
+    return h2;
+  }
   var tekst = state.licentieStatus === "opgezegd" ? "Je toegang is opgezegd."
     : state.licentieStatus === "betaling_mislukt" ? "De laatste betaling is niet gelukt. Neem contact op om dit op te lossen."
     : "Je account wacht nog op goedkeuring door de beheerder.";
