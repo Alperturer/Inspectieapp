@@ -3332,6 +3332,8 @@ function sharedDocCss(accent) {
   '.dl-table td.dl-v { font-weight:600; color:#1c1c1c; }' +
   '.doc-sec { margin-bottom:4px; }' +
   '.doc-sec.brk { break-before: page; }' +
+  '.brk-before { break-before: page; padding-top: 1px; }' +
+  'table.brk-before { break-before: page; }' +
   '.doc-h { font-size:19px; font-weight:800; letter-spacing:0.01em; margin:2px 0 16px; padding-bottom:10px; padding-left:14px; border-bottom:1px solid #EAE7DF; border-left:5px solid ' + accent + '; break-after:avoid; color:#161513; }' +
   '.doc-sub { font-size:14px; font-weight:700; margin:14px 0 6px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
   '.doc-p { font-size:12px; line-height:1.55; margin:4px 0; color:#3a382f; }' +
@@ -3524,7 +3526,7 @@ function buildScope12Body() {
   gegevensHtml += '<div class="doc-sub">Contactpersoon (eigenaar)</div>' + dlTable([["Naam", o.eigenaarContactNaam], ["Telefoonnummer", o.eigenaarContactTel], ["E-mailadres", o.eigenaarContactEmail]]);
   gegevensHtml += '<div class="doc-sub">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
-  gegevensHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Inspectiebedrijf</div>' + dlTable([
+  gegevensHtml += '<div class="doc-sub brk-before">Inspectiebedrijf</div>' + dlTable([
     ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail], ["Bedrijfscertificaat Scope 12", o.bedrijfCertScope12], ["Opsteller inspectierapport", o.inspecteur + (o.inspecteurCertificaat ? (" (" + o.inspecteurCertificaat + ")") : "")]
   ]);
   var meetinstrumentenVoorRapport = huidigeInspecteurMeetinstrumenten();
@@ -3559,7 +3561,7 @@ function buildScope12Body() {
     ["Deze inspectie heeft betrekking op", o.betrekkingOp], ["Gebruiksfunctie(s)", o.gebruiksfuncties], ["Uitsluitingen in deze inspectie", o.uitsluitingen],
     ["Bijzondere installaties, ruimten en terreinen", o.bijzondereInstallaties], ["Deze inspectie is uitgevoerd middels", o.uitgevoerdMiddels]
   ]);
-  omvangHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Te inspecteren onderdelen &mdash; Installatiedeel 1</div>' + dlTable([
+  omvangHtml += '<div class="doc-sub brk-before">Te inspecteren onderdelen &mdash; Installatiedeel 1</div>' + dlTable([
     ["Installatiedeel", o.installatiedeelNaam], ["Type bouwvorm", o.typeBouwvorm], ["Totaal Wattpiek", o.totaalWattpiek], ["Aantal panelen", o.aantalPanelen],
     ["Aantal strings", o.aantalStrings], ["Aantal omvormers", o.aantalOmvormersDeel], ["Aantal stringboxen", o.aantalStringboxen],
     ["Typologie omvormers", o.typologieOmvormers], ["Merk/type DC-connectoren", o.merkTypeDcConnectoren], ["Is de installatie volledig visueel zichtbaar", o.volledigZichtbaar]
@@ -3572,7 +3574,7 @@ function buildScope12Body() {
 
   // PAGINA 11-12 — CONSTATERINGEN DOCUMENTATIE
   var docIntro = '<p class="doc-p">De inspectie is uitgevoerd aan de hand van de door de opdrachtgever beschikbaar gestelde tekeningen en documenten.</p>';
-  var docTable = '<div class="doc-sub" style="break-before:page;padding-top:1px;">Documentatie conform NEN-EN-IEC 62446-1</div>';
+  var docTable = '<div class="doc-sub brk-before">Documentatie conform NEN-EN-IEC 62446-1</div>';
   docTable += '<table class="std-table"><thead><tr><th>Soort document</th><th>Beschikbaarheid</th><th style="width:80px;">Constatering</th></tr></thead><tbody>';
   var docConstateringenHtml = "";
   (o.documentatie||[]).forEach(function(d, idx){
@@ -3588,7 +3590,7 @@ function buildScope12Body() {
   if (state.verdelers.length > 0) {
     var vHtml = "";
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap"' + (vi>0 ? ' style="break-before:page;padding-top:1px;"' : '') + '><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
+      vHtml += '<div class="item-block-wrap' + (vi>0 ? ' brk-before' : '') + '"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
       vHtml += docPhotos(v.fotos, 260);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
       if (v.classificatie !== "goed") vHtml += docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, [], v.norm);
@@ -3605,7 +3607,7 @@ function buildScope12Body() {
   if (state.omvormers.length > 0) {
     var oHtml = "";
     state.omvormers.forEach(function(o2, oi){
-      oHtml += '<div class="item-block-wrap"' + (oi>0 ? ' style="break-before:page;padding-top:1px;"' : '') + '><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
+      oHtml += '<div class="item-block-wrap' + (oi>0 ? ' brk-before' : '') + '"><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
       oHtml += docPhotos(o2.fotos, 260);
       oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer", o2.serienummer], ["Voorbeveiliging", o2.voorbeveiliging], ["Max DC-spanning", metEenheid(o2.maxDcSpanning, "V")], ["Nominale stroom AC", metEenheid(o2.imax, "A")]]);
       if (o2.classificatie !== "goed") oHtml += docConstatering(nummerVoorItem(o2), o2.classificatie, o2.opmerking, [], o2.norm);
@@ -3643,7 +3645,7 @@ function buildScope12Body() {
   var cpHtml = '<p class="doc-p">Beoordeeld is in hoeverre de installatie voldoet aan de op dit rapport van toepassing zijnde controlepunten.</p>';
   var offset = 0;
   CONTROLEPUNTEN_GROEPEN.forEach(function(g, gi){
-    cpHtml += '<div class="doc-sub"' + (gi>0?' style="break-before:page;padding-top:1px;"':'') + '>' + esc(g.titel) + '</div>';
+    cpHtml += '<div class="doc-sub' + (gi>0?' brk-before':'') + '">' + esc(g.titel) + '</div>';
     cpHtml += '<table class="std-table"><tbody>';
     g.items.forEach(function(tekst, i){
       var cp = o.controlepunten[offset+i];
@@ -3728,7 +3730,7 @@ function buildNen1010Body() {
   gegevensHtml += '<div class="doc-sub">Contactpersoon (installatie)</div>' + dlTable([["Naam", o.contactNaam], ["Telefoonnummer", o.contactTel], ["E-mailadres", o.contactEmail]]);
   gegevensHtml += '<div class="doc-sub">Eigenaar</div>' + dlTable([["Naam", o.eigenaarNaam], ["Adres", o.eigenaarAdres + ((o.eigenaarPostcode||o.eigenaarPlaats) ? ("\n" + (o.eigenaarPostcode||"") + " " + (o.eigenaarPlaats||"")) : "")], ["Telefoonnummer", o.eigenaarTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (eigenaar)</div>' + dlTable([["Naam", o.eigenaarContactNaam], ["Telefoonnummer", o.eigenaarContactTel], ["E-mailadres", o.eigenaarContactEmail]]);
-  gegevensHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
+  gegevensHtml += '<div class="doc-sub brk-before">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
   gegevensHtml += '<div class="doc-sub">Inspectiebedrijf</div>' + dlTable([
     ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail],
@@ -3765,12 +3767,12 @@ function buildNen1010Body() {
     ["Deze inspectie heeft betrekking op", o.betrekkingOp], ["Gebruiksfunctie(s)", o.gebruiksfuncties], ["Uitsluitingen in deze inspectie", o.uitsluitingen],
     ["Bijzondere installaties, ruimten en terreinen", o.bijzondereInstallaties], ["Deze inspectie is uitgevoerd middels", o.uitgevoerdMiddels]
   ]);
-  omvangHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Te inspecteren onderdelen &mdash; Installatiedeel</div>' + dlTable([
+  omvangHtml += '<div class="doc-sub brk-before">Te inspecteren onderdelen &mdash; Installatiedeel</div>' + dlTable([
     ["Installatiedeel", o.installatiedeelNaam], ["Aantal m2", o.aantalM2], ["Aantal verdeelinrichtingen", o.aantalVerdeelinrichtingenDeel],
     ["Aantal regelkasten", o.aantalRegelkasten], ["Aantal vast opgestelde machines", o.aantalVastOpgesteldeMachines]
   ]);
   omvangHtml += '<div class="doc-sub">Overige informatie en afspraken</div>' + dlTable([["Overige informatie (voor de inspecteur)", o.overigeInfoInspecteur || "N.v.t."]]);
-  omvangHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Inspectieomvang</div>' + dlTable([["Inspectieomvang", o.inspectieomvangType]]);
+  omvangHtml += '<div class="doc-sub brk-before">Inspectieomvang</div>' + dlTable([["Inspectieomvang", o.inspectieomvangType]]);
   if (o.inspectieomvangType === "Steekproef") {
     omvangHtml += '<p class="doc-p">Voor het bepalen van de omvang van de steekproef wordt eerst de omvang van de te beoordelen partij bepaald: een verzameling gelijk elektrisch materieel dat op dezelfde wijze is geïnstalleerd, onder dezelfde omstandigheden en op gelijke wijze wordt gebruikt.</p>';
     omvangHtml += '<table class="std-table"><thead><tr><th>Code</th><th>Van</th><th>Tot</th><th>Steekproef</th><th>G*</th><th>F**</th></tr></thead><tbody>';
@@ -3814,8 +3816,8 @@ function buildNen1010Body() {
       vHtml += docPhotos(v.fotos, 220);
       vHtml += '</div>';
     });
-    vHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
-    vHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie visuele controle (verdeelinrichting)</div>';
+    vHtml += '<div class="doc-sub brk-before">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
+    vHtml += '<div class="doc-sub brk-before">Conclusie visuele controle (verdeelinrichting)</div>';
     var vConstateringen = "", vNr = 0;
     state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; } });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
@@ -3833,7 +3835,7 @@ function buildNen1010Body() {
   var cpHtml = "";
   var offset = 0;
   NEN1010_CONTROLEPUNTEN_GROEPEN.forEach(function(g, gi){
-    cpHtml += '<table class="std-table"' + (gi>0?' style="break-before:page;"':'') + '><thead><tr><th>' + esc(g.titel) + '</th><th style="width:110px;">Beoordeling</th></tr></thead><tbody>';
+    cpHtml += '<table class="std-table' + (gi>0?' brk-before':'') + '"><thead><tr><th>' + esc(g.titel) + '</th><th style="width:110px;">Beoordeling</th></tr></thead><tbody>';
     g.items.forEach(function(tekst, i){
       var cp = o.controlepuntenNen1010[offset+i];
       var val = cp ? cp.beoordeling : "Goed";
