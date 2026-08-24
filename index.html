@@ -1271,6 +1271,13 @@ function updateItem(id, patch) { var it = state.items.find(function(i){return i.
 function updateItemField(id, key, val) { var it = state.items.find(function(i){return i.id===id;}); if (it) it[key] = val; persistDraft(); }
 function updateVerdelerField(id, key, val) { var v = state.verdelers.find(function(x){return x.id===id;}); if (v) v[key] = val; persistDraft(); }
 function updateOmvormerField(id, key, val) { var o = state.omvormers.find(function(x){return x.id===id;}); if (o) o[key] = val; persistDraft(); }
+function updateStrengField(omvormerId, strengId, key, val) {
+  var o = state.omvormers.find(function(x){return x.id===omvormerId;});
+  if (!o || !o.strengen) return;
+  var s = o.strengen.find(function(x){return x.id===strengId;});
+  if (s) s[key] = val;
+  persistDraft();
+}
 function pasStandaardBeveiligingToe(soort, id) {
   var obj = soort === "verdeler" ? state.verdelers.find(function(x){return x.id===id;}) : state.omvormers.find(function(x){return x.id===id;});
   if (!obj) return;
@@ -1742,7 +1749,7 @@ function render() {
     var saved = state.cloudKeuringen.length > 0 ? state.cloudKeuringen : loadSaved();
     var html = '<div class="wrap">';
     html += '<div class="header"><div class="header-title" onclick="nieuweKeuring()">' + (state.object.logoData ? '<img src="' + state.object.logoData + '" style="height:32px;max-width:160px;object-fit:contain;vertical-align:middle;" />' : '&#9889; ' + esc(state.object.appNaam || "Keuringen app")) + '</div>' +
-      '<div class="header-right">' + (state.type && state.view !== "kies" ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
+      '<div class="header-right">' + (state.type && getStepOrder().indexOf(state.view) !== -1 ? '<div class="header-badge">' + TYPES[state.type].label + '</div>' : '') +
       '' +
       '<button class="overzicht-link' + (state.view === "kies" ? " actief" : "") + '" onclick="setState({view:\'kies\'})">Dashboard</button>' +
       '<button class="overzicht-link' + (state.view === "overzicht" ? " actief" : "") + '" onclick="setState({view:\'overzicht\'}); laadCloudKeuringen(); if (state.mijnRol===\'eigenaar\') laadTeam();">Opgeslagen (' + saved.length + ')</button>' +
@@ -2522,7 +2529,6 @@ function renderVerdelers() {
     h += '<div class="item-block-head"><span class="item-num">' + (idx+1) + '.</span>' +
       '<input class="item-title-input" placeholder="Naam verdeler (bijv. HVK, groepenkast 1e etage)" value="' + esc(v.naam) + '" oninput="updateVerdelerField(\'' + v.id + '\', \'naam\', this.value)" />' +
       '<button class="del-x" onclick="removeVerdeler(\'' + v.id + '\')">&#128465;</button></div>';
-    h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
     h += '<div class="grid2">';
     h += vField(v.id, "locatie", "Locatie", v.locatie, "bijv. BG (begane grond)");
     h += voorbeveiligingSelect("verdeler", v);
@@ -2539,6 +2545,7 @@ function renderVerdelers() {
     }
     h += '</div>';
     h += standaardBeveiligingBlok("verdeler", v);
+    h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
     h += classRow(v.classificatie, "updateVerdeler('" + v.id + "', {classificatie:");
     if (v.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateVerdelerField('" + v.id + "','norm',vc.norm); updateVerdelerField('" + v.id + "','opmerking',vc.omschrijving);");
@@ -2909,12 +2916,12 @@ function verzamelConstateringenMetBron() {
       }
     });
   }
-  state.constateringen.forEach(function(c){ voegToe("Vrije constatering", c, c.omschrijving); });
   state.verdelers.forEach(function(v){
     voegToe("Verdeler - " + (v.naam || "onbekend"), v, v.opmerking);
     (v.zsMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zs (foutlusimpedantie) " + (m.circuit||""), m, m.opmerking); });
     (v.ziMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zi (lusimpedantie) " + (m.circuit||""), m, m.opmerking); });
     (v.risoMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Riso " + (m.circuit||""), m, m.opmerking); });
+    (v.rloMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - RLo " + (m.omschrijving||""), m, m.opmerking); });
   });
   state.omvormers.forEach(function(o){
     voegToe("Omvormer - " + (o.naam || "onbekend"), o, o.opmerking);
@@ -2924,6 +2931,7 @@ function verzamelConstateringenMetBron() {
     (o.strengen||[]).forEach(function(s){ voegToe("Omvormer " + (o.naam||"") + " - Streng " + (s.naam||""), s, s.opmerking); });
     (o.rloMetingen||[]).forEach(function(m){ voegToe("Omvormer " + (o.naam||"") + " - RLo " + (m.omschrijving||""), m, m.opmerking); });
   });
+  state.constateringen.forEach(function(c){ voegToe("Vrije constatering", c, c.omschrijving); });
   return res;
 }
 // Geeft het doorlopende volgnummer van een item terug, gebaseerd op zijn positie in de
@@ -3072,7 +3080,7 @@ function renderRapport() {
     h += '<div class="r-page"><div class="r-h">Omvormers</div>';
     state.omvormers.forEach(function(o2){
       h += '<div style="margin-bottom:16px;break-inside:avoid;"><h3>' + esc(o2.naam || "Omvormer") + '</h3>' + constateringenIndicator(o2) + situatieFoto(o2.fotos) + '<div class="r-kv">' +
-        kv("Nominaal vermogen (kW)", o2.vermogen) + kv("Locatie", o2.locatie) + kv("Merk", o2.merk) + kv("Type", o2.type) + kv("Serienummer", o2.serienummer) + kv("Voorbeveiliging", o2.voorbeveiliging) + kv("Max DC-spanning", o2.maxDcSpanning) + kv("Imax omvormer (A)", o2.imax) + '</div>';
+        kv("Nominaal vermogen (kW)", o2.vermogen) + kv("Locatie", o2.locatie) + kv("Merk", o2.merk) + kv("Type", o2.type) + kv("Serienummer", o2.serienummer) + kv("Voorbeveiliging", o2.voorbeveiliging) + kv("Max DC-spanning", metEenheid(o2.maxDcSpanning, "V")) + kv("Imax omvormer (A)", metEenheid(o2.imax, "A")) + '</div>';
       if (o2.classificatie !== "goed") h += rConstateringBlock(o2.classificatie, o2.opmerking, [], o2.norm);
       h += rMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", o2.zsMetingen, true);
       h += rMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", o2.ziMetingen, true);
@@ -3217,6 +3225,7 @@ function rMetingTabel(titel, lijst, toonKortsluitstroom) {
   return h;
 }
 function kv(label, val) { return '<div class="k">' + label + ':</div><div>' + esc(val || "—") + '</div>'; }
+function metEenheid(val, eenheid) { return (val === undefined || val === null || val === "") ? val : (val + " " + eenheid); }
 // Overzichtsfoto van een verdeler/omvormer: puur ter illustratie, geen kader/label/badge.
 // Bepaalt automatisch of een verdeler/omvormer constateringen heeft \u2014 gebaseerd op de
 // eigen classificatie én alle onderliggende metingen (Zs/Zi/Riso/RLo/strengen).
@@ -3275,7 +3284,7 @@ function docConstatering(idx, classificatie, omschrijving, fotos, norm) {
   var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>Constatering' + (idx!=null ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
   h += '<div class="doc-constatering-body">';
   h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
-  h += docPhotos(fotos, 130);
+  h += docPhotos(fotos, 220);
   h += '</div></div>';
   return h;
 }
@@ -3289,7 +3298,7 @@ function sharedDocCss(accent) {
   '.cover-topRow { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px; }' +
   '.cover-topRow .cover-logo { margin-bottom:0; }' +
   '.cover-scios-logo { max-height:90px; max-width:180px; object-fit:contain; display:block; }' +
-  '.cover-brand { font-size:11px; color:#B8E0D8; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; }' +
+  '.cover-brand { font-size:11px; color:#1c1c1c; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; }' +
   '.cover-title { font-size:26px; font-weight:800; margin-top:8px; letter-spacing:-0.015em; color:#161513; }' +
   '.cover-sub { font-size:12.5px; font-weight:600; color:' + accent + '; margin-top:4px; letter-spacing:0.01em; }' +
   '.cover-rule { border:none; height:3px; background:linear-gradient(90deg,' + accent + ',' + accent + 'AA,transparent); margin:16px 0 20px; border-radius:3px; }' +
@@ -3297,7 +3306,7 @@ function sharedDocCss(accent) {
   '.dl-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px; }' +
   '.dl-table td { padding:7px 0; vertical-align:top; border-bottom:1px solid #F4F2EC; }' +
   '.dl-table tr:last-child td { border-bottom:none; }' +
-  '.dl-table td.dl-k { width:220px; color:#B8E0D8; font-weight:500; }' +
+  '.dl-table td.dl-k { width:220px; color:#1c1c1c; font-weight:500; }' +
   '.dl-table td.dl-v { font-weight:600; color:#1c1c1c; }' +
   '.doc-sec { margin-bottom:4px; }' +
   '.doc-sec.brk { break-before: page; }' +
@@ -3455,7 +3464,7 @@ function buildScope12Body() {
     ["Naam", o.klant], ["Adres", o.adres], ["Postcode & plaats", (o.postcode||"")+" "+(o.plaats||"")], ["Land", o.land],
     ["Aanmaakdatum inspectierapport", o.datum], ["Rapportnummer", o.rapportnummer], ["Geldigheidsduur", geldigheidsduurTekst], ["Geldigheidsdatum", geldigheidsdatum]
   ]);
-  h += '<p class="doc-p" style="font-size:10px;color:#B8E0D8;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
+  h += '<p class="doc-p" style="font-size:10px;color:#6b6659;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
   h += '</section>';
 
   // PAGINA 2 — CONCLUSIE
@@ -3478,7 +3487,7 @@ function buildScope12Body() {
     '</div>', true);
 
   // PAGINA 3 — INHOUDSOPGAVE
-  var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Constatering verdeelinrichtingen","6. Volledige meetstaat","7. Constateringen omvormers","8. Constatering overige installatiedelen","9. Controlepunten","10. Bijlage –"];
+  var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Constatering documentatie","6. Constateringen en meetstaat verdeelinrichtingen","7. Constateringen en meetstaat omvormers","8. Constatering overige installatiedelen","9. Controlepunten","10. Bijlage –"];
   h += docSec("Inhoudsopgave", tocItems.map(function(x){ var m = /^(\d+)\.\s*(.*)$/.exec(x); return '<div class="doc-toc-item"><span class="toc-num">' + (m?m[1]:"") + '</span><span class="toc-label">' + esc(m?m[2]:x) + '</span></div>'; }).join(""), false);
 
   // PAGINA 4-5 — GEGEVENS
@@ -3552,42 +3561,44 @@ function buildScope12Body() {
   docTable += '</tbody></table>' + docConstateringenHtml;
   h += docSec("Constateringen documentatie", docIntro + docTable, false);
 
-  // PAGINA 13-14 — CONSTATERINGEN VERDEELINRICHTINGEN
+  // PAGINA 13-14 — CONSTATERINGEN EN METINGEN VERDEELINRICHTINGEN
   if (state.verdelers.length > 0) {
     var vHtml = "";
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap" style="break-inside:avoid;"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
+      vHtml += '<div class="item-block-wrap"' + (vi>0 ? ' style="break-before:page;padding-top:1px;"' : '') + '><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
+      vHtml += docPhotos(v.fotos, 260);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
-      vHtml += docPhotos(v.fotos, 150);
+      if (v.classificatie !== "goed") vHtml += docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, [], v.norm);
+      vHtml += stdMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", v.zsMetingen, true);
+      vHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", v.ziMetingen, true);
+      vHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(v.testspanningRiso||"500") + " V DC)", v.risoMetingen, false);
+      vHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (v.rloMetingen||[]).map(function(m){ return { circuit: m.omschrijving, waarde: m.waarde, classificatie: m.classificatie, opmerking: m.opmerking, fotos: m.fotos, norm: m.norm }; }), false);
       vHtml += '</div>';
     });
-    vHtml += '<div class="doc-sub">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle afwijkende metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
-    vHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie visuele controle (verdeelinrichting)</div>';
-    var vConstateringen = "";
-    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") vConstateringen += docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, [], v.norm); });
-    vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele constateringen in de verdeelinrichting(en) geconstateerd.</p>';
-    h += docSec("Constateringen verdeelinrichtingen", vHtml, false);
-
-    // PAGINA 15 — VOLLEDIGE MEETSTAAT
-    var meetHtml = "";
-    state.verdelers.forEach(function(v){
-      meetHtml += '<div class="item-block-wrap"><div class="doc-sub">' + esc(v.naam || "Verdeler") + ' &mdash; ' + esc(v.locatie || "") + '</div>';
-      meetHtml += stdMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", v.zsMetingen, true);
-      meetHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", v.ziMetingen, true);
-      meetHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(v.testspanningRiso||"500") + " V DC)", v.risoMetingen, false);
-      meetHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (v.rloMetingen||[]).map(function(m){ return { circuit: m.omschrijving, waarde: m.waarde, classificatie: m.classificatie, opmerking: m.opmerking, fotos: m.fotos, norm: m.norm }; }), false);
-      meetHtml += '</div>';
-    });
-    h += docSec("Volledige meetstaat", meetHtml, true);
+    h += docSec("Constateringen en meetstaat verdeelinrichtingen", vHtml, false);
   }
 
-  // PAGINA 16-18 — CONSTATERINGEN OMVORMERS
+  // PAGINA 16-18 — CONSTATERINGEN EN METINGEN OMVORMERS
   if (state.omvormers.length > 0) {
     var oHtml = "";
     state.omvormers.forEach(function(o2, oi){
-      oHtml += '<div class="item-block-wrap" style="break-inside:avoid;"><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
-      oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer", o2.serienummer], ["Voorbeveiliging", o2.voorbeveiliging], ["Max DC-spanning", o2.maxDcSpanning], ["Nominale stroom AC", o2.imax]]);
-      oHtml += docPhotos(o2.fotos, 150);
+      oHtml += '<div class="item-block-wrap"' + (oi>0 ? ' style="break-before:page;padding-top:1px;"' : '') + '><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
+      oHtml += docPhotos(o2.fotos, 260);
+      oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer", o2.serienummer], ["Voorbeveiliging", o2.voorbeveiliging], ["Max DC-spanning", metEenheid(o2.maxDcSpanning, "V")], ["Nominale stroom AC", metEenheid(o2.imax, "A")]]);
+      if (o2.classificatie !== "goed") oHtml += docConstatering(nummerVoorItem(o2), o2.classificatie, o2.opmerking, [], o2.norm);
+      oHtml += stdMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", o2.zsMetingen, true);
+      oHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", o2.ziMetingen, true);
+      oHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(o2.testspanningRiso||"500") + " V DC)", o2.risoMetingen, false);
+      if (o2.strengen && o2.strengen.length > 0) {
+        oHtml += '<div class="doc-sub">Strengen (DC-metingen)</div>';
+        oHtml += '<table class="std-table"><thead><tr><th>Streng</th><th>Panelen</th><th style="text-align:right;">Voc (V)</th><th style="text-align:right;">Isc (A)</th><th style="text-align:right;">Riso (M&Omega;)</th><th style="text-align:center;">Polariteit</th></tr></thead><tbody>';
+        o2.strengen.forEach(function(s){ oHtml += '<tr><td>' + esc(s.naam||"—") + '</td><td>' + esc(s.aantalPanelen||"—") + '</td><td style="text-align:right;">' + esc(s.voc||"—") + '</td><td style="text-align:right;">' + esc(s.isc||"—") + '</td><td style="text-align:right;">' + esc(s.riso||"—") + '</td><td style="text-align:center;">' + (s.polariteit==="fout"?'<span class="badge" style="background:#DC3B2E;">Fout</span>':'<span class="badge" style="background:#2F7D3A;">Goed</span>') + '</td></tr>'; });
+        oHtml += '</tbody></table>';
+        var strengConst = "";
+        o2.strengen.forEach(function(s){ if (s.classificatie !== "goed") strengConst += docConstatering(nummerVoorItem(s), s.classificatie, (s.naam?s.naam+": ":"")+s.opmerking, s.fotos, s.norm); });
+        oHtml += strengConst;
+      }
+      oHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (o2.rloMetingen||[]).map(function(m){ return { circuit:m.omschrijving, waarde:m.waarde, classificatie:m.classificatie, opmerking:m.opmerking, fotos:m.fotos, norm:m.norm }; }), false);
       oHtml += '</div>';
     });
     var op = state.object;
@@ -3597,23 +3608,7 @@ function buildScope12Body() {
     oHtml += '<div class="item-block-wrap"><div class="doc-sub">Onderconstructie</div>';
     oHtml += dlTable([["Merk", op.onderconstructieMerk], ["Uitvoering", op.onderconstructieUitvoering], ["Garantie onderconstructie", op.onderconstructieGarantie]]);
     oHtml += '</div>';
-    oHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie metingen</div>';
-    state.omvormers.forEach(function(o2){
-      oHtml += stdMetingTabel("RLo-metingen (&Omega;) &mdash; " + esc(o2.naam||""), (o2.rloMetingen||[]).map(function(m){ return { circuit:m.omschrijving, waarde:m.waarde, classificatie:m.classificatie, opmerking:m.opmerking, fotos:m.fotos, norm:m.norm }; }), false);
-      if (o2.strengen && o2.strengen.length > 0) {
-        oHtml += '<table class="std-table"><thead><tr><th>Streng</th><th>Instraling (W/m&sup2;)</th><th style="text-align:right;">Open klemspanning</th><th style="text-align:right;">Kortsluitstroom</th><th style="text-align:right;">Isolatieweerstand (M&Omega;)</th></tr></thead><tbody>';
-        o2.strengen.forEach(function(s){ oHtml += '<tr><td>' + esc(s.naam||"—") + ' (' + esc(s.aantalPanelen||"—") + ' panelen)</td><td>&mdash;</td><td style="text-align:right;">' + esc(s.voc||"—") + ' V</td><td style="text-align:right;">' + esc(s.isc||"—") + ' A</td><td style="text-align:right;">' + esc(s.riso||"—") + ' M&Omega;</td></tr>'; });
-        oHtml += '</tbody></table>';
-      }
-    });
-    oHtml += '<div class="doc-sub" style="break-before:page;padding-top:1px;">Conclusie visuele controle</div>';
-    var oConst = "";
-    state.omvormers.forEach(function(o2){
-      if (o2.classificatie !== "goed") oConst += docConstatering(nummerVoorItem(o2), o2.classificatie, o2.opmerking, [], o2.norm);
-      (o2.strengen||[]).forEach(function(s){ if (s.classificatie !== "goed") oConst += docConstatering(nummerVoorItem(s), s.classificatie, (s.naam?s.naam+": ":"")+s.opmerking, s.fotos, s.norm); });
-    });
-    oHtml += oConst || '<p class="doc-p">Er zijn geen visuele constateringen bij de omvormers geconstateerd.</p>';
-    h += docSec("Constateringen omvormers", oHtml, false);
+    h += docSec("Constateringen en meetstaat omvormers", oHtml, false);
   }
 
   // PAGINA 19 — CONSTATERINGEN OVERIGE INSTALLATIEDELEN
@@ -3637,7 +3632,7 @@ function buildScope12Body() {
   h += docSec("Controlepunten", cpHtml, true);
 
   // PAGINA 24 — BIJLAGE(N)
-  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#B8E0D8;">Geen bijlagen toegevoegd.</p>', false);
+  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#6b6659;">Geen bijlagen toegevoegd.</p>', false);
 
   return h;
 }
@@ -3679,7 +3674,7 @@ function buildNen1010Body() {
     ["Datum(s) inspectie(s)", o.inspectiedatums], ["Aanmaakdatum inspectierapport", o.datum], ["Rapportnummer", o.rapportnummer],
     ["Projectnummer", o.projectnummer], ["Referentienummer", o.referentienummer], ["Geldigheidsduur", o.geldigheidsduur], ["Geldigheidsdatum", o.geldigheidsdatum || berekenGeldigheidsdatum(o.datumAfronding || o.datum, o.geldigheidsduur)]
   ]);
-  h += '<p class="doc-p" style="font-size:10px;color:#B8E0D8;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
+  h += '<p class="doc-p" style="font-size:10px;color:#6b6659;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
   h += '</section>';
 
   // PAGINA 2 — CONCLUSIE
@@ -3758,7 +3753,7 @@ function buildNen1010Body() {
     omvangHtml += '<table class="std-table"><thead><tr><th>Code</th><th>Van</th><th>Tot</th><th>Steekproef</th><th>G*</th><th>F**</th></tr></thead><tbody>';
     STEEKPROEF_TABEL.forEach(function(r){ omvangHtml += '<tr><td>' + r.code + '</td><td>' + r.van + '</td><td>' + r.tot + '</td><td>' + r.steekproef + '</td><td>' + r.g + '</td><td>' + r.f + '</td></tr>'; });
     omvangHtml += '</tbody></table>';
-    omvangHtml += '<p class="doc-p" style="font-size:10px;color:#B8E0D8;">G* = maximaal aantal defecten voor acceptatie van de gehele partij; F** = minimaal aantal defecten voor afwijzing van de gehele partij.</p>';
+    omvangHtml += '<p class="doc-p" style="font-size:10px;color:#6b6659;">G* = maximaal aantal defecten voor acceptatie van de gehele partij; F** = minimaal aantal defecten voor afwijzing van de gehele partij.</p>';
     (o.steekproeven||[]).forEach(function(s, idx){
       var r = nen1010GeldigCode(s.van, s.tot);
       omvangHtml += '<div class="doc-sub">Steekproef ' + (idx+1) + '</div>';
@@ -3782,7 +3777,7 @@ function buildNen1010Body() {
     o.documentatieNen1010.forEach(function(d){ docHtml += '<tr><td>' + esc(d.soort||"—") + '</td><td>' + esc(d.naam||"—") + '</td><td>' + esc(d.datum||"—") + '</td><td>' + esc(d.aanwezigheid||"—") + '</td><td>' + esc(d.afwijking||"Nee") + '</td></tr>'; });
     docHtml += '</tbody></table>';
   } else {
-    docHtml = '<p class="doc-p" style="color:#B8E0D8;">Geen documenten toegevoegd.</p>';
+    docHtml = '<p class="doc-p" style="color:#6b6659;">Geen documenten toegevoegd.</p>';
   }
   h += docSec("Documentatie", docHtml, (o.documentatieNen1010||[]).length > 0);
 
@@ -3863,7 +3858,7 @@ function buildNen1010Body() {
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
 
   // PAGINA — BIJLAGE(N)
-  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#B8E0D8;">Geen bijlagen toegevoegd.</p>', false);
+  h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#6b6659;">Geen bijlagen toegevoegd.</p>', false);
 
   return h;
 }
@@ -3904,7 +3899,17 @@ function stdMetingTabel(titel, lijst, toonKortsluitstroom) {
 
 function o_rapportnaamOfStandaard(typeLabel) {
   if (state.object.rapportnaam && state.object.rapportnaam.trim()) return state.object.rapportnaam.trim();
-  return "Inspectierapport_" + typeLabel + "_" + (state.object.klant || "klant") + "_" + (state.object.datum || "");
+  var o = state.object;
+  var pc = (o.postcode || "").replace(/\s+/g, "").toUpperCase();
+  var pcCijfers = (pc.match(/\d+/) || [""])[0];
+  var pcLetters = (pc.match(/[A-Z]+/) || [""])[0];
+  var huisnummerMatch = (o.adres || "").match(/(\d+)\s*[a-zA-Z]?\s*$/);
+  var huisnummer = huisnummerMatch ? huisnummerMatch[1] : "";
+  var scios = (o.scioscode || "").trim().replace(/\s+/g, "");
+  if (pcCijfers && pcLetters && scios) {
+    return pcCijfers + "_" + pcLetters + (huisnummer ? "_" + huisnummer : "") + "_" + scios;
+  }
+  return "Inspectierapport_" + typeLabel + "_" + (o.klant || "klant") + "_" + (o.datum || "");
 }
 function sanitizeBestandsnaam(naam) {
   return (naam || "Inspectierapport").trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "_").slice(0, 120) || "Inspectierapport";
