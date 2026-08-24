@@ -4034,9 +4034,23 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '  if (!pages.length) return null;' +
     '  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;' +
     '  var pdf = new jsPDFCtor({ unit: "mm", format: "a4", orientation: "portrait" });' +
+    // BELANGRIJK: alle pagina's van Paged.js staan onder elkaar in één lang document.
+    // html2canvas rendert intern standaard alleen een gebied zo groot als het zichtbare
+    // scherm (window.innerWidth/innerHeight) — pagina's die daar (ver) voorbij vallen,
+    // worden dan als LEGE afbeelding vastgelegd, ook al zie je ze op het scherm gewoon
+    // goed staan. Door windowWidth/windowHeight expliciet gelijk te zetten aan de volledige
+    // documenthoogte, laten we html2canvas het hele document renderen, zodat elke pagina —
+    // hoe ver ook naar beneden — correct wordt vastgelegd.
+    '  var volledigeBreedte = document.documentElement.scrollWidth;' +
+    '  var volledigeHoogte = document.documentElement.scrollHeight;' +
     '  for (var i = 0; i < pages.length; i++) {' +
     '    if (status) status.innerHTML = "PDF genereren&hellip; pagina " + (i+1) + " van " + pages.length;' +
-    '    var canvas = await html2canvas(pages[i], { scale: 2.2, useCORS: true, backgroundColor: "#ffffff" });' +
+    '    var rect = pages[i].getBoundingClientRect();' +
+    '    var canvas = await html2canvas(pages[i], {' +
+    '      scale: 2.2, useCORS: true, backgroundColor: "#ffffff",' +
+    '      windowWidth: volledigeBreedte, windowHeight: volledigeHoogte,' +
+    '      x: rect.left + window.scrollX, y: rect.top + window.scrollY' +
+    '    });' +
     '    var imgData = canvas.toDataURL("image/jpeg", 0.93);' +
     '    if (i > 0) pdf.addPage("a4", "portrait");' +
     '    pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");' +
