@@ -1206,10 +1206,32 @@ function syncMapIfEnabled(map, vlag) {
     cascadeUpdate(map[k], val);
   });
 }
+function genereerRapportnaam(o) {
+  var pc = (o.postcode || "").replace(/\s+/g, "").toUpperCase();
+  var pcCijfers = (pc.match(/\d+/) || [""])[0];
+  var pcLetters = (pc.match(/[A-Z]+/) || [""])[0];
+  var huisnummerMatch = (o.adres || "").match(/(\d+)\s*[a-zA-Z]?\s*$/);
+  var huisnummer = huisnummerMatch ? huisnummerMatch[1] : "";
+  var scios = (o.scioscode || "").trim().replace(/\s+/g, "");
+  if (pcCijfers && pcLetters && scios) {
+    return pcCijfers + "_" + pcLetters + (huisnummer ? "_" + huisnummer : "") + "_" + scios;
+  }
+  return "";
+}
 function updateObject(key, val) {
   state.object[key] = val;
   cascadeUpdate(key, val);
   if (key === "datumAfronding" || key === "geldigheidsduur") state.object.geldigheidsdatum = berekenGeldigheidsdatum(state.object.datumAfronding, state.object.geldigheidsduur);
+  if (key === "rapportnaam") {
+    state.object.rapportnaamHandmatig = !!val;
+  } else if ((key === "postcode" || key === "adres" || key === "scioscode") && !state.object.rapportnaamHandmatig) {
+    var auto = genereerRapportnaam(state.object);
+    if (auto) {
+      state.object.rapportnaam = auto;
+      var veld = document.getElementById("rapportnaamVeld");
+      if (veld) veld.value = auto;
+    }
+  }
   persistDraft();
   if (BEDRIJF_VELDEN.indexOf(key) !== -1) persistBedrijfsgegevens();
 }
@@ -1976,7 +1998,7 @@ function renderGegevens() {
   h += projectFotoWidget();
   h += '<div class="section-card">';
   h += '<label class="fl">Rapportnaam</label>';
-  h += '<input class="f" placeholder="bijv. Steenbakkerij17_2913LJ_Scope12" value="' + esc(o.rapportnaam) + '" oninput="updateObject(\'rapportnaam\', this.value)" />';
+  h += '<input class="f" id="rapportnaamVeld" placeholder="bijv. Steenbakkerij17_2913LJ_Scope12" value="' + esc(o.rapportnaam) + '" oninput="updateObject(\'rapportnaam\', this.value)" />';
   h += '<div style="font-size:11.5px;color:#6b6659;margin-top:4px;">Wordt gebruikt als bestandsnaam van het PDF-rapport en als naam in \u0027Opgeslagen\u0027 &mdash; laat leeg voor een automatisch gegenereerde naam.</div>';
   h += '</div>';
   if (state.klanten.length > 0) {
@@ -3899,17 +3921,9 @@ function stdMetingTabel(titel, lijst, toonKortsluitstroom) {
 
 function o_rapportnaamOfStandaard(typeLabel) {
   if (state.object.rapportnaam && state.object.rapportnaam.trim()) return state.object.rapportnaam.trim();
-  var o = state.object;
-  var pc = (o.postcode || "").replace(/\s+/g, "").toUpperCase();
-  var pcCijfers = (pc.match(/\d+/) || [""])[0];
-  var pcLetters = (pc.match(/[A-Z]+/) || [""])[0];
-  var huisnummerMatch = (o.adres || "").match(/(\d+)\s*[a-zA-Z]?\s*$/);
-  var huisnummer = huisnummerMatch ? huisnummerMatch[1] : "";
-  var scios = (o.scioscode || "").trim().replace(/\s+/g, "");
-  if (pcCijfers && pcLetters && scios) {
-    return pcCijfers + "_" + pcLetters + (huisnummer ? "_" + huisnummer : "") + "_" + scios;
-  }
-  return "Inspectierapport_" + typeLabel + "_" + (o.klant || "klant") + "_" + (o.datum || "");
+  var auto = genereerRapportnaam(state.object);
+  if (auto) return auto;
+  return "Inspectierapport_" + typeLabel + "_" + (state.object.klant || "klant") + "_" + (state.object.datum || "");
 }
 function sanitizeBestandsnaam(naam) {
   return (naam || "Inspectierapport").trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "_").slice(0, 120) || "Inspectierapport";
