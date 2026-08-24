@@ -3952,7 +3952,7 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '<div class="no-print" style="position:relative;background:#0B3B3C;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;font-family:sans-serif;gap:10px;flex-wrap:wrap;border-bottom:4px solid #E8952E;">' +
     '<span style="font-size:12.5px;font-weight:700;" id="statusLabel">' + esc(label) + ' — bezig met opmaken&hellip;</span>' +
     '<span style="flex-shrink:0;" id="btnRow">' +
-    '<button id="printBtn" onclick="window.print()" disabled style="background:#8fa39f;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;">&#128424; Print / Opslaan als PDF</button>' +
+    '<button id="printBtn" onclick="printViaPdf()" disabled style="background:#8fa39f;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;">&#128424; Print / Opslaan als PDF</button>' +
     '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:#fff;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Downloadt de PDF; met &#x27;altijd vragen waar te bewaren&#x27; aan in je browserinstellingen kies je zelf een map">&#128190; PDF downloaden</button>' +
     '<button id="mailBtn" onclick="verstuurAlsMail()" disabled style="background:#E8952E;color:#fff;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Opent het deelmenu van je toestel, met de PDF als bijlage">&#128231; Verstuur via mail</button>' +
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
@@ -4049,6 +4049,33 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     'function getPdf(status) {' +
     '  if (!cachedPdfPromise) cachedPdfPromise = genereerPdfObject(status);' +
     '  return cachedPdfPromise;' +
+    '}' +
+    'async function printViaPdf() {' +
+    '  var btn = document.getElementById("printBtn");' +
+    '  var status = document.getElementById("statusLabel");' +
+    // BELANGRIJK: we gebruiken hier bewust NIET window.print() op de live Paged.js-pagina.
+    // Op sommige toestellen (met name iOS) rekent het systeem-printvenster de paginamarges
+    // van @page nog EEN KEER bovenop de al kant-en-klare pagina's die Paged.js heeft opgemaakt.
+    // Daardoor past de inhoud net niet meer op de pagina en schuift de rest door naar een
+    // volgende, lege pagina — voor letterlijk elke pagina, dus een dubbel zo dik "rapport"
+    // met alleen maar lege pagina's ertussen. Door in plaats daarvan de reeds opgebouwde,
+    // correcte PDF (dezelfde als bij "PDF downloaden") te openen en DAARVAN te printen,
+    // printen we een kant-en-klaar, plat document zonder dat dat probleem kan optreden.
+    '  if (typeof html2canvas === "undefined" || !((window.jspdf && window.jspdf.jsPDF) || window.jsPDF)) {' +
+    '    status.innerHTML = "Deze knop kon niet laden (internetverbinding) — probeer het later opnieuw.";' +
+    '    return;' +
+    '  }' +
+    '  btn.disabled = true; btn.style.cursor = "wait";' +
+    '  var pdf = await getPdf(status);' +
+    '  if (!pdf) { alert("Het rapport is nog niet klaar met opmaken, probeer het zo nogmaals."); btn.disabled = false; btn.style.cursor = "pointer"; return; }' +
+    '  var blobUrl = URL.createObjectURL(pdf.output("blob"));' +
+    '  var printWin = window.open(blobUrl, "_blank");' +
+    '  if (!printWin) {' +
+    '    status.innerHTML = "Pop-up geblokkeerd — sta pop-ups toe, of gebruik \\\\u0027PDF downloaden\\\\u0027 en print het gedownloade bestand.";' +
+    '  } else {' +
+    '    status.innerHTML = "De PDF is geopend in een nieuw tabblad. Gebruik daar de printfunctie (of \\\\u0027Opslaan als PDF\\\\u0027) van je toestel.";' +
+    '  }' +
+    '  btn.disabled = false; btn.style.cursor = "pointer";' +
     '}' +
     'async function exporteerAlsPdf() {' +
     '  var btn = document.getElementById("exportBtn");' +
