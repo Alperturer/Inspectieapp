@@ -3627,7 +3627,7 @@ function buildScope12Body() {
       oHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(o2.testspanningRiso||"500") + " V DC)", o2.risoMetingen, false);
       if (o2.strengen && o2.strengen.length > 0) {
         oHtml += '<div class="doc-sub">Strengen (DC-metingen)</div>';
-        oHtml += '<table class="std-table"><thead><tr><th>Streng</th><th>Panelen</th><th style="text-align:right;">Voc (V)</th><th style="text-align:right;">Isc (A)</th><th style="text-align:right;">Riso (M&Omega;)</th><th style="text-align:center;">Polariteit</th></tr></thead><tbody>';
+        oHtml += '<table class="std-table meet-table"><colgroup><col style="width:22%;" /><col style="width:18%;" /><col style="width:15%;" /><col style="width:15%;" /><col style="width:15%;" /><col style="width:15%;" /></colgroup><thead><tr><th>Streng</th><th>Panelen</th><th style="text-align:right;">Voc (V)</th><th style="text-align:right;">Isc (A)</th><th style="text-align:right;">Riso (M&Omega;)</th><th style="text-align:center;">Polariteit</th></tr></thead><tbody>';
         o2.strengen.forEach(function(s){ oHtml += '<tr><td>' + esc(s.naam||"—") + '</td><td>' + esc(s.aantalPanelen||"—") + '</td><td style="text-align:right;">' + esc(s.voc||"—") + '</td><td style="text-align:right;">' + esc(s.isc||"—") + '</td><td style="text-align:right;">' + esc(s.riso||"—") + '</td><td style="text-align:center;">' + (s.polariteit==="fout"?'<span class="badge" style="background:#DC3B2E;">Fout</span>':'<span class="badge" style="background:#2F7D3A;">Goed</span>') + '</td></tr>'; });
         oHtml += '</tbody></table>';
         var strengConst = "";
@@ -3927,9 +3927,9 @@ function actieRow(nrKleur, term, bg, fg, actie, richttermijn) {
 function stdMetingTabel(titel, lijst, toonKortsluitstroom) {
   if (!lijst || lijst.length === 0) return "";
   var h = '<div class="doc-sub" style="margin-top:8px;">' + titel + '</div>';
-  h += '<table class="std-table meet-table"><colgroup><col style="width:auto;" />' +
-    '<col style="width:78px;" />' + (toonKortsluitstroom ? '<col style="width:66px;" />' : '') + '<col style="width:70px;" /></colgroup>' +
-    '<thead><tr><th>Circuit</th><th style="text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="text-align:right;">I&#8342; (A)</th>' : '') + '<th style="text-align:center;">Classificatie</th></tr></thead><tbody>';
+  h += '<table class="std-table meet-table"><colgroup>' +
+    (toonKortsluitstroom ? '<col style="width:58%;" /><col style="width:15%;" /><col style="width:15%;" /><col style="width:12%;" />' : '<col style="width:73%;" /><col style="width:15%;" /><col style="width:12%;" />') +
+    '</colgroup><thead><tr><th>Circuit</th><th style="text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="text-align:right;">I&#8342; (A)</th>' : '') + '<th style="text-align:center;">Classificatie</th></tr></thead><tbody>';
   lijst.forEach(function(m){
     h += '<tr><td>' + esc(m.circuit||"—") + '</td><td style="text-align:right;">' + esc(m.waarde||"—") + '</td>' + (toonKortsluitstroom ? '<td style="text-align:right;">' + (m.kortsluitstroom ? esc(m.kortsluitstroom) : "—") + '</td>' : '') + '<td style="text-align:center;">' + beoordelingBadge(m.classificatie) + '</td></tr>';
   });
