@@ -3347,7 +3347,7 @@ function sharedDocCss(accent) {
   'table.color-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; break-inside:avoid; border-radius:6px; overflow:hidden; }' +
   'table.color-table td { padding:7px 10px; vertical-align:top; }' +
   '.doc-table-block { break-inside:avoid; }' +
-  '.badge { display:inline-block; font-size:10.5px; font-weight:800; padding:4.5px 13px; border-radius:999px; color:#fff; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.18); }' +
+  '.badge { display:inline-block; font-size:10px; font-weight:800; padding:3.5px 11px; border-radius:999px; color:#fff; letter-spacing:0.02em; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.18); }' +
   '.cp-pill { display:inline-block; font-size:10px; font-weight:700; padding:4.5px 12px; border-radius:999px; white-space:nowrap; }' +
   '.doc-constatering { border:1px solid #EAE7DF; border-radius:8px; margin:9px 0; break-inside:avoid; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.04); }' +
   '.doc-constatering-head { display:flex; justify-content:space-between; align-items:center; background:#F7F6F1; padding:10px 14px; font-size:11.5px; font-weight:700; gap:8px; border-bottom:1px solid #EAE7DF; }' +
@@ -3365,6 +3365,10 @@ function sharedDocCss(accent) {
   '.toc-label { flex:1; padding:9px 0; font-weight:600; color:#242220; }' +
   '.item-block-wrap { margin-bottom:10px; }' +
   '.item-block-wrap > .doc-sub:first-child { margin-top:0; }' +
+  'table.meet-table { font-size:10.5px; margin-top:4px; }' +
+  'table.meet-table th { padding:4px 7px; font-size:9.5px; }' +
+  'table.meet-table td { padding:3px 7px; }' +
+  'table.meet-table .badge { padding:2.5px 8px; font-size:9px; min-width:44px; text-align:center; }' +
   '.no-print { }' +
   '@media print { .no-print { display:none !important; } }';
 }
@@ -3922,8 +3926,10 @@ function actieRow(nrKleur, term, bg, fg, actie, richttermijn) {
 }
 function stdMetingTabel(titel, lijst, toonKortsluitstroom) {
   if (!lijst || lijst.length === 0) return "";
-  var h = '<div class="doc-sub" style="margin-top:10px;">' + titel + '</div>';
-  h += '<table class="std-table"><thead><tr><th>Circuit</th><th style="text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="text-align:right;">Kortsluitstroom</th>' : '') + '<th style="text-align:center;width:90px;">Classificatie</th></tr></thead><tbody>';
+  var h = '<div class="doc-sub" style="margin-top:8px;">' + titel + '</div>';
+  h += '<table class="std-table meet-table"><colgroup><col style="width:auto;" />' +
+    '<col style="width:82px;" />' + (toonKortsluitstroom ? '<col style="width:82px;" />' : '') + '<col style="width:70px;" /></colgroup>' +
+    '<thead><tr><th>Circuit</th><th style="text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="text-align:right;">Kortsluitstroom</th>' : '') + '<th style="text-align:center;">Classificatie</th></tr></thead><tbody>';
   lijst.forEach(function(m){
     h += '<tr><td>' + esc(m.circuit||"—") + '</td><td style="text-align:right;">' + esc(m.waarde||"—") + '</td>' + (toonKortsluitstroom ? '<td style="text-align:right;">' + (m.kortsluitstroom ? esc(m.kortsluitstroom) + ' A' : "—") + '</td>' : '') + '<td style="text-align:center;">' + beoordelingBadge(m.classificatie) + '</td></tr>';
   });
