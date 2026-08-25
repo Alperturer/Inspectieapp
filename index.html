@@ -3338,10 +3338,10 @@ function sharedDocCss(accent) {
   '.doc-sub { font-size:14px; font-weight:700; margin:11px 0 5px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
   '.doc-p { font-size:12px; line-height:1.5; margin:3px 0; color:#3a382f; }' +
   'table.std-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; margin-top:5px; table-layout:fixed; }' +
-  'table.std-table th { text-align:left; font-size:10.5px; color:#6b6659; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; background:#F7F6F1; border-bottom:1.5px solid ' + accent + '44; padding:6px 9px; }' +
+  'table.std-table th { text-align:left; font-size:10.5px; color:#6b6659; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; background:#F7F6F1; border-bottom:1.5px solid ' + accent + '44; padding:6px 9px; overflow-wrap:anywhere; word-break:break-word; }' +
   'table.std-table th:first-child { border-top-left-radius:6px; }' +
   'table.std-table th:last-child { border-top-right-radius:6px; }' +
-  'table.std-table td { padding:5px 9px; border-bottom:1px solid #F2F0EA; vertical-align:top; break-inside:avoid; }' +
+  'table.std-table td { padding:5px 9px; border-bottom:1px solid #F2F0EA; vertical-align:top; break-inside:avoid; overflow-wrap:anywhere; word-break:break-word; }' +
   'table.std-table tbody tr:nth-child(even) td { background:#FBFAF7; }' +
   'table.std-table tr { break-inside:avoid; }' +
   'table.color-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; break-inside:avoid; border-radius:6px; overflow:hidden; }' +
@@ -3928,10 +3928,10 @@ function stdMetingTabel(titel, lijst, toonKortsluitstroom) {
   if (!lijst || lijst.length === 0) return "";
   var h = '<div class="doc-sub" style="margin-top:8px;">' + titel + '</div>';
   h += '<table class="std-table meet-table"><colgroup><col style="width:auto;" />' +
-    '<col style="width:82px;" />' + (toonKortsluitstroom ? '<col style="width:82px;" />' : '') + '<col style="width:70px;" /></colgroup>' +
-    '<thead><tr><th>Circuit</th><th style="text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="text-align:right;">Kortsluitstroom</th>' : '') + '<th style="text-align:center;">Classificatie</th></tr></thead><tbody>';
+    '<col style="width:78px;" />' + (toonKortsluitstroom ? '<col style="width:66px;" />' : '') + '<col style="width:70px;" /></colgroup>' +
+    '<thead><tr><th>Circuit</th><th style="text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="text-align:right;">I&#8342; (A)</th>' : '') + '<th style="text-align:center;">Classificatie</th></tr></thead><tbody>';
   lijst.forEach(function(m){
-    h += '<tr><td>' + esc(m.circuit||"—") + '</td><td style="text-align:right;">' + esc(m.waarde||"—") + '</td>' + (toonKortsluitstroom ? '<td style="text-align:right;">' + (m.kortsluitstroom ? esc(m.kortsluitstroom) + ' A' : "—") + '</td>' : '') + '<td style="text-align:center;">' + beoordelingBadge(m.classificatie) + '</td></tr>';
+    h += '<tr><td>' + esc(m.circuit||"—") + '</td><td style="text-align:right;">' + esc(m.waarde||"—") + '</td>' + (toonKortsluitstroom ? '<td style="text-align:right;">' + (m.kortsluitstroom ? esc(m.kortsluitstroom) : "—") + '</td>' : '') + '<td style="text-align:center;">' + beoordelingBadge(m.classificatie) + '</td></tr>';
   });
   h += '</tbody></table>';
   lijst.forEach(function(m){
