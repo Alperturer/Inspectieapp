@@ -3326,7 +3326,7 @@ function sharedDocCss(accent) {
   '.cover-rule { border:none; height:3px; background:linear-gradient(90deg,' + accent + ',' + accent + 'AA,transparent); margin:16px 0 20px; border-radius:3px; }' +
   '.cover-photo { width:100%; height:118mm; object-fit:cover; border-radius:8px; margin-bottom:18px; display:block; box-shadow:0 2px 14px rgba(0,0,0,0.14); }' +
   '.dl-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px; }' +
-  '.dl-table td { padding:7px 0; vertical-align:top; border-bottom:1px solid #F4F2EC; }' +
+  '.dl-table td { padding:5px 0; vertical-align:top; border-bottom:1px solid #F4F2EC; }' +
   '.dl-table tr:last-child td { border-bottom:none; }' +
   '.dl-table td.dl-k { width:220px; color:#1c1c1c; font-weight:500; }' +
   '.dl-table td.dl-v { font-weight:600; color:#1c1c1c; }' +
@@ -3334,14 +3334,14 @@ function sharedDocCss(accent) {
   '.doc-sec.brk { break-before: page; }' +
   '.brk-before { break-before: page; padding-top: 1px; }' +
   'table.brk-before { break-before: page; }' +
-  '.doc-h { font-size:19px; font-weight:800; letter-spacing:0.01em; margin:2px 0 16px; padding-bottom:10px; padding-left:14px; border-bottom:1px solid #EAE7DF; border-left:5px solid ' + accent + '; break-after:avoid; color:#161513; }' +
-  '.doc-sub { font-size:14px; font-weight:700; margin:14px 0 6px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
-  '.doc-p { font-size:12px; line-height:1.55; margin:4px 0; color:#3a382f; }' +
-  'table.std-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; margin-top:6px; table-layout:fixed; }' +
-  'table.std-table th { text-align:left; font-size:10.5px; color:#6b6659; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; background:#F7F6F1; border-bottom:1.5px solid ' + accent + '44; padding:7px 9px; }' +
+  '.doc-h { font-size:19px; font-weight:800; letter-spacing:0.01em; margin:2px 0 14px; padding-bottom:9px; padding-left:14px; border-bottom:1px solid #EAE7DF; border-left:5px solid ' + accent + '; break-after:avoid; color:#161513; }' +
+  '.doc-sub { font-size:14px; font-weight:700; margin:11px 0 5px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
+  '.doc-p { font-size:12px; line-height:1.5; margin:3px 0; color:#3a382f; }' +
+  'table.std-table { width:100%; border-collapse:separate; border-spacing:0; font-size:12px; margin-top:5px; table-layout:fixed; }' +
+  'table.std-table th { text-align:left; font-size:10.5px; color:#6b6659; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; background:#F7F6F1; border-bottom:1.5px solid ' + accent + '44; padding:6px 9px; }' +
   'table.std-table th:first-child { border-top-left-radius:6px; }' +
   'table.std-table th:last-child { border-top-right-radius:6px; }' +
-  'table.std-table td { padding:6px 9px; border-bottom:1px solid #F2F0EA; vertical-align:top; break-inside:avoid; }' +
+  'table.std-table td { padding:5px 9px; border-bottom:1px solid #F2F0EA; vertical-align:top; break-inside:avoid; }' +
   'table.std-table tbody tr:nth-child(even) td { background:#FBFAF7; }' +
   'table.std-table tr { break-inside:avoid; }' +
   'table.color-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; break-inside:avoid; border-radius:6px; overflow:hidden; }' +
@@ -3363,7 +3363,8 @@ function sharedDocCss(accent) {
   '.doc-toc-item { font-size:12px; padding:0; border-bottom:1px solid #F2F0EA; display:flex; align-items:center; gap:11px; }' +
   '.toc-num { flex-shrink:0; width:22px; height:22px; border-radius:50%; background:' + accent + '14; color:' + accent + '; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }' +
   '.toc-label { flex:1; padding:9px 0; font-weight:600; color:#242220; }' +
-  '.item-block-wrap { margin-bottom:18px; break-inside:avoid; }' +
+  '.item-block-wrap { margin-bottom:10px; }' +
+  '.item-block-wrap > .doc-sub:first-child { margin-top:0; }' +
   '.no-print { }' +
   '@media print { .no-print { display:none !important; } }';
 }
@@ -3428,8 +3429,11 @@ function buildMethodeClassificatieHtml() {
   [["A","Defect in beschermingsmaatregel, onder normale bedrijfsomstandigheden bereikbaar"],["B","Brandgevaar door elektrisch materieel"],["C","Beschikbaarheid en betrouwbaarheid van elektrisch materieel"],["D","Gevolg van defect elektrisch materieel, ontwerp- of toepassingsfout"],["E","Elektrisch materieel niet geschikt voor invloeden van buitenaf"],["F","Geen of onjuiste informatie"]].forEach(function(r){ classHtml += '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>'; });
   classHtml += '</tbody></table>';
   classHtml += '</div>';
-  classHtml += '<div class="doc-table-block">';
-  classHtml += '<div class="doc-sub">Tabel 3: Actie en richttermijnen naar aanleiding van constateringen</div>';
+  return classHtml;
+}
+function buildTabel3Html() {
+  var classHtml = '<div class="doc-table-block">';
+  classHtml += '<div class="doc-sub" style="margin-top:0;">Tabel 3: Actie en richttermijnen naar aanleiding van constateringen</div>';
   classHtml += '<p class="doc-p">Ernstige constateringen worden apart en direct gemeld; de installatie-eigenaar blijft te allen tijde verantwoordelijk voor herstel. Is herstel met herbeoordeling niet binnen 12 maanden na de inspectiedatum uitgevoerd, dan vervalt het inspectieresultaat.</p>';
   classHtml += '<table class="color-table"><tr style="background:#9A9A9A;color:#fff;"><td style="font-weight:700;width:15%;"></td><td style="font-weight:700;width:16%;">Classificatie</td><td style="font-weight:700;">Actie</td><td style="font-weight:700;width:22%;">Richttermijn herstel</td></tr>';
   classHtml += actieRow("1 - Rood", "Ernstig", "#DC3B2E", "#fff", "Direct maatregelen nemen; mondeling én schriftelijk melden; direct veiligstellen of verhelpen.", "Direct veiligstellen of verhelpen");
@@ -3513,7 +3517,7 @@ function buildScope12Body() {
 
   // PAGINA 3 — INHOUDSOPGAVE
   var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Constatering documentatie","6. Constateringen en meetstaat verdeelinrichtingen","7. Constateringen en meetstaat omvormers","8. Constatering overige installatiedelen","9. Controlepunten","10. Bijlage –"];
-  h += docSec("Inhoudsopgave", tocItems.map(function(x){ var m = /^(\d+)\.\s*(.*)$/.exec(x); return '<div class="doc-toc-item"><span class="toc-num">' + (m?m[1]:"") + '</span><span class="toc-label">' + esc(m?m[2]:x) + '</span></div>'; }).join(""), false);
+  h += docSec("Inhoudsopgave", tocItems.map(function(x){ var m = /^(\d+)\.\s*(.*)$/.exec(x); return '<div class="doc-toc-item"><span class="toc-num">' + (m?m[1]:"") + '</span><span class="toc-label">' + esc(m?m[2]:x) + '</span></div>'; }).join(""), true);
 
   // PAGINA 4-5 — GEGEVENS
   var gegevensHtml = '<div class="doc-sub">Installatie (object)</div>' + dlTable([
@@ -3542,14 +3546,14 @@ function buildScope12Body() {
   ]);
   h += docSec("Gegevens", gegevensHtml, true);
 
-  // PAGINA 6-7 — METHODE VAN CLASSIFICATIE
-  h += docSec("Methode van classificatie", buildMethodeClassificatieHtml(), false);
+  // PAGINA 7 — METHODE VAN CLASSIFICATIE
+  h += docSec("Methode van classificatie", buildMethodeClassificatieHtml(), true);
 
-  // PAGINA 8 — SAMENVATTING
-  h += docSec("Samenvatting", buildSamenvattingHtml(counts, afwijkend), false);
+  // PAGINA 8 — TABEL 3 + SAMENVATTING (samen, eigen pagina)
+  h += docSec("Tabel 3 & Samenvatting", buildTabel3Html() + '<div class="doc-h" style="margin-top:24px;">Samenvatting</div>' + buildSamenvattingHtml(counts, afwijkend), true);
 
-  // PAGINA 9-10 — INSPECTIEOMVANG
-  var omvangHtml = '<div class="doc-sub">Algemeen</div>' + dlTable([
+  // PAGINA 9 — INSPECTIEOMVANG (algemeen/normen/inspectie)
+  var omvangHtml = '<div class="doc-sub" style="margin-top:0;">Algemeen</div>' + dlTable([
     ["Jaar van aanleg", o.jaarVanAanleg], ["Van toepassing zijnde wet- en regelgeving", o.wetgeving], ["Bouwjaar PV-installatie", o.bouwjaarPV],
     ["Kenmerk toegepaste inspectieplan", o.kenmerkInspectieplan], ["Datum toegepaste inspectieplan", o.datumInspectieplan]
   ]);
@@ -3561,20 +3565,23 @@ function buildScope12Body() {
     ["Deze inspectie heeft betrekking op", o.betrekkingOp], ["Gebruiksfunctie(s)", o.gebruiksfuncties], ["Uitsluitingen in deze inspectie", o.uitsluitingen],
     ["Bijzondere installaties, ruimten en terreinen", o.bijzondereInstallaties], ["Deze inspectie is uitgevoerd middels", o.uitgevoerdMiddels]
   ]);
-  omvangHtml += '<div class="doc-sub brk-before">Te inspecteren onderdelen &mdash; Installatiedeel 1</div>' + dlTable([
+  h += docSec("Inspectieomvang", omvangHtml, true);
+
+  // PAGINA 10 — TE INSPECTEREN ONDERDELEN (INSTALLATIEDEEL 1), eigen pagina
+  var installatiedeelHtml = '<div class="doc-sub" style="margin-top:0;">Installatiedeel 1</div>' + dlTable([
     ["Installatiedeel", o.installatiedeelNaam], ["Type bouwvorm", o.typeBouwvorm], ["Totaal Wattpiek", o.totaalWattpiek], ["Aantal panelen", o.aantalPanelen],
     ["Aantal strings", o.aantalStrings], ["Aantal omvormers", o.aantalOmvormersDeel], ["Aantal stringboxen", o.aantalStringboxen],
     ["Typologie omvormers", o.typologieOmvormers], ["Merk/type DC-connectoren", o.merkTypeDcConnectoren], ["Is de installatie volledig visueel zichtbaar", o.volledigZichtbaar]
   ]);
-  omvangHtml += '<p class="doc-p">Inspecties en de bijbehorende metingen en beproevingen worden op locatie uitgevoerd, aan de hand van het overeengekomen inspectieplan en de noodzakelijke documenten en instructies.</p>';
-  omvangHtml += dlTable([["Inspectieomvang", o.inspectieomvangPct]]);
-  omvangHtml += '<div class="doc-sub">Inspectiefrequentie</div>' + dlTable([["Inspectiefrequentie conform", o.inspectiefrequentieConform], ["Inspectietermijn", o.inspectietermijn]]);
-  omvangHtml += '<div class="doc-sub">Aanvullende diensten</div>' + dlTable([["Thermografie verdeelinrichtingen", o.thermografieVerdeel], ["Thermografie PV", o.thermografiePV], ["I/U-curves", o.iuCurves]]);
-  h += docSec("Inspectieomvang", omvangHtml, false);
+  installatiedeelHtml += '<p class="doc-p">Inspecties en de bijbehorende metingen en beproevingen worden op locatie uitgevoerd, aan de hand van het overeengekomen inspectieplan en de noodzakelijke documenten en instructies.</p>';
+  installatiedeelHtml += dlTable([["Inspectieomvang", o.inspectieomvangPct]]);
+  installatiedeelHtml += '<div class="doc-sub">Inspectiefrequentie</div>' + dlTable([["Inspectiefrequentie conform", o.inspectiefrequentieConform], ["Inspectietermijn", o.inspectietermijn]]);
+  installatiedeelHtml += '<div class="doc-sub">Aanvullende diensten</div>' + dlTable([["Thermografie verdeelinrichtingen", o.thermografieVerdeel], ["Thermografie PV", o.thermografiePV], ["I/U-curves", o.iuCurves]]);
+  h += docSec("Te inspecteren onderdelen", installatiedeelHtml, true);
 
   // PAGINA 11-12 — CONSTATERINGEN DOCUMENTATIE
   var docIntro = '<p class="doc-p">De inspectie is uitgevoerd aan de hand van de door de opdrachtgever beschikbaar gestelde tekeningen en documenten.</p>';
-  var docTable = '<div class="doc-sub brk-before">Documentatie conform NEN-EN-IEC 62446-1</div>';
+  var docTable = '<div class="doc-sub">Documentatie conform NEN-EN-IEC 62446-1</div>';
   docTable += '<table class="std-table"><thead><tr><th>Soort document</th><th>Beschikbaarheid</th><th style="width:80px;">Constatering</th></tr></thead><tbody>';
   var docConstateringenHtml = "";
   (o.documentatie||[]).forEach(function(d, idx){
@@ -3584,7 +3591,7 @@ function buildScope12Body() {
     if (heeftConstatering) { docConstateringenHtml += docConstatering(nummerVoorItem(d), d.classificatie || "gering", esc(def.label) + " is niet beschikbaar/aangeleverd.", [], ""); }
   });
   docTable += '</tbody></table>' + docConstateringenHtml;
-  h += docSec("Constateringen documentatie", docIntro + docTable, false);
+  h += docSec("Constateringen documentatie", docIntro + docTable, true);
 
   // PAGINA 13-14 — CONSTATERINGEN EN METINGEN VERDEELINRICHTINGEN
   if (state.verdelers.length > 0) {
@@ -3600,7 +3607,7 @@ function buildScope12Body() {
       vHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (v.rloMetingen||[]).map(function(m){ return { circuit: m.omschrijving, waarde: m.waarde, classificatie: m.classificatie, opmerking: m.opmerking, fotos: m.fotos, norm: m.norm }; }), false);
       vHtml += '</div>';
     });
-    h += docSec("Constateringen en meetstaat verdeelinrichtingen", vHtml, false);
+    h += docSec("Constateringen en meetstaat verdeelinrichtingen", vHtml, true);
   }
 
   // PAGINA 16-18 — CONSTATERINGEN EN METINGEN OMVORMERS
@@ -3626,14 +3633,15 @@ function buildScope12Body() {
       oHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (o2.rloMetingen||[]).map(function(m){ return { circuit:m.omschrijving, waarde:m.waarde, classificatie:m.classificatie, opmerking:m.opmerking, fotos:m.fotos, norm:m.norm }; }), false);
       oHtml += '</div>';
     });
+    h += docSec("Constateringen en meetstaat omvormers", oHtml, true);
+
+    // PAGINA — GEGEVENS PANELEN EN ONDERCONSTRUCTIE, eigen pagina
     var op = state.object;
-    oHtml += '<div class="item-block-wrap"><div class="doc-sub">Gegevens panelen</div>';
-    oHtml += dlTable([["Merk", op.paneelMerk], ["Type", op.paneelType], ["Wattpiek per paneel (Wp)", op.paneelWp], ["Voc STC (V)", op.paneelVocStc], ["Isc STC (A)", op.paneelIscStc], ["Garantie panelen", op.paneelGarantie]]);
-    oHtml += '</div>';
-    oHtml += '<div class="item-block-wrap"><div class="doc-sub">Onderconstructie</div>';
-    oHtml += dlTable([["Merk", op.onderconstructieMerk], ["Uitvoering", op.onderconstructieUitvoering], ["Garantie onderconstructie", op.onderconstructieGarantie]]);
-    oHtml += '</div>';
-    h += docSec("Constateringen en meetstaat omvormers", oHtml, false);
+    var panelenHtml = '<div class="doc-sub" style="margin-top:0;">Gegevens panelen</div>';
+    panelenHtml += dlTable([["Merk", op.paneelMerk], ["Type", op.paneelType], ["Wattpiek per paneel (Wp)", op.paneelWp], ["Voc STC (V)", op.paneelVocStc], ["Isc STC (A)", op.paneelIscStc], ["Garantie panelen", op.paneelGarantie]]);
+    panelenHtml += '<div class="doc-sub">Onderconstructie</div>';
+    panelenHtml += dlTable([["Merk", op.onderconstructieMerk], ["Uitvoering", op.onderconstructieUitvoering], ["Garantie onderconstructie", op.onderconstructieGarantie]]);
+    h += docSec("Gegevens panelen en onderconstructie", panelenHtml, true);
   }
 
   // PAGINA 19 — CONSTATERINGEN OVERIGE INSTALLATIEDELEN
@@ -3645,13 +3653,14 @@ function buildScope12Body() {
   var cpHtml = '<p class="doc-p">Beoordeeld is in hoeverre de installatie voldoet aan de op dit rapport van toepassing zijnde controlepunten.</p>';
   var offset = 0;
   CONTROLEPUNTEN_GROEPEN.forEach(function(g, gi){
-    cpHtml += '<div class="doc-sub' + (gi>0?' brk-before':'') + '">' + esc(g.titel) + '</div>';
+    cpHtml += '<div class="doc-table-block">';
+    cpHtml += '<div class="doc-sub"' + (gi===0?' style="margin-top:0;"':'') + '>' + esc(g.titel) + '</div>';
     cpHtml += '<table class="std-table"><tbody>';
     g.items.forEach(function(tekst, i){
       var cp = o.controlepunten[offset+i];
       cpHtml += '<tr><td>' + esc(tekst) + '</td><td style="width:150px;text-align:right;">' + beoordelingPill(cp ? cp.beoordeling : "Niet van toepassing") + '</td></tr>';
     });
-    cpHtml += '</tbody></table>';
+    cpHtml += '</tbody></table></div>';
     offset += g.items.length;
   });
   h += docSec("Controlepunten", cpHtml, true);
@@ -3719,7 +3728,7 @@ function buildNen1010Body() {
   var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Documentatie","6. Bevindingen verdeelinrichtingen","7. Bevindingen overige installatiedelen","8. Controlepunten","9. Volledige meetstaat"];
   if (o.inspectiefrequentieConform === "NEN 3140") tocItems.push("10. Bijlage - Inspectiefrequentie NEN 3140");
   tocItems.push((tocItems.length+1) + ". Opsomming constateringen", (tocItems.length+2) + ". Bijlage -");
-  h += docSec("Inhoudsopgave", tocItems.map(function(x){ var m = /^(\d+)\.\s*(.*)$/.exec(x); return '<div class="doc-toc-item"><span class="toc-num">' + (m?m[1]:"") + '</span><span class="toc-label">' + esc(m?m[2]:x) + '</span></div>'; }).join(""), false);
+  h += docSec("Inhoudsopgave", tocItems.map(function(x){ var m = /^(\d+)\.\s*(.*)$/.exec(x); return '<div class="doc-toc-item"><span class="toc-num">' + (m?m[1]:"") + '</span><span class="toc-label">' + esc(m?m[2]:x) + '</span></div>'; }).join(""), true);
 
   // PAGINA 4-5 — GEGEVENS
   var gegevensHtml = '<div class="doc-sub">Installatie (object)</div>' + dlTable([
@@ -3751,14 +3760,14 @@ function buildNen1010Body() {
   ]);
   h += docSec("Gegevens", gegevensHtml, true);
 
-  // PAGINA 6-7 — METHODE VAN CLASSIFICATIE
-  h += docSec("Methode van classificatie", buildMethodeClassificatieHtml(), false);
+  // PAGINA — METHODE VAN CLASSIFICATIE
+  h += docSec("Methode van classificatie", buildMethodeClassificatieHtml(), true);
 
-  // PAGINA 8 — SAMENVATTING
-  h += docSec("Samenvatting", buildSamenvattingHtml(counts, afwijkend), false);
+  // PAGINA — TABEL 3 + SAMENVATTING (samen, eigen pagina)
+  h += docSec("Tabel 3 & Samenvatting", buildTabel3Html() + '<div class="doc-h" style="margin-top:24px;">Samenvatting</div>' + buildSamenvattingHtml(counts, afwijkend), true);
 
-  // PAGINA 9-12 — INSPECTIEOMVANG
-  var omvangHtml = '<div class="doc-sub">Algemeen</div>' + dlTable([["Jaar van aanleg", o.jaarVanAanleg], ["Van toepassing zijnde wet- en regelgeving", o.wetgeving]]);
+  // PAGINA — INSPECTIEOMVANG (algemeen/normen/inspectie/overig)
+  var omvangHtml = '<div class="doc-sub" style="margin-top:0;">Algemeen</div>' + dlTable([["Jaar van aanleg", o.jaarVanAanleg], ["Van toepassing zijnde wet- en regelgeving", o.wetgeving]]);
   omvangHtml += '<div class="doc-sub">Normen van toepassing</div>' + dlTable([
     ["Type NEN 1010", o.typeNen1010], ["Wijze van classificeren", o.wijzeClassificeren], ["Template versie", o.templateVersie],
     ["Overige normen", o.overigeNormen], ["Aanvullende eisen", o.aanvullendeEisen]
@@ -3767,33 +3776,36 @@ function buildNen1010Body() {
     ["Deze inspectie heeft betrekking op", o.betrekkingOp], ["Gebruiksfunctie(s)", o.gebruiksfuncties], ["Uitsluitingen in deze inspectie", o.uitsluitingen],
     ["Bijzondere installaties, ruimten en terreinen", o.bijzondereInstallaties], ["Deze inspectie is uitgevoerd middels", o.uitgevoerdMiddels]
   ]);
-  omvangHtml += '<div class="doc-sub brk-before">Te inspecteren onderdelen &mdash; Installatiedeel</div>' + dlTable([
+  omvangHtml += '<div class="doc-sub">Overige informatie en afspraken</div>' + dlTable([["Overige informatie (voor de inspecteur)", o.overigeInfoInspecteur || "N.v.t."]]);
+  h += docSec("Inspectieomvang", omvangHtml, true);
+
+  // PAGINA — TE INSPECTEREN ONDERDELEN + OMVANG/FREQUENTIE, eigen pagina
+  var installatiedeelHtml = '<div class="doc-sub" style="margin-top:0;">Te inspecteren onderdelen &mdash; Installatiedeel</div>' + dlTable([
     ["Installatiedeel", o.installatiedeelNaam], ["Aantal m2", o.aantalM2], ["Aantal verdeelinrichtingen", o.aantalVerdeelinrichtingenDeel],
     ["Aantal regelkasten", o.aantalRegelkasten], ["Aantal vast opgestelde machines", o.aantalVastOpgesteldeMachines]
   ]);
-  omvangHtml += '<div class="doc-sub">Overige informatie en afspraken</div>' + dlTable([["Overige informatie (voor de inspecteur)", o.overigeInfoInspecteur || "N.v.t."]]);
-  omvangHtml += '<div class="doc-sub brk-before">Inspectieomvang</div>' + dlTable([["Inspectieomvang", o.inspectieomvangType]]);
+  installatiedeelHtml += '<div class="doc-sub">Inspectieomvang</div>' + dlTable([["Inspectieomvang", o.inspectieomvangType]]);
   if (o.inspectieomvangType === "Steekproef") {
-    omvangHtml += '<p class="doc-p">Voor het bepalen van de omvang van de steekproef wordt eerst de omvang van de te beoordelen partij bepaald: een verzameling gelijk elektrisch materieel dat op dezelfde wijze is geïnstalleerd, onder dezelfde omstandigheden en op gelijke wijze wordt gebruikt.</p>';
-    omvangHtml += '<table class="std-table"><thead><tr><th>Code</th><th>Van</th><th>Tot</th><th>Steekproef</th><th>G*</th><th>F**</th></tr></thead><tbody>';
-    STEEKPROEF_TABEL.forEach(function(r){ omvangHtml += '<tr><td>' + r.code + '</td><td>' + r.van + '</td><td>' + r.tot + '</td><td>' + r.steekproef + '</td><td>' + r.g + '</td><td>' + r.f + '</td></tr>'; });
-    omvangHtml += '</tbody></table>';
-    omvangHtml += '<p class="doc-p" style="font-size:10px;color:#6b6659;">G* = maximaal aantal defecten voor acceptatie van de gehele partij; F** = minimaal aantal defecten voor afwijzing van de gehele partij.</p>';
+    installatiedeelHtml += '<p class="doc-p">Voor het bepalen van de omvang van de steekproef wordt eerst de omvang van de te beoordelen partij bepaald: een verzameling gelijk elektrisch materieel dat op dezelfde wijze is geïnstalleerd, onder dezelfde omstandigheden en op gelijke wijze wordt gebruikt.</p>';
+    installatiedeelHtml += '<table class="std-table"><thead><tr><th>Code</th><th>Van</th><th>Tot</th><th>Steekproef</th><th>G*</th><th>F**</th></tr></thead><tbody>';
+    STEEKPROEF_TABEL.forEach(function(r){ installatiedeelHtml += '<tr><td>' + r.code + '</td><td>' + r.van + '</td><td>' + r.tot + '</td><td>' + r.steekproef + '</td><td>' + r.g + '</td><td>' + r.f + '</td></tr>'; });
+    installatiedeelHtml += '</tbody></table>';
+    installatiedeelHtml += '<p class="doc-p" style="font-size:10px;color:#6b6659;">G* = maximaal aantal defecten voor acceptatie van de gehele partij; F** = minimaal aantal defecten voor afwijzing van de gehele partij.</p>';
     (o.steekproeven||[]).forEach(function(s, idx){
       var r = nen1010GeldigCode(s.van, s.tot);
-      omvangHtml += '<div class="doc-sub">Steekproef ' + (idx+1) + '</div>';
-      omvangHtml += dlTable([
+      installatiedeelHtml += '<div class="doc-sub">Steekproef ' + (idx+1) + '</div>';
+      installatiedeelHtml += dlTable([
         ["Steekproef gedaan bij het onderdeel", s.onderdeel],
         ["Te beoordelen omvang partij steekproef", s.van + " tot " + s.tot],
         ["Steekproef", r ? ("Steekproef van " + r.steekproef + " waarvan: maximaal " + r.g + " constateringen voor acceptatie van de gehele partij en; minimaal " + r.f + " constatering(en) voor afwijzing van de gehele partij.") : "—"]
       ]);
     });
   }
-  omvangHtml += '<div class="doc-sub">Inspectiefrequentie</div>' + dlTable([
+  installatiedeelHtml += '<div class="doc-sub">Inspectiefrequentie</div>' + dlTable([
     ["Inspectiefrequentie conform", o.inspectiefrequentieConform], ["Inspectietermijn", o.inspectietermijn]
   ]);
-  omvangHtml += '<div class="doc-sub">Aanvullende diensten</div>' + dlTable([["Thermografie verdeelinrichtingen", o.thermografieVerdeel]]);
-  h += docSec("Inspectieomvang", omvangHtml, false);
+  installatiedeelHtml += '<div class="doc-sub">Aanvullende diensten</div>' + dlTable([["Thermografie verdeelinrichtingen", o.thermografieVerdeel]]);
+  h += docSec("Te inspecteren onderdelen", installatiedeelHtml, true);
 
   // PAGINA — DOCUMENTATIE
   var docHtml = "";
@@ -3804,13 +3816,13 @@ function buildNen1010Body() {
   } else {
     docHtml = '<p class="doc-p" style="color:#6b6659;">Geen documenten toegevoegd.</p>';
   }
-  h += docSec("Documentatie", docHtml, (o.documentatieNen1010||[]).length > 0);
+  h += docSec("Documentatie", docHtml, true);
 
   // PAGINA — BEVINDINGEN VERDEELINRICHTINGEN
   if (state.verdelers.length > 0) {
     var vHtml = '<p class="doc-p">Er is middels visuele controle, metingen en beproevingen gecontroleerd of de verdeelinrichting(en) voldoen aan de daarvoor gestelde eisen.</p>';
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap" style="break-inside:avoid;"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
+      vHtml += '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse],
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
       vHtml += docPhotos(v.fotos, 220);
@@ -3821,7 +3833,7 @@ function buildNen1010Body() {
     var vConstateringen = "", vNr = 0;
     state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; } });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
-    h += docSec("Bevindingen verdeelinrichtingen", vHtml, false);
+    h += docSec("Bevindingen verdeelinrichtingen", vHtml, true);
   }
 
   // PAGINA — BEVINDINGEN OVERIGE INSTALLATIEDELEN
@@ -3835,14 +3847,14 @@ function buildNen1010Body() {
   var cpHtml = "";
   var offset = 0;
   NEN1010_CONTROLEPUNTEN_GROEPEN.forEach(function(g, gi){
-    cpHtml += '<table class="std-table' + (gi>0?' brk-before':'') + '"><thead><tr><th>' + esc(g.titel) + '</th><th style="width:110px;">Beoordeling</th></tr></thead><tbody>';
+    cpHtml += '<div class="doc-table-block"' + (gi===0?' style="margin-top:0;"':'') + '><table class="std-table"><thead><tr><th>' + esc(g.titel) + '</th><th style="width:110px;">Beoordeling</th></tr></thead><tbody>';
     g.items.forEach(function(tekst, i){
       var cp = o.controlepuntenNen1010[offset+i];
       var val = cp ? cp.beoordeling : "Goed";
       var kleur = val === "Fout" ? "#DC3B2E" : (val === "N.v.t." ? "#9A9A9A" : "#2F7D3A");
       cpHtml += '<tr><td>' + esc(tekst) + '</td><td>' + pill(val, kleur) + '</td></tr>';
     });
-    cpHtml += '</tbody></table>';
+    cpHtml += '</tbody></table></div>';
     offset += g.items.length;
   });
   h += docSec("Controlepunten", cpHtml, true);
