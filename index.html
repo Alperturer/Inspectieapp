@@ -2551,6 +2551,7 @@ function renderVerdelers() {
     h += '<div class="item-block-head"><span class="item-num">' + (idx+1) + '.</span>' +
       '<input class="item-title-input" placeholder="Naam verdeler (bijv. HVK, groepenkast 1e etage)" value="' + esc(v.naam) + '" oninput="updateVerdelerField(\'' + v.id + '\', \'naam\', this.value)" />' +
       '<button class="del-x" onclick="removeVerdeler(\'' + v.id + '\')">&#128465;</button></div>';
+    h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
     h += '<div class="grid2">';
     h += vField(v.id, "locatie", "Locatie", v.locatie, "bijv. BG (begane grond)");
     h += voorbeveiligingSelect("verdeler", v);
@@ -2567,7 +2568,6 @@ function renderVerdelers() {
     }
     h += '</div>';
     h += standaardBeveiligingBlok("verdeler", v);
-    h += photoRow(v.fotos, "addVerdelerPhoto('" + v.id + "', ", "removeVerdelerPhoto('" + v.id + "', ");
     h += classRow(v.classificatie, "updateVerdeler('" + v.id + "', {classificatie:");
     if (v.classificatie !== "goed") {
       h += veelvoorkomendSelect("updateVerdelerField('" + v.id + "','norm',vc.norm); updateVerdelerField('" + v.id + "','opmerking',vc.omschrijving);");
