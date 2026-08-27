@@ -48,6 +48,10 @@
   input.f, select.f, textarea.f { width:100%; border:1px solid #cfd8d6; border-radius:8px; padding:9px 11px; font-size:13.5px; font-family:inherit; margin-bottom:12px; background:#fff; color:#0B2E2D; }
   input.f:focus, textarea.f:focus, select.f:focus { outline:3px solid #E8952E; outline-offset:1px; border-color:#E8952E; box-shadow:0 0 0 4px rgba(232,149,46,0.25); }
   textarea.f { resize:vertical; min-height:48px; }
+  .adres-sugg-list { display:none; position:absolute; top:100%; left:0; right:0; z-index:40; background:#fff; border:1px solid #cfd8d6; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.12); max-height:220px; overflow-y:auto; margin-top:-8px; }
+  .adres-sugg-item { padding:9px 12px; font-size:13px; color:#0B2E2D; cursor:pointer; border-bottom:1px solid #F0EEE7; }
+  .adres-sugg-item:last-child { border-bottom:none; }
+  .adres-sugg-item:hover { background:#F4F2EC; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
   .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 12px; }
   .grid4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:0 10px; }
@@ -1959,10 +1963,10 @@ function renderKlantForm() {
   h += '<h1>Klantgegevens</h1>';
   h += '<div class="section-card">';
   h += '<label class="fl">Bedrijfsnaam</label><input class="f" value="' + esc(k.naam) + '" oninput="updateKlantField(\'' + k.id + '\',\'naam\',this.value)" />';
-  h += '<label class="fl">Adres</label><input class="f" value="' + esc(k.adres) + '" oninput="updateKlantField(\'' + k.id + '\',\'adres\',this.value)" />';
+  h += adresField("adres","Adres",k.adres,"postcode","plaats","updateKlantField",k.id);
   h += '<div style="display:flex;gap:10px;">';
-  h += '<div style="flex:1;"><label class="fl">Postcode</label><input class="f" value="' + esc(k.postcode) + '" oninput="updateKlantField(\'' + k.id + '\',\'postcode\',this.value)" /></div>';
-  h += '<div style="flex:2;"><label class="fl">Plaats</label><input class="f" value="' + esc(k.plaats) + '" oninput="updateKlantField(\'' + k.id + '\',\'plaats\',this.value)" /></div>';
+  h += '<div style="flex:1;"><label class="fl">Postcode</label><input class="f" id="field_postcode" value="' + esc(k.postcode) + '" oninput="updateKlantField(\'' + k.id + '\',\'postcode\',this.value)" /></div>';
+  h += '<div style="flex:2;"><label class="fl">Plaats</label><input class="f" id="field_plaats" value="' + esc(k.plaats) + '" oninput="updateKlantField(\'' + k.id + '\',\'plaats\',this.value)" /></div>';
   h += '</div>';
   h += '<h3>Contactpersoon</h3>';
   h += '<label class="fl">Naam</label><input class="f" value="' + esc(k.contactNaam) + '" oninput="updateKlantField(\'' + k.id + '\',\'contactNaam\',this.value)" />';
@@ -1970,7 +1974,7 @@ function renderKlantForm() {
   h += '<label class="fl">E-mailadres</label><input class="f" type="email" value="' + esc(k.contactEmail) + '" oninput="updateKlantField(\'' + k.id + '\',\'contactEmail\',this.value)" />';
   h += '<h3>Eigenaar &amp; opdrachtgever (indien afwijkend)</h3>';
   h += '<label class="fl">Naam eigenaar</label><input class="f" value="' + esc(k.eigenaarNaam) + '" oninput="updateKlantField(\'' + k.id + '\',\'eigenaarNaam\',this.value)" />';
-  h += '<label class="fl">Adres eigenaar</label><input class="f" value="' + esc(k.eigenaarAdres) + '" oninput="updateKlantField(\'' + k.id + '\',\'eigenaarAdres\',this.value)" />';
+  h += adresField("eigenaarAdres","Adres eigenaar",k.eigenaarAdres,null,null,"updateKlantField",k.id);
   h += '<label class="fl">Naam opdrachtgever</label><input class="f" value="' + esc(k.opdrachtgeverNaam) + '" oninput="updateKlantField(\'' + k.id + '\',\'opdrachtgeverNaam\',this.value)" />';
   h += '</div>';
   h += '<button class="btn-primary" onclick="opslaanKlant(\'' + k.id + '\')">&#128190; Opslaan</button>';
@@ -2010,7 +2014,7 @@ function renderGegevens() {
   h += '<div class="section-card"><h2>Installatie (object)</h2><div class="grid2">';
   h += field("klant","Klant / bedrijf",o.klant,"text","full","bijv. Voorbeeldbedrijf B.V.");
   h += field("installatieverantwoordelijke","Eigenaar / verantwoordelijke",o.installatieverantwoordelijke,"text","full","bijv. Rechtmatige eigenaar van de installatie");
-  h += field("adres","Adres",o.adres,"text","full","bijv. Voorbeeldstraat 1");
+  h += adresField("adres","Adres",o.adres,"postcode","plaats","updateObject",null);
   h += field("postcode","Postcode",o.postcode,"text","","bijv. 1234 AB") + field("plaats","Plaats",o.plaats,"text","","bijv. Voorbeeldstad");
   h += field("land","Land",o.land,"text","","bijv. Nederland") + field("telefoonInstallatie","Telefoonnummer",o.telefoonInstallatie,"text","","bijv. 010-1234567");
   h += field("emailInstallatie","E-mailadres",o.emailInstallatie,"text","full","naam@bedrijf.nl");
@@ -2037,7 +2041,7 @@ function renderGegevens() {
   } else {
     h += '<div class="grid2">';
     h += field("eigenaarNaam","Naam eigenaar",o.eigenaarNaam,"text","","bijv. Voorbeeldbedrijf B.V.") + field("eigenaarTel","Telefoonnummer",o.eigenaarTel,"text","","bijv. 010-1234567");
-    h += field("eigenaarAdres","Adres eigenaar",o.eigenaarAdres,"text","full","bijv. Voorbeeldstraat 1");
+    h += adresField("eigenaarAdres","Adres eigenaar",o.eigenaarAdres,"eigenaarPostcode","eigenaarPlaats","updateObject",null);
     h += field("eigenaarPostcode","Postcode",o.eigenaarPostcode,"text","","bijv. 1234 AB") + field("eigenaarPlaats","Plaats",o.eigenaarPlaats,"text","","bijv. Voorbeeldstad");
     h += '</div>';
   }
@@ -2062,7 +2066,7 @@ function renderGegevens() {
   } else {
     h += '<div class="grid2">';
     h += field("opdrachtgeverNaam","Naam opdrachtgever",o.opdrachtgeverNaam,"text","","bijv. Voorbeeldbedrijf B.V.") + field("opdrachtgeverTel","Telefoonnummer",o.opdrachtgeverTel,"text","","bijv. 010-1234567");
-    h += field("opdrachtgeverAdres","Adres opdrachtgever",o.opdrachtgeverAdres,"text","full","bijv. Voorbeeldstraat 1");
+    h += adresField("opdrachtgeverAdres","Adres opdrachtgever",o.opdrachtgeverAdres,"opdrachtgeverPostcode","opdrachtgeverPlaats","updateObject",null);
     h += field("opdrachtgeverPostcode","Postcode",o.opdrachtgeverPostcode,"text","","bijv. 1234 AB") + field("opdrachtgeverPlaats","Plaats",o.opdrachtgeverPlaats,"text","","bijv. Voorbeeldstad");
     h += '</div><h3>Contactpersoon (opdrachtgever)</h3><div class="grid3">';
     h += field("opdrachtgeverContactNaam","Naam",o.opdrachtgeverContactNaam,"text","","bijv. J. Jansen") + field("opdrachtgeverContactTel","Telefoonnummer",o.opdrachtgeverContactTel,"text","","bijv. 06-12345678") + field("opdrachtgeverContactEmail","E-mailadres",o.opdrachtgeverContactEmail,"text","","naam@bedrijf.nl");
@@ -2103,7 +2107,8 @@ function renderBedrijfsgegevensVelden(o, isKeuring) {
     '<input type="color" value="' + esc(o.accentColor || "#0D9488") + '" style="width:44px;height:34px;border:1px solid #E0DDD4;border-radius:8px;padding:2px;background:#fff;" onchange="updateObject(\'accentColor\', this.value); render();" />' +
     '<span style="font-size:11.5px;color:#6b6659;">De classificatiekleuren (rood/oranje/geel/blauw) zijn vast en wijzigen hier niet mee.</span></div>';
   h += '<div class="grid2">';
-  h += field("bedrijfNaam","Naam inspectiebedrijf",o.bedrijfNaam,"text","","bijv. Voorbeeld Inspecties B.V.") + field("bedrijfAdres","Adres inspectiebedrijf",o.bedrijfAdres,"text","","bijv. Bedrijvenweg 10");
+  h += field("bedrijfNaam","Naam inspectiebedrijf",o.bedrijfNaam,"text","","bijv. Voorbeeld Inspecties B.V.");
+  h += adresField("bedrijfAdres","Adres inspectiebedrijf",o.bedrijfAdres,"bedrijfPostcode","bedrijfPlaats","updateObject",null,"");
   h += field("bedrijfPostcode","Postcode *",o.bedrijfPostcode,"text","","bijv. 5678 CD") + field("bedrijfPlaats","Plaats *",o.bedrijfPlaats,"text","","bijv. Voorbeeldplaats");
   h += field("bedrijfTel","Telefoonnummer",o.bedrijfTel,"text","","bijv. 010-7654321");
   h += field("bedrijfEmail","E-mailadres",o.bedrijfEmail,"text","","naam@bedrijf.nl");
@@ -2473,7 +2478,87 @@ function field(key, label, val, type, cls, placeholder) {
     else if (lk.indexOf("postcode") !== -1) { extraAttrs = ' autocapitalize="characters"'; }
     else if (lk.indexOf("bagid") !== -1 || lk === "imax" || lk.indexOf("vermogen") !== -1 || lk.indexOf("aantal") !== -1 || lk.indexOf("groepen") !== -1) { extraAttrs = ' inputmode="numeric"'; }
   }
-  return '<div class="' + cls + '"><label class="fl">' + label + '</label><input class="f" type="' + type + '"' + extraAttrs + ' placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateObject(\'' + key + '\', this.value)" /></div>';
+  return '<div class="' + cls + '"><label class="fl">' + label + '</label><input class="f" id="field_' + key + '" type="' + type + '"' + extraAttrs + ' placeholder="' + esc(placeholder||"") + '" value="' + esc(val) + '" oninput="updateObject(\'' + key + '\', this.value)" /></div>';
+}
+// Adresveld met live suggesties (PDOK Locatieserver, gratis NL adressen-API, geen key nodig).
+// Typ bijv. "Steenbakkerij 23" -> toont alle plaatsen in NL waar dat adres bestaat, met postcode
+// en plaats erbij. Bij een keuze worden adres + postcode + plaats automatisch ingevuld.
+// updateFnName/callArgsPrefix: zelfde conventie als selectMetVrijeTekst hierboven.
+function adresField(key, label, val, postcodeKey, plaatsKey, updateFnName, callArgsPrefix, cls) {
+  var suggId = "sugg_" + key;
+  var prefixArg = callArgsPrefix ? ("'" + callArgsPrefix + "', ") : "";
+  var pcArg = postcodeKey ? ("'" + postcodeKey + "'") : "null";
+  var plArg = plaatsKey ? ("'" + plaatsKey + "'") : "null";
+  var prefixJsArg = callArgsPrefix ? ("'" + callArgsPrefix + "'") : "null";
+  return '<div class="' + (cls||"full") + '" style="position:relative;">' +
+    '<label class="fl">' + esc(label) + '</label>' +
+    '<input class="f" id="field_' + key + '" type="text" autocomplete="off" data-adreskey="' + key + '" placeholder="bijv. Steenbakkerij 23" value="' + esc(val) + '" ' +
+      'oninput="' + updateFnName + '(' + prefixArg + '\'' + key + '\', this.value); zoekAdresSuggesties(this, \'' + suggId + '\', ' + pcArg + ', ' + plArg + ', \'' + updateFnName + '\', ' + prefixJsArg + ')" ' +
+      'onblur="setTimeout(function(){ var el=document.getElementById(\'' + suggId + '\'); if (el) el.style.display=\'none\'; }, 200)" />' +
+    '<div id="' + suggId + '" class="adres-sugg-list"></div>' +
+  '</div>';
+}
+// Debounce + fetch van adressuggesties. Wordt aangeroepen vanuit oninput van adresField().
+function zoekAdresSuggesties(inputEl, suggId, postcodeKey, plaatsKey, updateFnName, callArgsPrefix) {
+  var suggEl = document.getElementById(suggId);
+  if (!suggEl) return;
+  var q = inputEl.value.trim();
+  if (q.length < 4) { suggEl.style.display = "none"; suggEl.innerHTML = ""; return; }
+  clearTimeout(window.__adresDebounceTimer);
+  window.__adresDebounceTimer = setTimeout(function(){
+    var myToken = (window.__adresFetchToken = (window.__adresFetchToken || 0) + 1);
+    fetch("https://api.pdok.nl/bzk/locatieserver/search/v3_1/suggest?rows=8&fq=type:adres&q=" + encodeURIComponent(q))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (myToken !== window.__adresFetchToken) return;
+        var docs = (data && data.response && data.response.docs) || [];
+        if (!docs.length) { suggEl.style.display = "none"; suggEl.innerHTML = ""; return; }
+        suggEl.innerHTML = docs.map(function(d){
+          return '<div class="adres-sugg-item" data-id="' + esc(d.id) + '">' + esc(d.weergavenaam || "") + '</div>';
+        }).join("");
+        suggEl.style.display = "block";
+        Array.prototype.forEach.call(suggEl.querySelectorAll(".adres-sugg-item"), function(el){
+          el.onmousedown = function(e){ e.preventDefault(); kiesAdresSuggestie(el.getAttribute("data-id"), inputEl, suggEl, postcodeKey, plaatsKey, updateFnName, callArgsPrefix); };
+        });
+      })
+      .catch(function(){ suggEl.style.display = "none"; suggEl.innerHTML = ""; });
+  }, 300);
+}
+// Haalt de volledige, opgesplitste adresgegevens op (straat, huisnummer, postcode, plaats) en vult
+// het adresveld + (indien opgegeven) de losse postcode-/plaatsvelden meteen zichtbaar in.
+function kiesAdresSuggestie(id, inputEl, suggEl, postcodeKey, plaatsKey, updateFnName, callArgsPrefix) {
+  suggEl.innerHTML = '<div class="adres-sugg-item" style="color:#8a8578;font-style:italic;">Laden&hellip;</div>';
+  fetch("https://api.pdok.nl/bzk/locatieserver/search/v3_1/lookup?id=" + encodeURIComponent(id))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      suggEl.style.display = "none"; suggEl.innerHTML = "";
+      var doc = data && data.response && data.response.docs && data.response.docs[0];
+      if (!doc) return;
+      var nr = (doc.huisnummer != null ? String(doc.huisnummer) : "");
+      var letter = doc.huisletter || "";
+      var toev = doc.huisnummertoevoeging ? ("-" + doc.huisnummertoevoeging) : "";
+      var straatNr = ((doc.straatnaam || "") + " " + nr + letter + toev).trim();
+      var postcode = doc.postcode || "";
+      var plaats = doc.woonplaatsnaam || "";
+      var adresVal = (!postcodeKey && !plaatsKey && (postcode || plaats)) ? (straatNr + ", " + postcode + " " + plaats).trim() : straatNr;
+      inputEl.value = adresVal;
+      var fn = window[updateFnName];
+      if (typeof fn !== "function") return;
+      var adresKey = inputEl.getAttribute("data-adreskey");
+      var args = callArgsPrefix ? [callArgsPrefix] : [];
+      fn.apply(null, args.concat([adresKey, adresVal]));
+      if (postcodeKey) {
+        fn.apply(null, args.concat([postcodeKey, postcode]));
+        var pcEl = document.getElementById("field_" + postcodeKey);
+        if (pcEl) pcEl.value = postcode;
+      }
+      if (plaatsKey) {
+        fn.apply(null, args.concat([plaatsKey, plaats]));
+        var plEl = document.getElementById("field_" + plaatsKey);
+        if (plEl) plEl.value = plaats;
+      }
+    })
+    .catch(function(){ suggEl.style.display = "none"; suggEl.innerHTML = ""; });
 }
 // Dropdown met vaste opties + "Anders (zelf invullen)" die een los tekstveld toont.
 // updateFnName: naam van de functie die (key, value) bijwerkt, bv. "updateObject" of "updateMetingField" (die laatste heeft extra vaste argumenten ervoor, zie callArgsPrefix).
