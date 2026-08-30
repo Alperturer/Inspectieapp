@@ -3361,7 +3361,8 @@ function situatieFoto(fotos, w) {
 
 // =======================================================================
 // SCOPE 12 — EXACT PDF-RAPPORT (paginagrootte A4, lopende koptekst/
-// voettekst + doorlopende paginanummering) via Paged.js.
+// voettekst + doorlopende paginanummering). Elke pagina is een eigen,
+// natuurlijke-hoogte .doc-page div (zelfde robuuste aanpak als de boekhoud-app).
 // Wordt geopend in een los venster en is los van de in-app voorvertoning.
 // =======================================================================
 function pill(text, bg, fg) { return '<span class="cp-pill" style="background:' + bg + ';color:' + (fg||"#fff") + ';">' + esc(text) + '</span>'; }
@@ -3376,7 +3377,32 @@ function dlTable(rows) {
   h += '</tbody></table>';
   return h;
 }
-function docSec(title, inner, brk) { return '<section class="doc-sec' + (brk ? ' brk' : '') + '"><h2 class="doc-h">' + esc(title) + '</h2>' + inner + '</section>'; }
+// Nieuwe, robuuste paginering ZONDER Paged.js: elke "pagina" is gewoon een gewone HTML-div
+// met natuurlijke hoogte (net als bij de boekhoud-app), die we zelf in een array bijhouden.
+// PAGE_BREAK_MARK is een onzichtbaar markeertje: waar dat in de inhoud voorkomt, begint een
+// nieuwe pagina — dat vervangt de oude 'brk-before' CSS-klasse die op Paged.js leunde.
+var PAGE_BREAK_MARK = "\u0000PAGEBREAK\u0000";
+var __pagBuf = null;
+function nieuwRapportOpbouw() { __pagBuf = []; }
+function docSec(title, inner, brk) {
+  var content = '<div class="doc-sec"><h2 class="doc-h">' + esc(title) + '</h2>' + inner + '</div>';
+  var stukken = content.split(PAGE_BREAK_MARK);
+  stukken.forEach(function(stuk, i){
+    if (__pagBuf.length === 0 || (i === 0 && brk) || i > 0) __pagBuf.push(stuk);
+    else __pagBuf[__pagBuf.length - 1] += stuk;
+  });
+  return "";
+}
+// Zet de opgebouwde pagina's om in kant-en-klare .doc-page divs, elk met koptekst (behalve
+// pagina 1, de voorpagina heeft al zijn eigen branding) en voettekst met paginanummer.
+function assembleerPaginas(headerHtml, footerHtmlFn) {
+  var totaal = __pagBuf.length;
+  return __pagBuf.map(function(inhoud, i){
+    var kop = (i > 0 && headerHtml) ? ('<div class="doc-page-header">' + headerHtml + '</div>') : "";
+    var voet = footerHtmlFn ? ('<div class="doc-page-footer">' + footerHtmlFn(i+1, totaal) + '</div>') : "";
+    return '<div class="doc-page">' + kop + '<div class="doc-page-body">' + inhoud + '</div>' + voet + '</div>';
+  }).join("");
+}
 function docPhotos(fotos, w) {
   if (!fotos || fotos.length === 0) return "";
   var h = '<div class="doc-photos">';
@@ -3422,9 +3448,6 @@ function sharedDocCss(accent) {
   '.dl-table td.dl-k { width:220px; color:#1c1c1c; font-weight:500; }' +
   '.dl-table td.dl-v { font-weight:600; color:#1c1c1c; }' +
   '.doc-sec { margin-bottom:4px; }' +
-  '.doc-sec.brk { break-before: page; }' +
-  '.brk-before { break-before: page; padding-top: 1px; }' +
-  'table.brk-before { break-before: page; }' +
   '.doc-h { font-size:19px; font-weight:800; letter-spacing:0.01em; margin:2px 0 14px; padding-bottom:9px; padding-left:14px; border-bottom:1px solid #EAE7DF; border-left:5px solid ' + accent + '; break-after:avoid; color:#161513; }' +
   '.doc-sub { font-size:14px; font-weight:700; margin:11px 0 5px; break-after:avoid; color:#161513; padding-left:9px; border-left:3px solid ' + accent + '55; }' +
   '.doc-p { font-size:12px; line-height:1.5; margin:3px 0; color:#3a382f; }' +
@@ -3468,11 +3491,11 @@ function sharedDocCss(accent) {
 function scope12Css() {
   var accent = state.object.accentColor || "#0D9488";
   return '' +
-  '@page { size: A4; margin: 33mm 18mm 20mm 18mm; }' +
-  '@page :first { margin-top: 0mm; }' +
-  '.pagedjs_page { position: relative; }' +
-  '.inj-header { position:absolute; top:8mm; left:18mm; right:18mm; }' +
-  '.inj-footer { position:absolute; bottom:6mm; left:18mm; right:18mm; }' +
+  '.doc-page { background:#fff; max-width:210mm; margin:0 auto 10px; padding:20mm 18mm 16mm; box-sizing:border-box; break-before:page; }' +
+  '.doc-page:first-child { break-before:avoid; }' +
+  '.doc-page-header { padding-bottom:8px; margin-bottom:10px; }' +
+  '.doc-page-footer { margin-top:14px; }' +
+  '@media screen { .doc-page { box-shadow:0 1px 8px rgba(0,0,0,0.12); margin-bottom:14px; } }' +
   '.run-header { display:flex; align-items:center; gap:10px; padding-bottom:8px; border-bottom:2px solid ' + accent + '; }' +
   '.run-header img { max-height:64px; max-width:260px; object-fit:contain; }' +
   '.run-header .rh-text { display:flex; flex-direction:column; }' +
@@ -3488,11 +3511,11 @@ function scope12Doc(o) { return (o.adres||"") + (o.postcode||o.plaats ? (", " + 
 function nen1010Css() {
   var accent = state.object.accentColor || "#0D9488";
   return '' +
-  '@page { size: A4; margin: 31mm 18mm 18mm 18mm; }' +
-  '@page :first { margin-top: 0mm; }' +
-  '.pagedjs_page { position: relative; }' +
-  '.inj-header { position:absolute; top:7mm; left:18mm; right:18mm; }' +
-  '.inj-footer { position:absolute; bottom:5mm; left:18mm; right:18mm; }' +
+  '.doc-page { background:#fff; max-width:210mm; margin:0 auto 10px; padding:18mm 18mm 15mm; box-sizing:border-box; break-before:page; }' +
+  '.doc-page:first-child { break-before:avoid; }' +
+  '.doc-page-header { padding-bottom:8px; margin-bottom:10px; }' +
+  '.doc-page-footer { margin-top:14px; }' +
+  '@media screen { .doc-page { box-shadow:0 1px 8px rgba(0,0,0,0.12); margin-bottom:14px; } }' +
   '.run-header { display:flex; align-items:flex-start; gap:10px; padding-bottom:8px; border-bottom:1.5px solid ' + accent + '; }' +
   '.run-header img { max-height:60px; max-width:240px; object-fit:contain; }' +
   '.run-header .rh-text { flex:1; }' +
@@ -3568,9 +3591,10 @@ function buildScope12Body() {
   var afwijkend = counts.opmerking + counts.gering + counts.serieus + counts.ernstig + counts.nader;
 
   var h = "";
+  nieuwRapportOpbouw();
 
   // PAGINA 1 — VOORPAGINA
-  h += '<section class="doc-sec">';
+  h += "";
   if (o.logoData || o.sciosLogoData) {
     h += '<div class="cover-topRow">';
     h += o.logoData ? ('<img class="cover-logo" src="' + o.logoData + '" />') : '<div></div>';
@@ -3590,7 +3614,8 @@ function buildScope12Body() {
     ["Aanmaakdatum inspectierapport", o.datum], ["Rapportnummer", o.rapportnummer], ["Geldigheidsduur", geldigheidsduurTekst], ["Geldigheidsdatum", geldigheidsdatum]
   ]);
   h += '<p class="doc-p" style="font-size:10px;color:#6b6659;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
-  h += '</section>';
+  __pagBuf.push(h);
+  h = "";
 
   // PAGINA 2 — CONCLUSIE
   var conclusieIntro = "Deze inspectie is uitsluitend uitgevoerd om vast te stellen of de betreffende elektrische installatie voldoet aan de veiligheidseisen uit de daarop van toepassing zijnde normen. De inspectie is uitgevoerd volgens de SCIOS-certificatieregeling Scope 12, geheel onafhankelijk en op basis van de werkwijze uit het inspectieplan.";
@@ -3626,7 +3651,7 @@ function buildScope12Body() {
   gegevensHtml += '<div class="doc-sub">Contactpersoon (eigenaar)</div>' + dlTable([["Naam", o.eigenaarContactNaam], ["Telefoonnummer", o.eigenaarContactTel], ["E-mailadres", o.eigenaarContactEmail]]);
   gegevensHtml += '<div class="doc-sub">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
-  gegevensHtml += '<div class="doc-sub brk-before">Inspectiebedrijf</div>' + dlTable([
+  gegevensHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Inspectiebedrijf</div>' + dlTable([
     ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail], ["Bedrijfscertificaat Scope 12", o.bedrijfCertScope12], ["Opsteller inspectierapport", o.inspecteur + (o.inspecteurCertificaat ? (" (" + o.inspecteurCertificaat + ")") : "")]
   ]);
   var meetinstrumentenVoorRapport = huidigeInspecteurMeetinstrumenten();
@@ -3693,7 +3718,7 @@ function buildScope12Body() {
   if (state.verdelers.length > 0) {
     var vHtml = "";
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap' + (vi>0 ? ' brk-before' : '') + '"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
+      vHtml += (vi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
       vHtml += docPhotos(v.fotos, 260);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
       if (v.classificatie !== "goed") vHtml += docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, [], v.norm);
@@ -3710,7 +3735,7 @@ function buildScope12Body() {
   if (state.omvormers.length > 0) {
     var oHtml = "";
     state.omvormers.forEach(function(o2, oi){
-      oHtml += '<div class="item-block-wrap' + (oi>0 ? ' brk-before' : '') + '"><div class="doc-sub">Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
+      oHtml += (oi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (oi===0?' style="margin-top:0;"':'') + '>Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>' + constateringenIndicator(o2);
       oHtml += docPhotos(o2.fotos, 260);
       oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer", o2.serienummer], ["Voorbeveiliging", o2.voorbeveiliging], ["Max DC-spanning", metEenheid(o2.maxDcSpanning, "V")], ["Nominale stroom AC", metEenheid(o2.imax, "A")]]);
       if (o2.classificatie !== "goed") oHtml += docConstatering(nummerVoorItem(o2), o2.classificatie, o2.opmerking, [], o2.norm);
@@ -3741,13 +3766,19 @@ function buildScope12Body() {
   }
 
   // PAGINA 19 — CONSTATERINGEN OVERIGE INSTALLATIEDELEN
-  var overigHtml = "";
-  state.constateringen.forEach(function(c){ if (c.classificatie !== "goed") overigHtml += docConstatering(nummerVoorItem(c), c.classificatie, c.omschrijving, c.fotos, c.norm); });
+  var overigHtml = "", overigTeller = 0;
+  state.constateringen.forEach(function(c){
+    if (c.classificatie !== "goed") {
+      overigHtml += docConstatering(nummerVoorItem(c), c.classificatie, c.omschrijving, c.fotos, c.norm);
+      overigTeller++;
+      if (overigTeller >= 5) { overigHtml += PAGE_BREAK_MARK; overigTeller = 0; }
+    }
+  });
   h += docSec("Constateringen overige installatiedelen", overigHtml || '<p class="doc-p">Er zijn geen constateringen bij overige installatiedelen.</p>', !!overigHtml);
 
   // PAGINA 20-23 — CONTROLEPUNTEN
   var cpHtml = '<p class="doc-p">Beoordeeld is in hoeverre de installatie voldoet aan de op dit rapport van toepassing zijnde controlepunten.</p>';
-  var offset = 0;
+  var offset = 0, cpRijTeller = 0;
   CONTROLEPUNTEN_GROEPEN.forEach(function(g, gi){
     cpHtml += '<div class="doc-table-block">';
     cpHtml += '<div class="doc-sub"' + (gi===0?' style="margin-top:0;"':'') + '>' + esc(g.titel) + '</div>';
@@ -3755,8 +3786,12 @@ function buildScope12Body() {
     g.items.forEach(function(tekst, i){
       var cp = o.controlepunten[offset+i];
       cpHtml += '<tr><td>' + esc(tekst) + '</td><td style="width:150px;text-align:right;">' + beoordelingPill(cp ? cp.beoordeling : "Niet van toepassing") + '</td></tr>';
+      cpRijTeller++;
     });
     cpHtml += '</tbody></table></div>';
+    // Elke ~18 rijen een nieuwe pagina, zodat een lange checklist niet op één pagina
+    // samengeperst (en dus te klein) wordt weergegeven.
+    if (cpRijTeller >= 18) { cpHtml += PAGE_BREAK_MARK; cpRijTeller = 0; }
     offset += g.items.length;
   });
   h += docSec("Controlepunten", cpHtml, true);
@@ -3764,7 +3799,7 @@ function buildScope12Body() {
   // PAGINA 24 — BIJLAGE(N)
   h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#6b6659;">Geen bijlagen toegevoegd.</p>', false);
 
-  return h;
+  return assembleerPaginas(scope12RunningHeaderHtml(), scope12RunningFooterHtml);
 }
 function scope12RunningHeaderHtml() {
   var o = state.object, t = TYPES.scope12;
@@ -3774,8 +3809,8 @@ function scope12RunningHeaderHtml() {
   h += '</div>';
   return h;
 }
-function scope12RunningFooterHtml() {
-  return '<div class="run-footer"><span class="run-page-num"></span></div>';
+function scope12RunningFooterHtml(paginaNr, totaal) {
+  return '<div class="run-footer"><span class="run-page-num">' + paginaNr + ' / ' + totaal + '</span></div>';
 }
 function buildNen1010Body() {
   state._cGenLijst = null;
@@ -3787,9 +3822,8 @@ function buildNen1010Body() {
   var docTitel = o.rapportnummer ? (o.rapportnummer + " | Inspectierapport NEN 1010 | " + (o.klant||"")) : ("Inspectierapport NEN 1010 | " + (o.klant||""));
 
   var h = "";
-  // Lopende koptekst (2 regels tekst) en voettekst (logo + paginanummer)
+  nieuwRapportOpbouw();
   // PAGINA 1 — VOORPAGINA
-  h += '<section class="doc-sec">';
   if (o.logoData || o.sciosLogoData) {
     h += '<div class="cover-topRow">';
     h += o.logoData ? ('<img class="cover-logo" src="' + o.logoData + '" />') : '<div></div>';
@@ -3805,7 +3839,8 @@ function buildNen1010Body() {
     ["Projectnummer", o.projectnummer], ["Referentienummer", o.referentienummer], ["Geldigheidsduur", o.geldigheidsduur], ["Geldigheidsdatum", o.geldigheidsdatum || berekenGeldigheidsdatum(o.datumAfronding || o.datum, o.geldigheidsduur)]
   ]);
   h += '<p class="doc-p" style="font-size:10px;color:#6b6659;margin-top:8px;">De datum van afronding van de inspectiewerkzaamheden is het uitgangspunt van de geldigheidsduur.</p>';
-  h += '</section>';
+  __pagBuf.push(h);
+  h = "";
 
   // PAGINA 2 — CONCLUSIE
   var conclusieIntro = "Deze inspectie van de elektrische installatie is uitsluitend uitgevoerd om vast te stellen of de betreffende elektrische installatie voldoet aan de veiligheidseisen uit de daarop van toepassing zijnde normen. De inspectie is uitgevoerd volgens de NEN 1010, geheel onafhankelijk.";
@@ -3835,7 +3870,7 @@ function buildNen1010Body() {
   gegevensHtml += '<div class="doc-sub">Contactpersoon (installatie)</div>' + dlTable([["Naam", o.contactNaam], ["Telefoonnummer", o.contactTel], ["E-mailadres", o.contactEmail]]);
   gegevensHtml += '<div class="doc-sub">Eigenaar</div>' + dlTable([["Naam", o.eigenaarNaam], ["Adres", o.eigenaarAdres + ((o.eigenaarPostcode||o.eigenaarPlaats) ? ("\n" + (o.eigenaarPostcode||"") + " " + (o.eigenaarPlaats||"")) : "")], ["Telefoonnummer", o.eigenaarTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (eigenaar)</div>' + dlTable([["Naam", o.eigenaarContactNaam], ["Telefoonnummer", o.eigenaarContactTel], ["E-mailadres", o.eigenaarContactEmail]]);
-  gegevensHtml += '<div class="doc-sub brk-before">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
+  gegevensHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
   gegevensHtml += '<div class="doc-sub">Inspectiebedrijf</div>' + dlTable([
     ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail],
@@ -3924,24 +3959,30 @@ function buildNen1010Body() {
       vHtml += docPhotos(v.fotos, 220);
       vHtml += '</div>';
     });
-    vHtml += '<div class="doc-sub brk-before">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
-    vHtml += '<div class="doc-sub brk-before">Conclusie visuele controle (verdeelinrichting)</div>';
-    var vConstateringen = "", vNr = 0;
-    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; } });
+    vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
+    vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie visuele controle (verdeelinrichting)</div>';
+    var vConstateringen = "", vNr = 0, vConstTeller = 0;
+    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } } });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
     h += docSec("Bevindingen verdeelinrichtingen", vHtml, true);
   }
 
   // PAGINA — BEVINDINGEN OVERIGE INSTALLATIEDELEN
-  var overigHtml = '<div class="doc-sub">Conclusie overige installatiedelen</div>';
-  var overigConst = "";
-  state.constateringen.forEach(function(c){ if (c.classificatie !== "goed") overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130) + '</div></div>'; });
+  var overigHtml = '<div class="doc-sub" style="margin-top:0;">Conclusie overige installatiedelen</div>';
+  var overigConst = "", overigTeller2 = 0;
+  state.constateringen.forEach(function(c){
+    if (c.classificatie !== "goed") {
+      overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130) + '</div></div>';
+      overigTeller2++;
+      if (overigTeller2 >= 5) { overigConst += PAGE_BREAK_MARK; overigTeller2 = 0; }
+    }
+  });
   overigHtml += overigConst ? ('<p class="doc-p">Er zijn afwijkingen geconstateerd:</p>' + overigConst) : '<p class="doc-p">Er zijn geen afwijkingen geconstateerd.</p>';
   h += docSec("Bevindingen overige installatiedelen", overigHtml, !!overigConst);
 
   // PAGINA — CONTROLEPUNTEN
   var cpHtml = "";
-  var offset = 0;
+  var offset = 0, cpRijTeller = 0;
   NEN1010_CONTROLEPUNTEN_GROEPEN.forEach(function(g, gi){
     cpHtml += '<div class="doc-table-block"' + (gi===0?' style="margin-top:0;"':'') + '><table class="std-table"><thead><tr><th>' + esc(g.titel) + '</th><th style="width:110px;">Beoordeling</th></tr></thead><tbody>';
     g.items.forEach(function(tekst, i){
@@ -3949,8 +3990,12 @@ function buildNen1010Body() {
       var val = cp ? cp.beoordeling : "Goed";
       var kleur = val === "Fout" ? "#DC3B2E" : (val === "N.v.t." ? "#9A9A9A" : "#2F7D3A");
       cpHtml += '<tr><td>' + esc(tekst) + '</td><td>' + pill(val, kleur) + '</td></tr>';
+      cpRijTeller++;
     });
     cpHtml += '</tbody></table></div>';
+    // Elke ~18 rijen een nieuwe pagina, zodat een lange checklist niet op één pagina
+    // samengeperst (en dus te klein) wordt weergegeven.
+    if (cpRijTeller >= 18) { cpHtml += PAGE_BREAK_MARK; cpRijTeller = 0; }
     offset += g.items.length;
   });
   h += docSec("Controlepunten", cpHtml, true);
@@ -3958,8 +4003,8 @@ function buildNen1010Body() {
   // PAGINA — VOLLEDIGE MEETSTAAT (alle metingen, ongeacht classificatie)
   var meetHtml = "";
   if (state.verdelers.length > 0) {
-    state.verdelers.forEach(function(v){
-      meetHtml += '<div class="item-block-wrap"><div class="doc-sub">Verdeelinrichting &mdash; ' + esc(v.naam || "") + '</div><div class="doc-p">Locatie: ' + esc(v.locatie||"—") + '</div>';
+    state.verdelers.forEach(function(v, vi){
+      meetHtml += (vi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "") + '</div><div class="doc-p">Locatie: ' + esc(v.locatie||"—") + '</div>';
       meetHtml += stdMetingTabel("Zs-metingen (foutlusimpedantie, &Omega;)", v.zsMetingen, true);
       meetHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", v.ziMetingen, true);
       meetHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(v.testspanningRiso||"500") + " V DC)", v.risoMetingen, false);
@@ -3983,17 +4028,27 @@ function buildNen1010Body() {
   }
 
   // PAGINA — OPSOMMING CONSTATERINGEN
-  var opsomHtml = "";
+  var opsomHtml = "", opsomTeller = 0;
   state.verdelers.forEach(function(v){
-    if (v.classificatie !== "goed") { opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(nummerVoorItem(v)).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,130) + '</div></div>'; }
+    if (v.classificatie !== "goed") {
+      opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(nummerVoorItem(v)).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,130) + '</div></div>';
+      opsomTeller++;
+      if (opsomTeller >= 5) { opsomHtml += PAGE_BREAK_MARK; opsomTeller = 0; }
+    }
   });
-  state.constateringen.forEach(function(c){ if (c.classificatie !== "goed") opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,130) + '</div></div>'; });
+  state.constateringen.forEach(function(c){
+    if (c.classificatie !== "goed") {
+      opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,130) + '</div></div>';
+      opsomTeller++;
+      if (opsomTeller >= 5) { opsomHtml += PAGE_BREAK_MARK; opsomTeller = 0; }
+    }
+  });
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
 
   // PAGINA — BIJLAGE(N)
   h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#6b6659;">Geen bijlagen toegevoegd.</p>', false);
 
-  return h;
+  return assembleerPaginas(nen1010RunningHeaderHtml(), nen1010RunningFooterHtml);
 }
 function nen1010RunningHeaderHtml() {
   var o = state.object;
@@ -4006,8 +4061,8 @@ function nen1010RunningHeaderHtml() {
     '</div></div>';
   return h;
 }
-function nen1010RunningFooterHtml() {
-  return '<div class="run-footer"><span class="run-page-num"></span></div>';
+function nen1010RunningFooterHtml(paginaNr, totaal) {
+  return '<div class="run-footer"><span class="run-page-num">' + paginaNr + ' / ' + totaal + '</span></div>';
 }
 
 function colorRow(nr, kleur, term, bg, fg, toelichting) {
@@ -4046,110 +4101,61 @@ function vraagBestandsnaam(standaardNaam) {
   return sanitizeBestandsnaam(naam);
 }
 
-function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
+function openPagedReport(body, css, filename, label) {
   var win = window.open("about:blank", "_blank");
   if (!win) { toonToast("Pop-up geblokkeerd — sta pop-ups toe voor deze site"); return; }
   var doc = '<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8" />' +
     '<title>' + esc(filename) + '</title>' +
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">' +
-    '<style>html,body{margin:0;padding:0;} @media print { .no-print { display:none !important; } }</style>' +
-    '<script>window.PagedConfig = { auto: false };<\/script>' +
-    '<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"><\/script>' +
+    '<style>html,body{margin:0;padding:0;background:#DAD7CE;} @media print { .no-print { display:none !important; } body{background:#fff;} }</style>' +
     '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>' +
     '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>' +
     '</head><body>' +
     '<div class="no-print" style="position:relative;background:#0B3B3C;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:999;font-family:sans-serif;gap:10px;flex-wrap:wrap;border-bottom:4px solid #E8952E;">' +
-    '<span style="font-size:12.5px;font-weight:700;" id="statusLabel">' + esc(label) + ' — bezig met opmaken&hellip;</span>' +
+    '<span style="font-size:12.5px;font-weight:700;" id="statusLabel">' + esc(label) + ' — bezig met laden&hellip;</span>' +
     '<span style="flex-shrink:0;" id="btnRow">' +
     '<button id="printBtn" onclick="printViaPdf()" disabled style="background:#8fa39f;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;">&#128424; Print / Opslaan als PDF</button>' +
     '<button id="exportBtn" onclick="exporteerAlsPdf()" disabled style="background:#fff;color:#0B3B3C;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Downloadt de PDF; met &#x27;altijd vragen waar te bewaren&#x27; aan in je browserinstellingen kies je zelf een map">&#128190; PDF downloaden</button>' +
     '<button id="mailBtn" onclick="verstuurAlsMail()" disabled style="background:#E8952E;color:#fff;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Opent het deelmenu van je toestel, met de PDF als bijlage">&#128231; Verstuur via mail</button>' +
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
-    '<div id="pagedjs-target"></div>' +
+    '<div id="report-target"></div>' +
     '<script>' +
-    // "PDF downloaden" (jsPDF) en "Print / Opslaan als PDF" (browser-print) zijn allebei
-    // altijd beschikbaar en gelijkwaardig — geen detectie/omkleuren meer nodig.
     'var bestandsnaam = ' + JSON.stringify(filename) + ';' +
     'window.onerror = function(msg){' +
     '  var el = document.getElementById("statusLabel");' +
     '  if (el) el.innerHTML = "Onverwachte fout: " + msg + " — sluit dit venster en probeer het opnieuw.";' +
     '  return false;' +
     '};' +
-    'var HEADER_HTML = ' + JSON.stringify(headerHtml || "").replace(/<\/script/gi, "<\\/script") + ';' +
-    'var FOOTER_HTML = ' + JSON.stringify(footerHtml || "").replace(/<\/script/gi, "<\\/script") + ';' +
-    // Koptekst/voettekst (incl. paginanummers) worden hier NIET via CSS @page running-elements
-    // gedaan (bleek onbetrouwbaar), maar direct in JS toegevoegd ná afloop van het opmaken —
-    // op dat moment kennen we het definitieve aantal pagina's (flow.total) zeker.
-    'function plaatsKopEnVoettekst(flow) {' +
-    '  var pages = document.querySelectorAll("#pagedjs-target .pagedjs_page");' +
-    '  var total = flow && flow.total ? flow.total : pages.length;' +
-    '  pages.forEach(function(pageEl, i){' +
-    '    if (i > 0 && HEADER_HTML) {' +
-    '      var h = document.createElement("div");' +
-    '      h.className = "inj-header";' +
-    '      h.innerHTML = HEADER_HTML;' +
-    '      pageEl.appendChild(h);' +
-    '    }' +
-    '    if (FOOTER_HTML) {' +
-    '      var f = document.createElement("div");' +
-    '      f.className = "inj-footer";' +
-    '      f.innerHTML = FOOTER_HTML;' +
-    '      var num = f.querySelector(".run-page-num");' +
-    '      if (num) num.textContent = (i+1) + " / " + total;' +
-    '      pageEl.appendChild(f);' +
-    '    }' +
-    '  });' +
+    // GEEN Paged.js meer: de pagina's zijn al kant-en-klaar aangeleverd als losse .doc-page
+    // divs met natuurlijke hoogte (zelfde aanpak als de boekhoud-app) -- dus geen aparte
+    // opmaak-bibliotheek nodig, geen kans meer dat die faalt te laden, en geen automatische
+    // paginering die tabellen/pagina's verkeerd kan opknippen. We tonen de inhoud gewoon
+    // meteen; alleen de PDF-knoppen wachten nog op html2canvas/jsPDF (voor export).
+    'var cssText = ' + JSON.stringify(css).replace(/<\/script/gi, "<\\/script") + ';' +
+    'var style = document.createElement("style"); style.textContent = cssText; document.head.appendChild(style);' +
+    'document.getElementById("report-target").innerHTML = ' + JSON.stringify(body).replace(/<\/script/gi, "<\\/script") + ';' +
+    'var totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
+    'document.getElementById("statusLabel").innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Wachten op PDF-onderdelen&hellip;";' +
+    'function wachtOpPdfLibs(pogingen) {' +
+    '  if (typeof html2canvas !== "undefined" && ((window.jspdf && window.jspdf.jsPDF) || window.jsPDF)) {' +
+    '    ["printBtn","exportBtn","mailBtn"].forEach(function(id){ var b = document.getElementById(id); b.disabled = false; b.style.cursor = "pointer"; if (id !== "mailBtn") b.style.background = "#fff"; });' +
+    '    document.getElementById("statusLabel").innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Tik op \\u0027Verstuur via mail\\u0027 voor Mail/WhatsApp/etc., of op \\u0027PDF downloaden\\u0027.";' +
+    '    getPdf(document.getElementById("statusLabel"));' +
+    '    return;' +
+    '  }' +
+    '  if (pogingen > 100) { document.getElementById("statusLabel").innerHTML = "PDF-onderdelen konden niet laden (controleer je internetverbinding). Het rapport is wel zichtbaar."; return; }' +
+    '  setTimeout(function(){ wachtOpPdfLibs(pogingen+1); }, 100);' +
     '}' +
-    'window.addEventListener("load", function(){' +
-    '  var content = ' + JSON.stringify(body).replace(/<\/script/gi, "<\\/script") + ';' +
-    '  var cssText = ' + JSON.stringify(css).replace(/<\/script/gi, "<\\/script") + ';' +
-    '  function toonEenvoudigeFallback(reden) {' +
-    '    var style = document.createElement("style");' +
-    '    style.textContent = cssText;' +
-    '    document.head.appendChild(style);' +
-    '    document.getElementById("pagedjs-target").innerHTML = content;' +
-    '    var pBtn = document.getElementById("printBtn"); pBtn.disabled = false; pBtn.style.background = "#fff"; pBtn.style.cursor = "pointer";' +
-    '    document.getElementById("exportBtn").style.display = "none";' +
-    '    document.getElementById("mailBtn").style.display = "none";' +
-    '    document.getElementById("statusLabel").innerHTML = "Vereenvoudigde weergave (" + reden + ") — de opmaak is minder verzorgd, maar \\u0027Print / Opslaan als PDF\\u0027 werkt gewoon. Klik daarop en kies \\u0027Opslaan als PDF\\u0027 om zelf een map te kiezen.";' +
-    '    alert("Het rapport staat klaar (eenvoudige weergave).\\n\\nZo sla je het op:\\n1. Klik op de knop \\u0027Print / Opslaan als PDF\\u0027\\n2. Kies in dat venster bij \\u0027Bestemming\\u0027 de optie \\u0027Opslaan als PDF\\u0027\\n3. Klik op \\u0027Opslaan\\u0027\\n4. Nu opent het venster waar je zelf een map kiest.");' +
-    '  }' +
-    '  try {' +
-    '    if (typeof Paged === "undefined") { toonEenvoudigeFallback("opmaak-bibliotheek niet geladen, controleer je internetverbinding"); return; }' +
-    '    var blob = new Blob([cssText], {type:"text/css"});' +
-    '    var cssUrl = URL.createObjectURL(blob);' +
-    '    var paged = new Paged.Previewer();' +
-    '    paged.preview(content, [cssUrl], document.getElementById("pagedjs-target")).then(function(flow){' +
-    '      plaatsKopEnVoettekst(flow);' +
-    '      var eBtn = document.getElementById("exportBtn"); eBtn.disabled = false; eBtn.style.background = "#fff"; eBtn.style.cursor = "pointer";' +
-    '      var pBtn = document.getElementById("printBtn"); pBtn.disabled = false; pBtn.style.background = "#fff"; pBtn.style.cursor = "pointer";' +
-    '      var mBtn = document.getElementById("mailBtn"); mBtn.disabled = false; mBtn.style.cursor = "pointer";' +
-    // De PDF wordt hier alvast op de achtergrond opgebouwd (i.p.v. pas ná een klik).
-    // Zo staat hij al klaar in het geheugen zodra je op "downloaden" of "mail" drukt —
-    // dat voelt sneller, en op telefoons is het bovendien nodig: het delen-venster
-    // mag alleen direct na een klik geopend worden, niet pas na een paar seconden wachten.
-    '      getPdf(document.getElementById("statusLabel"));' +
-    '      document.getElementById("statusLabel").innerHTML = "Klaar — " + flow.total + " pagina\\u0027s. Tik op \\u0027Verstuur via mail\\u0027 voor Mail/WhatsApp/etc., of op \\u0027PDF downloaden\\u0027.";' +
-    '    }).catch(function(err){' +
-    '      toonEenvoudigeFallback("opmaken mislukt");' +
-    '      alert("Er ging iets mis bij het opmaken van het rapport: " + (err && err.message ? err.message : err) + "\\n\\nGebruik toch de knop \\u0027Print / Opslaan als PDF\\u0027, die werkt nog steeds.");' +
-    '    });' +
-    '  } catch (err) {' +
-    '    toonEenvoudigeFallback("onverwachte fout");' +
-    '  }' +
-    '});' +
+    'wachtOpPdfLibs(0);' +
     'async function genereerPdfObject(status) {' +
-    '  var pages = document.querySelectorAll("#pagedjs-target .pagedjs_page");' +
+    '  var pages = document.querySelectorAll("#report-target .doc-page");' +
     '  if (!pages.length) return null;' +
     '  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;' +
     '  var pdf = new jsPDFCtor({ unit: "mm", format: "a4", orientation: "portrait" });' +
-    // BELANGRIJK: alle pagina's van Paged.js staan onder elkaar in één lang document.
-    // html2canvas rendert intern standaard alleen een gebied zo groot als het zichtbare
-    // scherm (window.innerWidth/innerHeight) — pagina's die daar (ver) voorbij vallen,
-    // worden dan als LEGE afbeelding vastgelegd, ook al zie je ze op het scherm gewoon
-    // goed staan. Door windowWidth/windowHeight expliciet gelijk te zetten aan de volledige
-    // documenthoogte, laten we html2canvas het hele document renderen, zodat elke pagina —
-    // hoe ver ook naar beneden — correct wordt vastgelegd.
+    '  var pageWidthMm = 210, pageHeightMm = 297;' +
+    // Elke .doc-page apart vastleggen (net als bij de boekhoud-app) i.p.v. proberen om
+    // Paged.js-fragmenten te matchen -- elke pagina heeft nu gewoon een eigen, natuurlijke
+    // hoogte div, dus dit kan nooit meer een tabel/koptekst verkeerd opknippen.
     '  var volledigeBreedte = document.documentElement.scrollWidth;' +
     '  var volledigeHoogte = document.documentElement.scrollHeight;' +
     '  for (var i = 0; i < pages.length; i++) {' +
@@ -4161,13 +4167,17 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     '      x: rect.left + window.scrollX, y: rect.top + window.scrollY' +
     '    });' +
     '    var imgData = canvas.toDataURL("image/jpeg", 0.93);' +
+    '    var imgWidth = pageWidthMm;' +
+    '    var imgHeight = (canvas.height * imgWidth) / canvas.width;' +
+    // Nooit uitrekken: als de inhoud iets hoger is dan één A4-pagina, verkleinen we het
+    // geheel proportioneel (net als de boekhoud-app) i.p.v. te vervormen of af te kappen.
+    '    if (imgHeight > pageHeightMm) { imgHeight = pageHeightMm; imgWidth = (canvas.width * imgHeight) / canvas.height; }' +
     '    if (i > 0) pdf.addPage("a4", "portrait");' +
-    '    pdf.addImage(imgData, "JPEG", 0, 0, 210, 297, undefined, "FAST");' +
+    '    var xOffset = Math.max(0, (pageWidthMm - imgWidth) / 2);' +
+    '    pdf.addImage(imgData, "JPEG", xOffset, 0, imgWidth, imgHeight, undefined, "FAST");' +
     '  }' +
     '  return pdf;' +
     '}' +
-    // cachedPdfPromise onthoudt de al gestarte/klaar PDF-opbouw, zodat we 'm niet
-    // steeds opnieuw met html2canvas hoeven te renderen (dat is het trage deel).
     'var cachedPdfPromise = null;' +
     'function getPdf(status) {' +
     '  if (!cachedPdfPromise) cachedPdfPromise = genereerPdfObject(status);' +
@@ -4176,14 +4186,6 @@ function openPagedReport(body, css, filename, label, headerHtml, footerHtml) {
     'async function printViaPdf() {' +
     '  var btn = document.getElementById("printBtn");' +
     '  var status = document.getElementById("statusLabel");' +
-    // BELANGRIJK: we gebruiken hier bewust NIET window.print() op de live Paged.js-pagina.
-    // Op sommige toestellen (met name iOS) rekent het systeem-printvenster de paginamarges
-    // van @page nog EEN KEER bovenop de al kant-en-klare pagina's die Paged.js heeft opgemaakt.
-    // Daardoor past de inhoud net niet meer op de pagina en schuift de rest door naar een
-    // volgende, lege pagina — voor letterlijk elke pagina, dus een dubbel zo dik "rapport"
-    // met alleen maar lege pagina's ertussen. Door in plaats daarvan de reeds opgebouwde,
-    // correcte PDF (dezelfde als bij "PDF downloaden") te openen en DAARVAN te printen,
-    // printen we een kant-en-klaar, plat document zonder dat dat probleem kan optreden.
     '  if (typeof html2canvas === "undefined" || !((window.jspdf && window.jspdf.jsPDF) || window.jsPDF)) {' +
     '    status.innerHTML = "Deze knop kon niet laden (internetverbinding) — probeer het later opnieuw.";' +
     '    return;' +
@@ -4273,14 +4275,14 @@ function openScope12Rapport() {
   var standaard = sanitizeBestandsnaam(o_rapportnaamOfStandaard("Scope12"));
   var naam = vraagBestandsnaam(standaard);
   if (naam === null) return;
-  openPagedReport(buildScope12Body(), scope12Css(), naam, "Scope 12 inspectierapport", scope12RunningHeaderHtml(), scope12RunningFooterHtml());
+  openPagedReport(buildScope12Body(), scope12Css(), naam, "Scope 12 inspectierapport");
 }
 
 function openNen1010Rapport() {
   var standaard = sanitizeBestandsnaam(o_rapportnaamOfStandaard("NEN1010"));
   var naam = vraagBestandsnaam(standaard);
   if (naam === null) return;
-  openPagedReport(buildNen1010Body(), nen1010Css(), naam, "NEN 1010 inspectierapport", nen1010RunningHeaderHtml(), nen1010RunningFooterHtml());
+  openPagedReport(buildNen1010Body(), nen1010Css(), naam, "NEN 1010 inspectierapport");
 }
 
 
