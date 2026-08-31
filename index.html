@@ -537,14 +537,142 @@ function emptyObject() {
 // Plattegronden (alleen NEN1010): een geüploade tekening/plattegrond met daarop
 // aanklikbare notities (bijv. locaties van WCD's of andere componenten).
 function newPlattegrond() { return { id: uid(), naam: "", afbeelding: "", notities: [] }; }
-function newPlattegrondNotitie(x, y) { return { id: uid(), x: x, y: y, tekst: "", zs: "", zi: "" }; }
-function voegPlattegrondToe(files) {
-  filesToDataUrls(files, function(urls){
-    urls.filter(Boolean).forEach(function(url){
-      var p = newPlattegrond(); p.afbeelding = url; p.naam = "Plattegrond " + (state.object.plattegronden.length + 1);
-      state.object.plattegronden.push(p);
+function newPlattegrondNotitie(x, y) { return { id: uid(), x: x, y: y, tekst: "", zs: "", zi: "", groepRef: "", gemeten: "Nee" }; }
+// Tekent het "stempel" op de plattegrond voor één meetpunt: zolang er nog geen Zs/Zi is
+// ingevuld gewoon een klein genummerd bolletje; zodra er een waarde staat, een leesbaar
+// stempel met de waarden erop, direct op de tekening (zowel in het formulier als het rapport).
+function plattegrondStempelHtml(n, ni) {
+  var kleur = n.gemeten === "Ja" ? "#2F7D3A" : "#E8952E";
+  if (!n.zs && !n.zi) {
+    return '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:' + kleur + ';color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;">' + (ni+1) + '</div>';
+  }
+  return '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);background:' + kleur + ';color:#fff;font-weight:700;font-size:9px;line-height:1.3;padding:3px 6px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.45);white-space:nowrap;pointer-events:none;text-align:center;">' +
+    '<div style="font-weight:800;font-size:10.5px;">' + (ni+1) + '</div>' +
+    (n.zs ? ('<div>Zs ' + esc(n.zs) + '&Omega;</div>') : '') +
+    (n.zi ? ('<div>Zi ' + esc(n.zi) + '&Omega;</div>') : '') +
+    '</div>';
+}
+// Verzamelt alle afgaande groepen van alle verdelers in één lijst, zodat je een meetpunt op
+// de plattegrond aan de juiste groep kunt koppelen. groepRef-waarde is "verdelerId::groepId".
+function alleAfgaandeGroepenOpties() {
+  var opties = [];
+  state.verdelers.forEach(function(v){
+    (v.afgaandeGroepen||[]).forEach(function(g){
+      opties.push({ waarde: v.id + "::" + g.id, label: (v.naam || "Verdeler") + " &mdash; " + (g.naam || "Groep") });
     });
-    persistDraft(); render();
+  });
+  return opties;
+}
+// Verkleint/comprimeert een afbeelding (dataURL) tot max 1600px lange zijde, JPEG kwaliteit 0.8.
+// Wordt gebruikt voor zowel gewone foto-uploads als (per pagina) omgezette PDF-plattegronden,
+// zodat grote bestanden nooit onnodig veel opslagruimte innemen.
+function verkleinDataUrl(dataUrl, callback) {
+  var MAX_AFMETING = 1600, KWALITEIT = 0.8;
+  var img = new Image();
+  img.onload = function() {
+    var w = img.width, h = img.height;
+    if (w > MAX_AFMETING || h > MAX_AFMETING) {
+      if (w >= h) { h = Math.round(h * (MAX_AFMETING / w)); w = MAX_AFMETING; }
+      else { w = Math.round(w * (MAX_AFMETING / h)); h = MAX_AFMETING; }
+    }
+    try {
+      var canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL("image/jpeg", KWALITEIT));
+    } catch (err) { callback(dataUrl); }
+  };
+  img.onerror = function() { callback(dataUrl); };
+  img.src = dataUrl;
+}
+// Laadt pdf.js (eenmalig, alleen wanneer er echt een PDF wordt geüpload) zodat we een
+// PDF-plattegrond kunnen omzetten naar gewone afbeeldingen — één per pagina.
+function laadPdfJs(callback) {
+  if (window.pdfjsLib) { callback(); return; }
+  if (window.__pdfJsLoading) { window.__pdfJsWachtrij.push(callback); return; }
+  window.__pdfJsLoading = true; window.__pdfJsWachtrij = [callback];
+  var script = document.createElement("script");
+  script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  script.onload = function() {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    window.__pdfJsWachtrij.forEach(function(fn){ fn(); });
+  };
+  script.onerror = function() {
+    alert("Kon PDF-ondersteuning niet laden (controleer je internetverbinding). Upload de plattegrond eventueel als foto/afbeelding (JPG/PNG) in plaats van PDF.");
+  };
+  document.head.appendChild(script);
+}
+// Zet elke pagina van een PDF-bestand om naar een aparte afbeelding (dataURL). Meerdere
+// pagina's (bijv. een tekeningenset met meerdere verdiepingen) worden elk een eigen plattegrond.
+function pdfNaarAfbeeldingen(file, callback) {
+  laadPdfJs(function() {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var typedarray = new Uint8Array(e.target.result);
+      window.pdfjsLib.getDocument({ data: typedarray }).promise.then(function(pdf) {
+        var paginas = [];
+        function volgende(i) {
+          if (i > pdf.numPages) { callback(paginas); return; }
+          pdf.getPage(i).then(function(page) {
+            var viewport = page.getViewport({ scale: 2 });
+            var canvas = document.createElement("canvas");
+            canvas.width = viewport.width; canvas.height = viewport.height;
+            page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise.then(function() {
+              paginas.push({ naam: (file.name || "Plattegrond").replace(/\.pdf$/i, "") + (pdf.numPages > 1 ? " - pagina " + i : ""), dataUrl: canvas.toDataURL("image/png") });
+              volgende(i + 1);
+            });
+          });
+        }
+        volgende(1);
+      }).catch(function(err) {
+        console.error("PDF-plattegrond kon niet worden gelezen:", err);
+        alert("Deze PDF kon niet worden gelezen. Upload de plattegrond eventueel als foto/afbeelding (JPG/PNG).");
+        callback([]);
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+function voegPlattegrondToe(files) {
+  var lijst = Array.prototype.slice.call(files);
+  if (lijst.length === 0) return;
+  var toeTeVoegen = [];
+  var openstaand = lijst.length;
+  function klaarMetBestand() {
+    openstaand--;
+    if (openstaand === 0) {
+      toeTeVoegen.forEach(function(item) {
+        var p = newPlattegrond();
+        p.afbeelding = item.dataUrl;
+        p.naam = item.naam || ("Plattegrond " + (state.object.plattegronden.length + 1));
+        state.object.plattegronden.push(p);
+      });
+      persistDraft(); render();
+    }
+  }
+  lijst.forEach(function(f) {
+    if (f.type === "application/pdf") {
+      pdfNaarAfbeeldingen(f, function(paginas) {
+        if (paginas.length === 0) { klaarMetBestand(); return; }
+        var resterend = paginas.length;
+        paginas.forEach(function(pg) {
+          verkleinDataUrl(pg.dataUrl, function(kleinereUrl) {
+            toeTeVoegen.push({ naam: pg.naam, dataUrl: kleinereUrl });
+            resterend--;
+            if (resterend === 0) klaarMetBestand();
+          });
+        });
+      });
+    } else {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        verkleinDataUrl(e.target.result, function(kleinereUrl) {
+          toeTeVoegen.push({ naam: null, dataUrl: kleinereUrl });
+          klaarMetBestand();
+        });
+      };
+      reader.readAsDataURL(f);
+    }
   });
 }
 function verwijderPlattegrond(id) {
@@ -2465,33 +2593,38 @@ function renderDocumentatieNen1010() {
 }
 function renderPlattegronden() {
   var o = state.object;
+  var groepOpties = alleAfgaandeGroepenOpties();
   var h = '<button class="backbtn" onclick="goPrev()">&larr; Terug</button>';
-  h += '<h1>Plattegronden</h1><p class="subtitle">Upload een plattegrond/tekening en klik erop om een genummerd meetpunt te plaatsen (bijv. een WCD). Vul daar de Zs- en Zi-meting bij in — dit komt in het rapport terecht als een meettekening per groep. Alles wordt automatisch opgeslagen.</p>';
+  h += '<h1>Plattegronden</h1><p class="subtitle">Upload een plattegrond/tekening en klik erop om een genummerd meetpunt te plaatsen (bijv. een WCD). Koppel het aan de juiste groep, vul de Zs-/Zi-meting in en vink af zodra je het gemeten hebt. Alles wordt automatisch opgeslagen.</p>';
   h += '<div class="section-card">';
-  h += '<label class="photo-add" style="display:inline-block;cursor:pointer;">&#128247; Plattegrond uploaden<input type="file" accept="image/*" multiple style="display:none;" onchange="voegPlattegrondToe(this.files); this.value=\'\';" /></label>';
+  h += '<label class="photo-add" style="display:inline-block;cursor:pointer;">&#128247; Plattegrond uploaden (foto of PDF)<input type="file" accept="image/*,application/pdf" multiple style="display:none;" onchange="voegPlattegrondToe(this.files); this.value=\'\';" /></label>';
+  h += '<p class="subtitle" style="margin-top:6px;color:#4d493f;">Grote bestanden (ook PDF-tekeningen) worden automatisch verkleind/gecomprimeerd bij het uploaden. Een PDF met meerdere pagina\'s wordt per pagina een eigen plattegrond.</p>';
   h += '</div>';
   if ((o.plattegronden||[]).length === 0) h += '<div class="empty-state">Nog geen plattegronden toegevoegd.</div>';
   (o.plattegronden||[]).forEach(function(p){
     h += '<div class="item-block">';
     h += '<div class="item-block-head"><input class="item-title-input" placeholder="Naam plattegrond (bijv. Begane grond)" value="' + esc(p.naam) + '" oninput="updatePlattegrondNaam(\'' + p.id + '\', this.value)" /><button class="del-x" onclick="verwijderPlattegrond(\'' + p.id + '\')">&#128465;</button></div>';
-    h += '<p class="subtitle" style="color:#4d493f;">Tik/klik op de tekening om een notitie te plaatsen.</p>';
+    h += '<p class="subtitle" style="color:#4d493f;">Tik/klik op de tekening om een meetpunt te plaatsen. Vul je Zs/Zi in, dan verschijnt dat direct als stempel op de tekening. Groen = al gemeten, oranje = nog niet.</p>';
     h += '<div style="position:relative;display:inline-block;max-width:100%;touch-action:manipulation;">';
     h += '<img src="' + p.afbeelding + '" style="max-width:100%;display:block;border-radius:8px;border:1px solid #cfd8d6;cursor:crosshair;" onclick="voegPlattegrondNotitieToe(\'' + p.id + '\', event)" />';
     (p.notities||[]).forEach(function(n, ni){
-      h += '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#E8952E;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;">' + (ni+1) + '</div>';
+      h += plattegrondStempelHtml(n, ni);
     });
     h += '</div>';
     (p.notities||[]).forEach(function(n, ni){
       h += '<div class="streng-block" style="margin-top:8px;">';
       h += '<div style="display:grid;grid-template-columns:22px 1fr 26px;gap:8px;align-items:center;">';
-      h += '<div style="width:22px;height:22px;border-radius:50%;background:#E8952E;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;">' + (ni+1) + '</div>';
+      h += '<div style="width:22px;height:22px;border-radius:50%;background:' + (n.gemeten==="Ja"?"#2F7D3A":"#E8952E") + ';color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;">' + (ni+1) + '</div>';
       h += '<input class="f" style="margin-bottom:0;font-weight:700;" placeholder="Omschrijving (bijv. WCD keuken, groep 3)" value="' + esc(n.tekst) + '" oninput="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'tekst\', this.value)" />';
       h += '<button class="del-x" onclick="verwijderPlattegrondNotitie(\'' + p.id + '\', \'' + n.id + '\')">&#128465;</button>';
       h += '</div>';
+      h += '<div style="margin-top:6px;"><label class="fl">Hoort bij groep</label><select class="mini-select" onchange="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'groepRef\', this.value)"><option value="">&mdash; geen koppeling &mdash;</option>' +
+        groepOpties.map(function(go){ return '<option value="' + esc(go.waarde) + '"' + (n.groepRef===go.waarde?' selected':'') + '>' + go.label + '</option>'; }).join('') + '</select></div>';
       h += '<div class="grid2" style="margin-top:6px;">';
       h += '<div><label class="fl">Zs (&Omega;)</label><input class="f" style="margin-bottom:0;" placeholder="bijv. 1,2" value="' + esc(n.zs) + '" oninput="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'zs\', this.value)" /></div>';
       h += '<div><label class="fl">Zi (&Omega;)</label><input class="f" style="margin-bottom:0;" placeholder="bijv. 0,8" value="' + esc(n.zi) + '" oninput="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'zi\', this.value)" /></div>';
       h += '</div>';
+      h += '<div style="margin-top:6px;max-width:160px;"><label class="fl">Gemeten</label><select class="mini-select" onchange="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'gemeten\', this.value)"><option' + (n.gemeten==="Nee"?' selected':'') + '>Nee</option><option' + (n.gemeten==="Ja"?' selected':'') + '>Ja</option></select></div>';
       h += '</div>';
     });
     h += '</div>';
@@ -4268,17 +4401,21 @@ function buildNen1010Body() {
   // PAGINA — PLATTEGRONDEN
   if ((o.plattegronden||[]).length > 0) {
     var pgHtml = "";
+    var groepLabelMap = {};
+    state.verdelers.forEach(function(v){ (v.afgaandeGroepen||[]).forEach(function(g){ groepLabelMap[v.id + "::" + g.id] = (v.naam||"Verdeler") + " &mdash; " + (g.naam||"Groep"); }); });
     o.plattegronden.forEach(function(p, pi){
       pgHtml += (pi>0 ? PAGE_BREAK_MARK : "") + '<div class="doc-sub"' + (pi===0?' style="margin-top:0;"':'') + '>' + esc(p.naam || "Plattegrond " + (pi+1)) + '</div>';
       pgHtml += '<div style="position:relative;display:inline-block;max-width:100%;">';
       pgHtml += '<img src="' + p.afbeelding + '" style="max-width:100%;display:block;border-radius:6px;border:1px solid #cfd8d6;" />';
       (p.notities||[]).forEach(function(n, ni){
-        pgHtml += '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#E8952E;color:#fff;font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.4);">' + (ni+1) + '</div>';
+        pgHtml += plattegrondStempelHtml(n, ni);
       });
       pgHtml += '</div>';
       if ((p.notities||[]).length > 0) {
-        pgHtml += '<table class="std-table meet-table" style="margin-top:10px;"><thead><tr><th style="width:40px;">Nr.</th><th style="width:46%;">Omschrijving</th><th style="text-align:right;">Zs (&Omega;)</th><th style="text-align:right;">Zi (&Omega;)</th></tr></thead><tbody>';
-        p.notities.forEach(function(n, ni){ pgHtml += '<tr><td>' + (ni+1) + '</td><td>' + esc(n.tekst || "—") + '</td><td style="text-align:right;">' + esc(n.zs || "—") + '</td><td style="text-align:right;">' + esc(n.zi || "—") + '</td></tr>'; });
+        pgHtml += '<table class="std-table meet-table" style="margin-top:10px;"><thead><tr><th style="width:32px;">Nr.</th><th style="width:26%;">Omschrijving</th><th style="width:26%;">Groep</th><th style="text-align:right;">Zs (&Omega;)</th><th style="text-align:right;">Zi (&Omega;)</th><th style="text-align:center;">Gemeten</th></tr></thead><tbody>';
+        p.notities.forEach(function(n, ni){
+          pgHtml += '<tr><td>' + (ni+1) + '</td><td>' + esc(n.tekst || "—") + '</td><td>' + (groepLabelMap[n.groepRef] || "—") + '</td><td style="text-align:right;">' + esc(n.zs || "—") + '</td><td style="text-align:right;">' + esc(n.zi || "—") + '</td><td style="text-align:center;"><span class="badge" style="background:' + (n.gemeten==="Ja"?"#2F7D3A":"#9A9A9A") + ';">' + (n.gemeten==="Ja"?"Ja":"Nee") + '</span></td></tr>';
+        });
         pgHtml += '</tbody></table>';
       }
     });
