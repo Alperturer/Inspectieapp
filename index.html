@@ -548,8 +548,8 @@ function plattegrondStempelHtml(n, ni) {
   var achtergrond = isGemeten ? "#DCEEDD" : "#FBE6C6";
   var tekstkleur = isGemeten ? "#1F5C2A" : "#8A5A12";
   var randkleur = isGemeten ? "#8FC79A" : "#E8B45C";
-  return '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);background:' + achtergrond + ';color:' + tekstkleur + ';font-weight:700;font-size:7.5px;line-height:1.3;padding:2px 4px;border-radius:4px;border:1px solid ' + randkleur + ';box-shadow:0 1px 2px rgba(0,0,0,0.25);white-space:nowrap;pointer-events:none;text-align:left;">' +
-    '<div style="font-weight:800;font-size:8px;">#' + (ni+1) + '</div>' +
+  return '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);background:' + achtergrond + ';color:' + tekstkleur + ';font-weight:700;font-size:5px;line-height:1.25;padding:1px 3px;border-radius:3px;border:1px solid ' + randkleur + ';box-shadow:0 1px 2px rgba(0,0,0,0.25);white-space:nowrap;pointer-events:none;text-align:left;">' +
+    '<div style="font-weight:800;font-size:5.5px;">#' + (ni+1) + '</div>' +
     '<div>Zs ' + (n.zs ? esc(n.zs) + '&Omega;' : '&mdash;') + '</div>' +
     '<div>Zi ' + (n.zi ? esc(n.zi) + '&Omega;' : '&mdash;') + '</div>' +
     '</div>';
@@ -2913,13 +2913,12 @@ function renderVerdelers() {
     h += '<h3>AC-metingen</h3>';
     if (!heeftMetingen) {
       h += '<button class="btn-add" onclick="genereerStandaardMetingen(\'' + v.id + '\')">&#9889; Genereer standaard metingen (Zs, Zi, Riso)</button>';
-    } else {
-      h += metingLijst(v, "zsMetingen", "Zs &ndash; foutlusimpedantie (&Omega;)");
-      h += metingLijst(v, "ziMetingen", "Zi &ndash; lusimpedantie (&Omega;)");
-      h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(v.testspanningRiso) + '" oninput="updateVerdelerField(\'' + v.id + '\',\'testspanningRiso\',this.value)" /></div>';
-      h += risoBeoordelingBlok("verdeler", v);
-      h += metingLijst(v, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     }
+    h += metingLijst(v, "zsMetingen", "Zs &ndash; foutlusimpedantie (&Omega;)");
+    h += metingLijst(v, "ziMetingen", "Zi &ndash; lusimpedantie (&Omega;)");
+    h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(v.testspanningRiso) + '" oninput="updateVerdelerField(\'' + v.id + '\',\'testspanningRiso\',this.value)" /></div>';
+    h += risoBeoordelingBlok("verdeler", v);
+    h += metingLijst(v, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     h += '<h3>RLo-metingen (doorgangsweerstand)</h3><p class="subtitle" style="margin-top:-6px;color:#4d493f;">Vrij in te vullen &mdash; voeg toe wat je gemeten hebt.</p>';
     (v.rloMetingen||[]).forEach(function(m){
       h += '<div class="streng-block" style="margin-top:6px;">';
@@ -3187,13 +3186,12 @@ function renderOmvormers() {
     h += '<h3>AC-metingen</h3>';
     if (!heeftOmvormerMetingen) {
       h += '<button class="btn-add" onclick="genereerStandaardMetingenOmvormer(\'' + o.id + '\')">&#9889; Genereer standaard metingen (Zs, Zi, Riso)</button>';
-    } else {
-      h += metingLijstOmvormer(o, "zsMetingen", "Zs &ndash; foutlusimpedantie (&Omega;)");
-      h += metingLijstOmvormer(o, "ziMetingen", "Zi &ndash; lusimpedantie (&Omega;)");
-      h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(o.testspanningRiso) + '" oninput="updateOmvormerField(\'' + o.id + '\',\'testspanningRiso\',this.value)" /></div>';
-      h += risoBeoordelingBlok("omvormer", o);
-      h += metingLijstOmvormer(o, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     }
+    h += metingLijstOmvormer(o, "zsMetingen", "Zs &ndash; foutlusimpedantie (&Omega;)");
+    h += metingLijstOmvormer(o, "ziMetingen", "Zi &ndash; lusimpedantie (&Omega;)");
+    h += '<div style="max-width:220px;margin-top:14px;"><label class="fl">Testspanning Riso (V DC)</label><input class="f" placeholder="bijv. 500" value="' + esc(o.testspanningRiso) + '" oninput="updateOmvormerField(\'' + o.id + '\',\'testspanningRiso\',this.value)" /></div>';
+    h += risoBeoordelingBlok("omvormer", o);
+    h += metingLijstOmvormer(o, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
 
     h += '<h3 style="margin-top:14px;">Aardlekschakelaar</h3>';
     h += '<div style="max-width:260px;"><label class="fl">Is er een aardlekschakelaar/-automaat toegepast?</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekAanwezig\', this.value); render();"><option' + (o.aardlekAanwezig==="Nee"?' selected':'') + '>Nee</option><option' + (o.aardlekAanwezig==="Ja"?' selected':'') + '>Ja</option></select></div>';
@@ -3245,8 +3243,8 @@ function renderOmvormers() {
     h += '<h3>RLo-metingen (apart, per omvormer)</h3>';
     if (!o.rloMetingen || o.rloMetingen.length === 0) {
       h += '<button class="btn-add" onclick="genereerStandaardRlo(\'' + o.id + '\')">&#9889; Genereer standaard RLo-metingen</button>';
-    } else {
-      (o.rloMetingen).forEach(function(m){
+    }
+    (o.rloMetingen||[]).forEach(function(m){
         h += '<div class="streng-block" style="margin-top:6px;">';
         h += '<div style="display:grid;grid-template-columns:2fr 1fr 26px;gap:8px;align-items:end;">';
         h += '<div><label class="fl" style="min-height:auto;">Wat gemeten</label><input class="f" style="font-weight:700;margin-bottom:0;" placeholder="bijv. Aardrail - Omvormer" value="' + esc(m.omschrijving) + '" oninput="updateRloMetingField(\'' + o.id + '\', \'' + m.id + '\', \'omschrijving\', this.value)" /></div>';
@@ -3261,9 +3259,8 @@ function renderOmvormers() {
         }
         h += photoRow(m.fotos, "addRloMetingPhoto('" + o.id + "', '" + m.id + "', ", "removeRloMetingPhoto('" + o.id + "', '" + m.id + "', ");
         h += '</div>';
-      });
-      h += '<button class="btn-add" onclick="addRloMeting(\'' + o.id + '\')">+ RLo-meting toevoegen</button>';
-    }
+    });
+    h += '<button class="btn-add" onclick="addRloMeting(\'' + o.id + '\')">+ RLo-meting toevoegen</button>';
     h += '</div>';
   });
   h += '<button class="btn-add" onclick="addOmvormer()">+ Omvormer toevoegen</button>';
