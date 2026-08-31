@@ -531,7 +531,55 @@ function emptyObject() {
     ],
     controlepuntenNen1010: [],
     documentatieNen1010: [], steekproefResultaten: "",
+    plattegronden: [],
   };
+}
+// Plattegronden (alleen NEN1010): een geüploade tekening/plattegrond met daarop
+// aanklikbare notities (bijv. locaties van WCD's of andere componenten).
+function newPlattegrond() { return { id: uid(), naam: "", afbeelding: "", notities: [] }; }
+function newPlattegrondNotitie(x, y) { return { id: uid(), x: x, y: y, tekst: "", zs: "", zi: "" }; }
+function voegPlattegrondToe(files) {
+  filesToDataUrls(files, function(urls){
+    urls.filter(Boolean).forEach(function(url){
+      var p = newPlattegrond(); p.afbeelding = url; p.naam = "Plattegrond " + (state.object.plattegronden.length + 1);
+      state.object.plattegronden.push(p);
+    });
+    persistDraft(); render();
+  });
+}
+function verwijderPlattegrond(id) {
+  vraagBevestiging("Plattegrond verwijderen? Dit verwijdert de tekening en alle notities daarop.", function(){
+    state.object.plattegronden = state.object.plattegronden.filter(function(p){return p.id!==id;});
+    persistDraft(); render();
+  });
+}
+function updatePlattegrondNaam(id, naam) { var p = state.object.plattegronden.find(function(x){return x.id===id;}); if (p) p.naam = naam; persistDraft(); }
+// Klik ergens op de afbeelding om daar een genummerd notitie-vlaggetje te plaatsen.
+// x/y zijn percentages (0-100) t.o.v. de afbeelding, zodat de plek klopt ongeacht schermgrootte.
+function voegPlattegrondNotitieToe(plattegrondId, evt) {
+  var p = state.object.plattegronden.find(function(x){return x.id===plattegrondId;});
+  if (!p) return;
+  var img = evt.currentTarget;
+  var rect = img.getBoundingClientRect();
+  var clientX = evt.touches && evt.touches[0] ? evt.touches[0].clientX : evt.clientX;
+  var clientY = evt.touches && evt.touches[0] ? evt.touches[0].clientY : evt.clientY;
+  var x = ((clientX - rect.left) / rect.width) * 100;
+  var y = ((clientY - rect.top) / rect.height) * 100;
+  p.notities.push(newPlattegrondNotitie(x.toFixed(2), y.toFixed(2)));
+  persistDraft(); render();
+}
+function updatePlattegrondNotitieVeld(plattegrondId, notitieId, key, val) {
+  var p = state.object.plattegronden.find(function(x){return x.id===plattegrondId;});
+  if (!p) return;
+  var n = p.notities.find(function(x){return x.id===notitieId;});
+  if (n) n[key] = val;
+  persistDraft();
+}
+function verwijderPlattegrondNotitie(plattegrondId, notitieId) {
+  var p = state.object.plattegronden.find(function(x){return x.id===plattegrondId;});
+  if (!p) return;
+  p.notities = p.notities.filter(function(n){return n.id!==notitieId;});
+  persistDraft(); render();
 }
 function newDocumentatieNen1010() { return { id: uid(), soort: "", naam: "", datum: "", aanwezigheid: "Het document is digitaal beschikbaar", afwijking: "Nee" }; }
 var STEEKPROEF_TABEL = [
@@ -596,7 +644,27 @@ var NEN1010_BEOORDELING_TEKST = {
   "voldoet": "Tijdens de inspectie zijn geen gebreken, afwijkingen of defecten vastgesteld die een risico vormen voor de elektrische veiligheid van de gebruikers en de bedrijfsvoering. De installatie voldoet aan de normering.",
   "gebreken": "Tijdens de inspectie zijn gebreken, afwijkingen en/of defecten vastgesteld die een mogelijk risico vormen voor de elektrische veiligheid van de gebruikers en de bedrijfsvoering. De installatie voldoet niet aan de normering.",
 };
-function newVerdeler() { return { id: uid(), naam: "", locatie: "", typeZekering: "", voorbeveiliging: "", hoofdschakelaar: "", klasse: "", rlo: "", groepen1Fase: "", groepen3Fase: "", aantalAardlek: "", uitwendigeInvloeden: "", ipStof: "", ipWater: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true }; }
+function newVerdeler() { return { id: uid(), naam: "", locatie: "", typeZekering: "", voorbeveiliging: "", hoofdschakelaar: "", klasse: "", rlo: "", groepen1Fase: "", groepen3Fase: "", aantalAardlek: "", uitwendigeInvloeden: "", ipStof: "", ipWater: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true, afgaandeGroepen: [], aardlekschakelaars: [] }; }
+// Aardlekschakelaar/-automaat-test: bij scope 8/10/NEN1010 kunnen er meerdere per
+// verdeler zijn (bijv. meerdere groepen met een eigen aardlekbeveiliging); bij scope 12
+// is er hoogstens 1, en alleen bij de omvormer (zie newOmvormer/omvormerAardlek*-velden).
+function newAardlekschakelaar() { return { id: uid(), soort: "Aardlekschakelaar", type: "A", amperage: "40A", uitschakelstroom: "", uitschakeltijd: "", testknop: "Werkt", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
+function voegAardlekschakelaarToe(verdelerId) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; if (!v.aardlekschakelaars) v.aardlekschakelaars = []; v.aardlekschakelaars.push(newAardlekschakelaar()); persistDraft(); render(); }
+function verwijderAardlekschakelaar(verdelerId, id) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; v.aardlekschakelaars = (v.aardlekschakelaars||[]).filter(function(a){return a.id!==id;}); persistDraft(); render(); }
+function updateAardlekschakelaarField(verdelerId, id, key, val) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var a = (v.aardlekschakelaars||[]).find(function(x){return x.id===id;}); if (a) a[key] = val; persistDraft(); }
+function updateAardlekschakelaar(verdelerId, id, patch) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var a = (v.aardlekschakelaars||[]).find(function(x){return x.id===id;}); if (a) Object.assign(a, patch); persistDraft(); render(); }
+function addAardlekschakelaarPhoto(verdelerId, id, files) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var a = (v.aardlekschakelaars||[]).find(function(x){return x.id===id;}); if (!a) return; filesToDataUrls(files, function(urls){ a.fotos = a.fotos.concat(urls.filter(Boolean)); persistDraft(); render(); }); }
+function removeAardlekschakelaarPhoto(verdelerId, id, idx) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var a = (v.aardlekschakelaars||[]).find(function(x){return x.id===id;}); if (!a) return; a.fotos.splice(idx,1); persistDraft(); render(); }
+// Afgaande groep (alleen NEN1010): een eindgroep vanuit een verdeler, met de hoogste
+// gemeten Zs/Zi-waarde van de WCD's die in het veld op die groep zijn gemeten, plus de
+// Riso-meting en de gegevens van de aardlekschakelaar-test.
+function newAfgaandeGroep() { return { id: uid(), naam: "", zsMax: "", ziMax: "", riso: "", aardlekAanwezig: "Ja", aardlekUitschakeltijd: "", aardlekUitschakelstroom: "", aardlekTestknop: "Werkt", classificatie: "goed", opmerking: "", fotos: [] }; }
+function voegAfgaandeGroepToe(verdelerId) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; if (!v.afgaandeGroepen) v.afgaandeGroepen = []; v.afgaandeGroepen.push(newAfgaandeGroep()); persistDraft(); render(); }
+function verwijderAfgaandeGroep(verdelerId, groepId) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; v.afgaandeGroepen = (v.afgaandeGroepen||[]).filter(function(g){return g.id!==groepId;}); persistDraft(); render(); }
+function updateAfgaandeGroepField(verdelerId, groepId, key, val) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var g = (v.afgaandeGroepen||[]).find(function(x){return x.id===groepId;}); if (g) g[key] = val; persistDraft(); }
+function updateAfgaandeGroep(verdelerId, groepId, patch) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var g = (v.afgaandeGroepen||[]).find(function(x){return x.id===groepId;}); if (g) Object.assign(g, patch); persistDraft(); render(); }
+function addAfgaandeGroepPhoto(verdelerId, groepId, files) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var g = (v.afgaandeGroepen||[]).find(function(x){return x.id===groepId;}); if (!g) return; filesToDataUrls(files, function(urls){ g.fotos = g.fotos.concat(urls.filter(Boolean)); persistDraft(); render(); }); }
+function removeAfgaandeGroepPhoto(verdelerId, groepId, idx) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var g = (v.afgaandeGroepen||[]).find(function(x){return x.id===groepId;}); if (!g) return; g.fotos.splice(idx,1); persistDraft(); render(); }
 function newMeting(circuit) { return { id: uid(), circuit: circuit, waarde: "", kortsluitstroom: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], beveiligingType: "", klasse: "", nominaleStroom: "", smeltKarakteristiek: "gG", autoBeoordeling: true, autoBeoordelingRiso: true }; }
 // Factor voor installatieautomaten (Ia = In x factor), volgens de gebruikelijke karakteristieken B/C/D.
 var IA_FACTOR = { B: 5, C: 10, D: 20 };
@@ -719,7 +787,8 @@ function pasStandaardRisoBeoordelingToe(soort, id) {
 var ZS_CIRCUITS = ["L1-PE", "L2-PE", "L3-PE"];
 var ZI_CIRCUITS = ["L1-L2", "L1-L3", "L2-L3", "L1-N", "L2-N", "L3-N"];
 var RISO_CIRCUITS = ["L1-L2", "L1-L3", "L2-L3", "L1-N", "L2-N", "L3-N", "L1-PE", "L2-PE", "L3-PE", "N-PE"];
-function newOmvormer() { return { id: uid(), naam: "", vermogen: "", locatie: "", merk: "", type: "", serienummer: "", voorbeveiliging: "", maxDcSpanning: "", imax: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], strengen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true }; }
+function newOmvormer() { return { id: uid(), naam: "", vermogen: "", locatie: "", merk: "", type: "", serienummer: "", voorbeveiliging: "", maxDcSpanning: "", imax: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], strengen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true,
+  aardlekAanwezig: "Nee", aardlekSoort: "Aardlekschakelaar", aardlekType: "A", aardlekAmperage: "40A", aardlekUitschakelstroom: "", aardlekUitschakeltijd: "", aardlekTestknop: "Werkt", aardlekClassificatie: "goed", aardlekOpmerking: "", aardlekFotos: [] }; }
 function newRloMeting(omschrijving) { return { id: uid(), omschrijving: omschrijving || "", waarde: "", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
 function newConstatering() { return { id: uid(), omschrijving: "", classificatie: "opmerking", norm: "", fotos: [] }; }
 var RLO_STANDAARD = ["Aardrail - Omvormer", "Aardrail - 1e deel constructie", "1e deel constructie - 2e deel constructie", "2e deel constructie - 3e deel constructie", "3e deel constructie - 4e deel constructie"];
@@ -765,7 +834,7 @@ function getStepOrder() {
   if (state.type === "nen1010") order.push("nen1010details");
   order.push("verdelers");
   if (state.type === "scope12") order.push("omvormers", "documentatie");
-  if (state.type === "nen1010") order.push("documentatieNen1010");
+  if (state.type === "nen1010") order.push("documentatieNen1010", "plattegronden");
   order.push("checklist");
   if (state.type === "scope12" || state.type === "nen1010") order.push("controlepunten");
   order.push("conclusie", "rapport");
@@ -1442,6 +1511,8 @@ function removeOmvormer(id) {
 function updateOmvormer(id, patch) { var o = state.omvormers.find(function(x){return x.id===id;}); if (o) Object.assign(o, patch); persistDraft(); render(); }
 function addOmvormerPhoto(id, files) { var o = state.omvormers.find(function(x){return x.id===id;}); filesToDataUrls(files, function(urls){ o.fotos = o.fotos.concat(urls.filter(Boolean)); persistDraft(); render(); }); }
 function removeOmvormerPhoto(id, idx) { var o = state.omvormers.find(function(x){return x.id===id;}); o.fotos.splice(idx,1); persistDraft(); render(); }
+function addOmvormerAardlekPhoto(id, files) { var o = state.omvormers.find(function(x){return x.id===id;}); if (!o) return; filesToDataUrls(files, function(urls){ o.aardlekFotos = (o.aardlekFotos||[]).concat(urls.filter(Boolean)); persistDraft(); render(); }); }
+function removeOmvormerAardlekPhoto(id, idx) { var o = state.omvormers.find(function(x){return x.id===id;}); if (!o) return; o.aardlekFotos.splice(idx,1); persistDraft(); render(); }
 
 // RLo-metingen per omvormer (meerdere meetpunten mogelijk)
 function genereerStandaardRlo(omvormerId) {
@@ -1802,6 +1873,7 @@ function render() {
     else if (state.view === "omvormers") html += renderOmvormers();
     else if (state.view === "documentatie") html += renderDocumentatie();
     else if (state.view === "documentatieNen1010") html += renderDocumentatieNen1010();
+    else if (state.view === "plattegronden") html += renderPlattegronden();
     else if (state.view === "checklist") html += renderChecklist();
     else if (state.view === "controlepunten") html += renderControlepuntenStap();
     else if (state.view === "conclusie") html += renderConclusie();
@@ -1850,7 +1922,7 @@ function submitAuth() {
 var STEP_LABELS = {
   gegevens: "Gegevens", installatie: "Installatiedetails", nen1010details: "Installatiedetails",
   verdelers: "Verdelers", omvormers: "Omvormers", documentatie: "Documentatie", documentatieNen1010: "Documentatie",
-  checklist: "Checklist", controlepunten: "Controlepunten", conclusie: "Conclusie", rapport: "Rapport",
+  checklist: "Checklist", controlepunten: "Controlepunten", conclusie: "Conclusie", rapport: "Rapport", plattegronden: "Plattegronden",
 };
 function renderSteps() {
   var order = getStepOrder(), idx = order.indexOf(state.view);
@@ -2391,6 +2463,42 @@ function renderDocumentatieNen1010() {
   h += navBtns("Volgende");
   return h;
 }
+function renderPlattegronden() {
+  var o = state.object;
+  var h = '<button class="backbtn" onclick="goPrev()">&larr; Terug</button>';
+  h += '<h1>Plattegronden</h1><p class="subtitle">Upload een plattegrond/tekening en klik erop om een genummerd meetpunt te plaatsen (bijv. een WCD). Vul daar de Zs- en Zi-meting bij in — dit komt in het rapport terecht als een meettekening per groep. Alles wordt automatisch opgeslagen.</p>';
+  h += '<div class="section-card">';
+  h += '<label class="photo-add" style="display:inline-block;cursor:pointer;">&#128247; Plattegrond uploaden<input type="file" accept="image/*" multiple style="display:none;" onchange="voegPlattegrondToe(this.files); this.value=\'\';" /></label>';
+  h += '</div>';
+  if ((o.plattegronden||[]).length === 0) h += '<div class="empty-state">Nog geen plattegronden toegevoegd.</div>';
+  (o.plattegronden||[]).forEach(function(p){
+    h += '<div class="item-block">';
+    h += '<div class="item-block-head"><input class="item-title-input" placeholder="Naam plattegrond (bijv. Begane grond)" value="' + esc(p.naam) + '" oninput="updatePlattegrondNaam(\'' + p.id + '\', this.value)" /><button class="del-x" onclick="verwijderPlattegrond(\'' + p.id + '\')">&#128465;</button></div>';
+    h += '<p class="subtitle" style="color:#4d493f;">Tik/klik op de tekening om een notitie te plaatsen.</p>';
+    h += '<div style="position:relative;display:inline-block;max-width:100%;touch-action:manipulation;">';
+    h += '<img src="' + p.afbeelding + '" style="max-width:100%;display:block;border-radius:8px;border:1px solid #cfd8d6;cursor:crosshair;" onclick="voegPlattegrondNotitieToe(\'' + p.id + '\', event)" />';
+    (p.notities||[]).forEach(function(n, ni){
+      h += '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#E8952E;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;">' + (ni+1) + '</div>';
+    });
+    h += '</div>';
+    (p.notities||[]).forEach(function(n, ni){
+      h += '<div class="streng-block" style="margin-top:8px;">';
+      h += '<div style="display:grid;grid-template-columns:22px 1fr 26px;gap:8px;align-items:center;">';
+      h += '<div style="width:22px;height:22px;border-radius:50%;background:#E8952E;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;">' + (ni+1) + '</div>';
+      h += '<input class="f" style="margin-bottom:0;font-weight:700;" placeholder="Omschrijving (bijv. WCD keuken, groep 3)" value="' + esc(n.tekst) + '" oninput="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'tekst\', this.value)" />';
+      h += '<button class="del-x" onclick="verwijderPlattegrondNotitie(\'' + p.id + '\', \'' + n.id + '\')">&#128465;</button>';
+      h += '</div>';
+      h += '<div class="grid2" style="margin-top:6px;">';
+      h += '<div><label class="fl">Zs (&Omega;)</label><input class="f" style="margin-bottom:0;" placeholder="bijv. 1,2" value="' + esc(n.zs) + '" oninput="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'zs\', this.value)" /></div>';
+      h += '<div><label class="fl">Zi (&Omega;)</label><input class="f" style="margin-bottom:0;" placeholder="bijv. 0,8" value="' + esc(n.zi) + '" oninput="updatePlattegrondNotitieVeld(\'' + p.id + '\', \'' + n.id + '\', \'zi\', this.value)" /></div>';
+      h += '</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+  });
+  h += navBtns("Volgende");
+  return h;
+}
 function voegDocNen1010Toe() { state.object.documentatieNen1010.push(newDocumentatieNen1010()); persistDraft(); render(); }
 function verwijderDocNen1010(id) { state.object.documentatieNen1010 = state.object.documentatieNen1010.filter(function(d){return d.id!==id;}); persistDraft(); render(); }
 function updateDocNen1010(id, key, val) { var d = state.object.documentatieNen1010.find(function(x){return x.id===id;}); if (d) d[key] = val; persistDraft(); }
@@ -2695,6 +2803,66 @@ function renderVerdelers() {
       h += '</div>';
     });
     h += '<button class="btn-add" onclick="addRloMetingVerdeler(\'' + v.id + '\')">+ RLo-meting toevoegen</button>';
+    if (state.type !== "scope12") {
+      h += '<h3 style="margin-top:16px;">Aardlekschakelaars</h3><p class="subtitle" style="margin-top:-6px;color:#4d493f;">Voeg per aardlekschakelaar/-automaat de testresultaten toe.</p>';
+      (v.aardlekschakelaars||[]).forEach(function(a, aidx){
+        h += '<div class="streng-block" style="margin-top:8px;">';
+        h += '<div style="display:grid;grid-template-columns:1fr 26px;gap:8px;align-items:end;">';
+        h += '<label class="fl" style="min-height:auto;">Aardlekschakelaar ' + (aidx+1) + '</label>';
+        h += '<button class="del-x" style="align-self:end;" onclick="verwijderAardlekschakelaar(\'' + v.id + '\', \'' + a.id + '\')">&#128465;</button>';
+        h += '</div>';
+        h += '<div class="grid3">';
+        h += '<div><label class="fl">Soort</label><select class="mini-select" onchange="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'soort\', this.value)"><option' + (a.soort==="Aardlekschakelaar"?' selected':'') + '>Aardlekschakelaar</option><option' + (a.soort==="Aardlekautomaat"?' selected':'') + '>Aardlekautomaat</option></select></div>';
+        h += '<div><label class="fl">Type</label><select class="mini-select" onchange="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'type\', this.value)">' + ["A","B","S"].map(function(t){ return '<option' + (a.type===t?' selected':'') + '>' + t + '</option>'; }).join('') + '</select></div>';
+        h += '<div><label class="fl">Amperage</label><select class="mini-select" onchange="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'amperage\', this.value)"><option' + (a.amperage==="40A"?' selected':'') + '>40A</option><option' + (a.amperage==="63A"?' selected':'') + '>63A</option></select></div>';
+        h += '</div>';
+        h += '<div class="grid3" style="margin-top:6px;">';
+        h += '<div><label class="fl">Uitschakelstroom (mA)</label><input class="f" placeholder="bijv. 30" value="' + esc(a.uitschakelstroom) + '" oninput="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'uitschakelstroom\', this.value)" /></div>';
+        h += '<div><label class="fl">Uitschakeltijd (ms)</label><input class="f" placeholder="bijv. 25" value="' + esc(a.uitschakeltijd) + '" oninput="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'uitschakeltijd\', this.value)" /></div>';
+        h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'testknop\', this.value)"><option' + (a.testknop==="Werkt"?' selected':'') + '>Werkt</option><option' + (a.testknop==="Werkt niet"?' selected':'') + '>Werkt niet</option></select></div>';
+        h += '</div>';
+        h += classRow(a.classificatie, "updateAardlekschakelaar('" + v.id + "', '" + a.id + "', {classificatie:");
+        if (a.classificatie !== "goed") {
+          h += veelvoorkomendSelect("updateAardlekschakelaarField('" + v.id + "','" + a.id + "','norm',vc.norm); updateAardlekschakelaarField('" + v.id + "','" + a.id + "','opmerking',vc.omschrijving);");
+          h += '<input class="f" list="normen-lijst" placeholder="Norm / artikelnummer" value="' + esc(a.norm) + '" oninput="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'norm\', this.value)" />';
+          h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'opmerking\', this.value)">' + esc(a.opmerking) + '</textarea>';
+        }
+        h += photoRow(a.fotos, "addAardlekschakelaarPhoto('" + v.id + "', '" + a.id + "', ", "removeAardlekschakelaarPhoto('" + v.id + "', '" + a.id + "', ");
+        h += '</div>';
+      });
+      h += '<button class="btn-add" onclick="voegAardlekschakelaarToe(\'' + v.id + '\')">+ Aardlekschakelaar toevoegen</button>';
+    }
+    if (state.type === "nen1010") {
+      h += '<h3 style="margin-top:16px;">Afgaande groepen</h3><p class="subtitle" style="margin-top:-6px;color:#4d493f;">Voeg per eindgroep de hoogst gemeten Zs/Zi-waarde (van de WCD\'s die in het veld zijn gemeten), de Riso-meting en de aardlekschakelaar-test toe.</p>';
+      (v.afgaandeGroepen||[]).forEach(function(g, gidx){
+        h += '<div class="streng-block" style="margin-top:8px;">';
+        h += '<div style="display:grid;grid-template-columns:1fr 26px;gap:8px;align-items:end;">';
+        h += '<div><label class="fl" style="min-height:auto;">Groep ' + (gidx+1) + '</label><input class="f" style="font-weight:700;margin-bottom:0;" placeholder="bijv. Groep 3 - WCD\'s woonkamer" value="' + esc(g.naam) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'naam\', this.value)" /></div>';
+        h += '<button class="del-x" style="align-self:end;padding-bottom:9px;" onclick="verwijderAfgaandeGroep(\'' + v.id + '\', \'' + g.id + '\')">&#128465;</button>';
+        h += '</div>';
+        h += '<div class="grid3" style="margin-top:6px;">';
+        h += '<div><label class="fl">Zs max (&Omega;)</label><input class="f" placeholder="hoogste gemeten waarde" value="' + esc(g.zsMax) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'zsMax\', this.value)" /></div>';
+        h += '<div><label class="fl">Zi max (&Omega;)</label><input class="f" placeholder="hoogste gemeten waarde" value="' + esc(g.ziMax) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'ziMax\', this.value)" /></div>';
+        h += '<div><label class="fl">Riso (M&Omega;)</label><input class="f" placeholder="bijv. >999" value="' + esc(g.riso) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'riso\', this.value)" /></div>';
+        h += '</div>';
+        h += '<div style="margin-top:2px;"><label class="fl">Aardlekschakelaar aanwezig</label><select class="mini-select" onchange="updateAfgaandeGroep(\'' + v.id + '\', \'' + g.id + '\', {aardlekAanwezig:this.value})"><option' + (g.aardlekAanwezig==="Ja"?' selected':'') + '>Ja</option><option' + (g.aardlekAanwezig==="Nee"?' selected':'') + '>Nee</option></select></div>';
+        if (g.aardlekAanwezig === "Ja") {
+          h += '<div class="grid3" style="margin-top:6px;">';
+          h += '<div><label class="fl">Uitschakeltijd (ms)</label><input class="f" placeholder="bijv. 25" value="' + esc(g.aardlekUitschakeltijd) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekUitschakeltijd\', this.value)" /></div>';
+          h += '<div><label class="fl">Uitschakelstroom (mA)</label><input class="f" placeholder="bijv. 30" value="' + esc(g.aardlekUitschakelstroom) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekUitschakelstroom\', this.value)" /></div>';
+          h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekTestknop\', this.value)"><option' + (g.aardlekTestknop==="Werkt"?' selected':'') + '>Werkt</option><option' + (g.aardlekTestknop==="Werkt niet"?' selected':'') + '>Werkt niet</option></select></div>';
+          h += '</div>';
+        }
+        h += classRow(g.classificatie, "updateAfgaandeGroep('" + v.id + "', '" + g.id + "', {classificatie:");
+        if (g.classificatie !== "goed") {
+          h += veelvoorkomendSelect("updateAfgaandeGroepField('" + v.id + "','" + g.id + "','norm',vc.norm); updateAfgaandeGroepField('" + v.id + "','" + g.id + "','opmerking',vc.omschrijving);");
+          h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'opmerking\', this.value)">' + esc(g.opmerking) + '</textarea>';
+        }
+        h += photoRow(g.fotos, "addAfgaandeGroepPhoto('" + v.id + "', '" + g.id + "', ", "removeAfgaandeGroepPhoto('" + v.id + "', '" + g.id + "', ");
+        h += '</div>';
+      });
+      h += '<button class="btn-add" onclick="voegAfgaandeGroepToe(\'' + v.id + '\')">+ Afgaande groep toevoegen</button>';
+    }
     h += '</div>';
   });
   h += '<button class="btn-add" onclick="addVerdeler()">+ Verdeler toevoegen</button>';
@@ -2892,6 +3060,26 @@ function renderOmvormers() {
       h += metingLijstOmvormer(o, "risoMetingen", "Riso &ndash; isolatieweerstand (M&Omega;)");
     }
 
+    h += '<h3 style="margin-top:14px;">Aardlekschakelaar</h3>';
+    h += '<div style="max-width:260px;"><label class="fl">Is er een aardlekschakelaar/-automaat toegepast?</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekAanwezig\', this.value); render();"><option' + (o.aardlekAanwezig==="Nee"?' selected':'') + '>Nee</option><option' + (o.aardlekAanwezig==="Ja"?' selected':'') + '>Ja</option></select></div>';
+    if (o.aardlekAanwezig === "Ja") {
+      h += '<div class="grid3" style="margin-top:6px;">';
+      h += '<div><label class="fl">Soort</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekSoort\', this.value)"><option' + (o.aardlekSoort==="Aardlekschakelaar"?' selected':'') + '>Aardlekschakelaar</option><option' + (o.aardlekSoort==="Aardlekautomaat"?' selected':'') + '>Aardlekautomaat</option></select></div>';
+      h += '<div><label class="fl">Type</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekType\', this.value)">' + ["A","B","S"].map(function(t){ return '<option' + (o.aardlekType===t?' selected':'') + '>' + t + '</option>'; }).join('') + '</select></div>';
+      h += '<div><label class="fl">Amperage</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekAmperage\', this.value)"><option' + (o.aardlekAmperage==="40A"?' selected':'') + '>40A</option><option' + (o.aardlekAmperage==="63A"?' selected':'') + '>63A</option></select></div>';
+      h += '</div>';
+      h += '<div class="grid3" style="margin-top:6px;">';
+      h += '<div><label class="fl">Uitschakelstroom (mA)</label><input class="f" placeholder="bijv. 30" value="' + esc(o.aardlekUitschakelstroom) + '" oninput="updateOmvormerField(\'' + o.id + '\', \'aardlekUitschakelstroom\', this.value)" /></div>';
+      h += '<div><label class="fl">Uitschakeltijd (ms)</label><input class="f" placeholder="bijv. 25" value="' + esc(o.aardlekUitschakeltijd) + '" oninput="updateOmvormerField(\'' + o.id + '\', \'aardlekUitschakeltijd\', this.value)" /></div>';
+      h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekTestknop\', this.value)"><option' + (o.aardlekTestknop==="Werkt"?' selected':'') + '>Werkt</option><option' + (o.aardlekTestknop==="Werkt niet"?' selected':'') + '>Werkt niet</option></select></div>';
+      h += '</div>';
+      h += classRow(o.aardlekClassificatie, "updateOmvormer('" + o.id + "', {aardlekClassificatie:");
+      if (o.aardlekClassificatie !== "goed") {
+        h += '<textarea class="f" placeholder="Omschrijving constatering" oninput="updateOmvormerField(\'' + o.id + '\', \'aardlekOpmerking\', this.value)">' + esc(o.aardlekOpmerking) + '</textarea>';
+      }
+      h += photoRow(o.aardlekFotos, "addOmvormerAardlekPhoto('" + o.id + "', ", "removeOmvormerAardlekPhoto('" + o.id + "', ");
+    }
+
     if (state.type === "scope12") {
       h += '<h3>Strengen (DC-metingen)</h3>';
       o.strengen.forEach(function(s, sidx){
@@ -3035,6 +3223,8 @@ function verzamelConstateringenMetBron() {
     (v.ziMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Zi (lusimpedantie) " + (m.circuit||""), m, m.opmerking); });
     (v.risoMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - Riso " + (m.circuit||""), m, m.opmerking); });
     (v.rloMetingen||[]).forEach(function(m){ voegToe("Verdeler " + (v.naam||"") + " - RLo " + (m.omschrijving||""), m, m.opmerking); });
+    (v.aardlekschakelaars||[]).forEach(function(a){ voegToe("Verdeler " + (v.naam||"") + " - Aardlekschakelaar", a, a.opmerking); });
+    (v.afgaandeGroepen||[]).forEach(function(g){ voegToe("Verdeler " + (v.naam||"") + " - Afgaande groep " + (g.naam||""), g, g.opmerking); });
   });
   state.omvormers.forEach(function(o){
     voegToe("Omvormer - " + (o.naam || "onbekend"), o, o.opmerking);
@@ -3060,8 +3250,8 @@ function allConstateringen() {
   var res = [];
   if (state.type !== "scope12" && state.type !== "nen1010") state.items.forEach(function(it){ res.push(it); });
   state.constateringen.forEach(function(c){ res.push(c); });
-  state.verdelers.forEach(function(v){ res.push(v); (v.zsMetingen||[]).forEach(function(m){ res.push(m); }); (v.ziMetingen||[]).forEach(function(m){ res.push(m); }); (v.risoMetingen||[]).forEach(function(m){ res.push(m); }); (v.rloMetingen||[]).forEach(function(m){ res.push(m); }); });
-  state.omvormers.forEach(function(o){ res.push(o); o.strengen.forEach(function(s){ res.push(s); }); (o.rloMetingen||[]).forEach(function(m){ res.push(m); }); (o.zsMetingen||[]).forEach(function(m){ res.push(m); }); (o.ziMetingen||[]).forEach(function(m){ res.push(m); }); (o.risoMetingen||[]).forEach(function(m){ res.push(m); }); });
+  state.verdelers.forEach(function(v){ res.push(v); (v.zsMetingen||[]).forEach(function(m){ res.push(m); }); (v.ziMetingen||[]).forEach(function(m){ res.push(m); }); (v.risoMetingen||[]).forEach(function(m){ res.push(m); }); (v.rloMetingen||[]).forEach(function(m){ res.push(m); }); (v.aardlekschakelaars||[]).forEach(function(a){ res.push(a); }); (v.afgaandeGroepen||[]).forEach(function(g){ res.push(g); }); });
+  state.omvormers.forEach(function(o){ res.push(o); o.strengen.forEach(function(s){ res.push(s); }); (o.rloMetingen||[]).forEach(function(m){ res.push(m); }); (o.zsMetingen||[]).forEach(function(m){ res.push(m); }); (o.ziMetingen||[]).forEach(function(m){ res.push(m); }); (o.risoMetingen||[]).forEach(function(m){ res.push(m); }); if (o.aardlekAanwezig === "Ja") res.push({ classificatie: o.aardlekClassificatie, origineelOmvormerAardlek: o.id }); });
   if (state.type === "scope12") {
     (state.object.documentatie||[]).forEach(function(d){ if (d.beschikbaarheid === "Niet beschikbaar") res.push({ classificatie: d.classificatie || "gering" }); });
   }
@@ -3752,6 +3942,11 @@ function buildScope12Body() {
         oHtml += strengConst;
       }
       oHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (o2.rloMetingen||[]).map(function(m){ return { circuit:m.omschrijving, waarde:m.waarde, classificatie:m.classificatie, opmerking:m.opmerking, fotos:m.fotos, norm:m.norm }; }), false);
+      if (o2.aardlekAanwezig === "Ja") {
+        oHtml += '<div class="doc-sub">Aardlekschakelaar</div>' + constateringenIndicator({classificatie:o2.aardlekClassificatie});
+        oHtml += dlTable([["Soort", o2.aardlekSoort], ["Type", o2.aardlekType], ["Amperage", o2.aardlekAmperage], ["Uitschakelstroom", metEenheid(o2.aardlekUitschakelstroom, "mA")], ["Uitschakeltijd", metEenheid(o2.aardlekUitschakeltijd, "ms")], ["Testknop", o2.aardlekTestknop]]);
+        if (o2.aardlekClassificatie !== "goed") oHtml += docConstatering(null, o2.aardlekClassificatie, o2.aardlekOpmerking, o2.aardlekFotos, "");
+      }
       oHtml += '</div>';
     });
     h += docSec("Constateringen en meetstaat omvormers", oHtml, true);
@@ -3857,7 +4052,8 @@ function buildNen1010Body() {
 
   // PAGINA 3 — INHOUDSOPGAVE
   var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Documentatie","6. Bevindingen verdeelinrichtingen","7. Bevindingen overige installatiedelen","8. Controlepunten","9. Volledige meetstaat"];
-  if (o.inspectiefrequentieConform === "NEN 3140") tocItems.push("10. Bijlage - Inspectiefrequentie NEN 3140");
+  if (o.inspectiefrequentieConform === "NEN 3140") tocItems.push(tocItems.length + 1 + ". Bijlage - Inspectiefrequentie NEN 3140");
+  if ((o.plattegronden||[]).length > 0) tocItems.push((tocItems.length+1) + ". Plattegronden");
   tocItems.push((tocItems.length+1) + ". Opsomming constateringen", (tocItems.length+2) + ". Bijlage -");
   h += docSec("Inhoudsopgave", tocItems.map(function(x){ var m = /^(\d+)\.\s*(.*)$/.exec(x); return '<div class="doc-toc-item"><span class="toc-num">' + (m?m[1]:"") + '</span><span class="toc-label">' + esc(m?m[2]:x) + '</span></div>'; }).join(""), true);
 
@@ -3957,12 +4153,36 @@ function buildNen1010Body() {
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse],
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
       vHtml += docPhotos(v.fotos, 220);
+      if ((v.afgaandeGroepen||[]).length > 0) {
+        vHtml += '<div class="doc-sub">Afgaande groepen</div>';
+        vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:30%;">Groep</th><th style="width:14%;text-align:right;">Zs max (&Omega;)</th><th style="width:14%;text-align:right;">Zi max (&Omega;)</th><th style="width:12%;text-align:right;">Riso (M&Omega;)</th><th style="width:15%;text-align:right;">Uitschakeltijd/-stroom</th><th style="width:15%;text-align:center;">Testknop</th></tr></thead><tbody>';
+        v.afgaandeGroepen.forEach(function(g){
+          vHtml += '<tr><td>' + esc(g.naam||"—") + '</td><td style="text-align:right;">' + esc(g.zsMax||"—") + '</td><td style="text-align:right;">' + esc(g.ziMax||"—") + '</td><td style="text-align:right;">' + esc(g.riso||"—") + '</td>' +
+            '<td style="text-align:right;">' + (g.aardlekAanwezig==="Ja" ? (esc(g.aardlekUitschakeltijd||"—") + " ms / " + esc(g.aardlekUitschakelstroom||"—") + " mA") : "n.v.t.") + '</td>' +
+            '<td style="text-align:center;">' + (g.aardlekAanwezig==="Ja" ? esc(g.aardlekTestknop||"—") : "n.v.t.") + '</td></tr>';
+        });
+        vHtml += '</tbody></table>';
+      }
+      if ((v.aardlekschakelaars||[]).length > 0) {
+        vHtml += '<div class="doc-sub">Aardlekschakelaars</div>';
+        vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:22%;">Soort</th><th style="width:10%;text-align:center;">Type</th><th style="width:14%;text-align:center;">Amperage</th><th style="width:18%;text-align:right;">Uitschakelstroom</th><th style="width:18%;text-align:right;">Uitschakeltijd</th><th style="width:18%;text-align:center;">Testknop</th></tr></thead><tbody>';
+        v.aardlekschakelaars.forEach(function(a){
+          vHtml += '<tr><td>' + esc(a.soort||"—") + '</td><td style="text-align:center;">' + esc(a.type||"—") + '</td><td style="text-align:center;">' + esc(a.amperage||"—") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakelstroom,"mA") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakeltijd,"ms") + '</td><td style="text-align:center;">' + esc(a.testknop||"—") + '</td></tr>';
+        });
+        vHtml += '</tbody></table>';
+        v.aardlekschakelaars.forEach(function(a){ if (a.classificatie !== "goed") vHtml += docConstatering(nummerVoorItem(a), a.classificatie, a.opmerking, a.fotos, a.norm); });
+      }
       vHtml += '</div>';
     });
     vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
     vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie visuele controle (verdeelinrichting)</div>';
     var vConstateringen = "", vNr = 0, vConstTeller = 0;
-    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } } });
+    state.verdelers.forEach(function(v){
+      if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
+      (v.afgaandeGroepen||[]).forEach(function(g){
+        if (g.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Afgaande groep: ' + esc(g.naam||"") + ' (' + esc(v.naam||"") + ')</span>' + beoordelingBadge(g.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(g.opmerking||"—") + docPhotos(g.fotos,220) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
+      });
+    });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
     h += docSec("Bevindingen verdeelinrichtingen", vHtml, true);
   }
@@ -4044,6 +4264,26 @@ function buildNen1010Body() {
     }
   });
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
+
+  // PAGINA — PLATTEGRONDEN
+  if ((o.plattegronden||[]).length > 0) {
+    var pgHtml = "";
+    o.plattegronden.forEach(function(p, pi){
+      pgHtml += (pi>0 ? PAGE_BREAK_MARK : "") + '<div class="doc-sub"' + (pi===0?' style="margin-top:0;"':'') + '>' + esc(p.naam || "Plattegrond " + (pi+1)) + '</div>';
+      pgHtml += '<div style="position:relative;display:inline-block;max-width:100%;">';
+      pgHtml += '<img src="' + p.afbeelding + '" style="max-width:100%;display:block;border-radius:6px;border:1px solid #cfd8d6;" />';
+      (p.notities||[]).forEach(function(n, ni){
+        pgHtml += '<div style="position:absolute;left:' + n.x + '%;top:' + n.y + '%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#E8952E;color:#fff;font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.4);">' + (ni+1) + '</div>';
+      });
+      pgHtml += '</div>';
+      if ((p.notities||[]).length > 0) {
+        pgHtml += '<table class="std-table meet-table" style="margin-top:10px;"><thead><tr><th style="width:40px;">Nr.</th><th style="width:46%;">Omschrijving</th><th style="text-align:right;">Zs (&Omega;)</th><th style="text-align:right;">Zi (&Omega;)</th></tr></thead><tbody>';
+        p.notities.forEach(function(n, ni){ pgHtml += '<tr><td>' + (ni+1) + '</td><td>' + esc(n.tekst || "—") + '</td><td style="text-align:right;">' + esc(n.zs || "—") + '</td><td style="text-align:right;">' + esc(n.zi || "—") + '</td></tr>'; });
+        pgHtml += '</tbody></table>';
+      }
+    });
+    h += docSec("Plattegronden", pgHtml, true);
+  }
 
   // PAGINA — BIJLAGE(N)
   h += docSec("Bijlage(n)", '<p class="doc-p" style="color:#6b6659;">Geen bijlagen toegevoegd.</p>', false);
