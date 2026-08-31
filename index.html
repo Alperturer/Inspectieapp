@@ -648,7 +648,7 @@ function newVerdeler() { return { id: uid(), naam: "", locatie: "", typeZekering
 // Aardlekschakelaar/-automaat-test: bij scope 8/10/NEN1010 kunnen er meerdere per
 // verdeler zijn (bijv. meerdere groepen met een eigen aardlekbeveiliging); bij scope 12
 // is er hoogstens 1, en alleen bij de omvormer (zie newOmvormer/omvormerAardlek*-velden).
-function newAardlekschakelaar() { return { id: uid(), soort: "Aardlekschakelaar", type: "A", amperage: "40A", uitschakelstroom: "", uitschakeltijd: "", testknop: "Werkt", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
+function newAardlekschakelaar() { return { id: uid(), soort: "Aardlekschakelaar", type: "A", amperage: "40A", uitschakelstroom: "", uitschakeltijd: "", testknop: "Functioneert", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
 function voegAardlekschakelaarToe(verdelerId) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; if (!v.aardlekschakelaars) v.aardlekschakelaars = []; v.aardlekschakelaars.push(newAardlekschakelaar()); persistDraft(); render(); }
 function verwijderAardlekschakelaar(verdelerId, id) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; v.aardlekschakelaars = (v.aardlekschakelaars||[]).filter(function(a){return a.id!==id;}); persistDraft(); render(); }
 function updateAardlekschakelaarField(verdelerId, id, key, val) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var a = (v.aardlekschakelaars||[]).find(function(x){return x.id===id;}); if (a) a[key] = val; persistDraft(); }
@@ -658,7 +658,7 @@ function removeAardlekschakelaarPhoto(verdelerId, id, idx) { var v = state.verde
 // Afgaande groep (alleen NEN1010): een eindgroep vanuit een verdeler, met de hoogste
 // gemeten Zs/Zi-waarde van de WCD's die in het veld op die groep zijn gemeten, plus de
 // Riso-meting en de gegevens van de aardlekschakelaar-test.
-function newAfgaandeGroep() { return { id: uid(), naam: "", zsMax: "", ziMax: "", riso: "", aardlekAanwezig: "Ja", aardlekUitschakeltijd: "", aardlekUitschakelstroom: "", aardlekTestknop: "Werkt", classificatie: "goed", opmerking: "", fotos: [] }; }
+function newAfgaandeGroep() { return { id: uid(), naam: "", zsMax: "", ziMax: "", riso: "", aardlekAanwezig: "Ja", aardlekUitschakeltijd: "", aardlekUitschakelstroom: "", aardlekTestknop: "Functioneert", classificatie: "goed", opmerking: "", fotos: [] }; }
 function voegAfgaandeGroepToe(verdelerId) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; if (!v.afgaandeGroepen) v.afgaandeGroepen = []; v.afgaandeGroepen.push(newAfgaandeGroep()); persistDraft(); render(); }
 function verwijderAfgaandeGroep(verdelerId, groepId) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; v.afgaandeGroepen = (v.afgaandeGroepen||[]).filter(function(g){return g.id!==groepId;}); persistDraft(); render(); }
 function updateAfgaandeGroepField(verdelerId, groepId, key, val) { var v = state.verdelers.find(function(x){return x.id===verdelerId;}); if (!v) return; var g = (v.afgaandeGroepen||[]).find(function(x){return x.id===groepId;}); if (g) g[key] = val; persistDraft(); }
@@ -788,7 +788,7 @@ var ZS_CIRCUITS = ["L1-PE", "L2-PE", "L3-PE"];
 var ZI_CIRCUITS = ["L1-L2", "L1-L3", "L2-L3", "L1-N", "L2-N", "L3-N"];
 var RISO_CIRCUITS = ["L1-L2", "L1-L3", "L2-L3", "L1-N", "L2-N", "L3-N", "L1-PE", "L2-PE", "L3-PE", "N-PE"];
 function newOmvormer() { return { id: uid(), naam: "", vermogen: "", locatie: "", merk: "", type: "", serienummer: "", voorbeveiliging: "", maxDcSpanning: "", imax: "", classificatie: "goed", opmerking: "", norm: "", fotos: [], zsMetingen: [], ziMetingen: [], risoMetingen: [], strengen: [], rloMetingen: [], testspanningRiso: "500", defaultBeveiligingType: "", defaultKlasse: "", defaultNominaleStroom: "", defaultSmeltKarakteristiek: "gG", defaultAutoBeoordeling: true, defaultAutoBeoordelingRiso: true,
-  aardlekAanwezig: "Nee", aardlekSoort: "Aardlekschakelaar", aardlekType: "A", aardlekAmperage: "40A", aardlekUitschakelstroom: "", aardlekUitschakeltijd: "", aardlekTestknop: "Werkt", aardlekClassificatie: "goed", aardlekOpmerking: "", aardlekFotos: [] }; }
+  aardlekAanwezig: "Nee", aardlekSoort: "Aardlekschakelaar", aardlekType: "A", aardlekAmperage: "40A", aardlekUitschakelstroom: "", aardlekUitschakeltijd: "", aardlekTestknop: "Functioneert", aardlekClassificatie: "goed", aardlekOpmerking: "", aardlekFotos: [] }; }
 function newRloMeting(omschrijving) { return { id: uid(), omschrijving: omschrijving || "", waarde: "", classificatie: "goed", opmerking: "", norm: "", fotos: [] }; }
 function newConstatering() { return { id: uid(), omschrijving: "", classificatie: "opmerking", norm: "", fotos: [] }; }
 var RLO_STANDAARD = ["Aardrail - Omvormer", "Aardrail - 1e deel constructie", "1e deel constructie - 2e deel constructie", "2e deel constructie - 3e deel constructie", "3e deel constructie - 4e deel constructie"];
@@ -2819,7 +2819,7 @@ function renderVerdelers() {
         h += '<div class="grid3" style="margin-top:6px;">';
         h += '<div><label class="fl">Uitschakelstroom (mA)</label><input class="f" placeholder="bijv. 30" value="' + esc(a.uitschakelstroom) + '" oninput="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'uitschakelstroom\', this.value)" /></div>';
         h += '<div><label class="fl">Uitschakeltijd (ms)</label><input class="f" placeholder="bijv. 25" value="' + esc(a.uitschakeltijd) + '" oninput="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'uitschakeltijd\', this.value)" /></div>';
-        h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'testknop\', this.value)"><option' + (a.testknop==="Werkt"?' selected':'') + '>Werkt</option><option' + (a.testknop==="Werkt niet"?' selected':'') + '>Werkt niet</option></select></div>';
+        h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateAardlekschakelaarField(\'' + v.id + '\', \'' + a.id + '\', \'testknop\', this.value)"><option' + (a.testknop==="Functioneert"?' selected':'') + '>Functioneert</option><option' + (a.testknop==="Functioneert niet"?' selected':'') + '>Functioneert niet</option></select></div>';
         h += '</div>';
         h += classRow(a.classificatie, "updateAardlekschakelaar('" + v.id + "', '" + a.id + "', {classificatie:");
         if (a.classificatie !== "goed") {
@@ -2850,7 +2850,7 @@ function renderVerdelers() {
           h += '<div class="grid3" style="margin-top:6px;">';
           h += '<div><label class="fl">Uitschakeltijd (ms)</label><input class="f" placeholder="bijv. 25" value="' + esc(g.aardlekUitschakeltijd) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekUitschakeltijd\', this.value)" /></div>';
           h += '<div><label class="fl">Uitschakelstroom (mA)</label><input class="f" placeholder="bijv. 30" value="' + esc(g.aardlekUitschakelstroom) + '" oninput="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekUitschakelstroom\', this.value)" /></div>';
-          h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekTestknop\', this.value)"><option' + (g.aardlekTestknop==="Werkt"?' selected':'') + '>Werkt</option><option' + (g.aardlekTestknop==="Werkt niet"?' selected':'') + '>Werkt niet</option></select></div>';
+          h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateAfgaandeGroepField(\'' + v.id + '\', \'' + g.id + '\', \'aardlekTestknop\', this.value)"><option' + (g.aardlekTestknop==="Functioneert"?' selected':'') + '>Functioneert</option><option' + (g.aardlekTestknop==="Functioneert niet"?' selected':'') + '>Functioneert niet</option></select></div>';
           h += '</div>';
         }
         h += classRow(g.classificatie, "updateAfgaandeGroep('" + v.id + "', '" + g.id + "', {classificatie:");
@@ -3071,7 +3071,7 @@ function renderOmvormers() {
       h += '<div class="grid3" style="margin-top:6px;">';
       h += '<div><label class="fl">Uitschakelstroom (mA)</label><input class="f" placeholder="bijv. 30" value="' + esc(o.aardlekUitschakelstroom) + '" oninput="updateOmvormerField(\'' + o.id + '\', \'aardlekUitschakelstroom\', this.value)" /></div>';
       h += '<div><label class="fl">Uitschakeltijd (ms)</label><input class="f" placeholder="bijv. 25" value="' + esc(o.aardlekUitschakeltijd) + '" oninput="updateOmvormerField(\'' + o.id + '\', \'aardlekUitschakeltijd\', this.value)" /></div>';
-      h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekTestknop\', this.value)"><option' + (o.aardlekTestknop==="Werkt"?' selected':'') + '>Werkt</option><option' + (o.aardlekTestknop==="Werkt niet"?' selected':'') + '>Werkt niet</option></select></div>';
+      h += '<div><label class="fl">Testknop</label><select class="mini-select" onchange="updateOmvormerField(\'' + o.id + '\', \'aardlekTestknop\', this.value)"><option' + (o.aardlekTestknop==="Functioneert"?' selected':'') + '>Functioneert</option><option' + (o.aardlekTestknop==="Functioneert niet"?' selected':'') + '>Functioneert niet</option></select></div>';
       h += '</div>';
       h += classRow(o.aardlekClassificatie, "updateOmvormer('" + o.id + "', {aardlekClassificatie:");
       if (o.aardlekClassificatie !== "goed") {
