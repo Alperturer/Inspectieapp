@@ -3710,6 +3710,12 @@ function docSec(title, inner, brk) {
   var content = '<div class="doc-sec"><h2 class="doc-h">' + esc(title) + '</h2>' + inner + '</div>';
   var stukken = content.split(PAGE_BREAK_MARK);
   stukken.forEach(function(stuk, i){
+    // Als er toevallig een marker vlak vóór het einde van de inhoud staat (bijv. omdat een lijst
+    // exact op een afrondingsgetal eindigt), zou dat een compleet LEGE pagina opleveren -- alleen
+    // restjes afsluitende HTML, geen echte inhoud. Zo'n leeg restje voegen we altijd bij de vorige
+    // pagina i.p.v. er een nieuwe (blanco) pagina van te maken.
+    var isLeegRestant = /^(<\/div>\s*)*$/.test(stuk.trim());
+    if (isLeegRestant && __pagBuf.length > 0) { __pagBuf[__pagBuf.length - 1] += stuk; return; }
     if (__pagBuf.length === 0 || (i === 0 && brk) || i > 0) __pagBuf.push(stuk);
     else __pagBuf[__pagBuf.length - 1] += stuk;
   });
@@ -4529,19 +4535,25 @@ function openPagedReport(body, css, filename, label) {
     '  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;' +
     '  var pdf = new jsPDFCtor({ unit: "mm", format: "a4", orientation: "portrait" });' +
     '  var pageWidthMm = 210, pageHeightMm = 297;' +
-    // Elke .doc-page apart vastleggen (net als bij de boekhoud-app) i.p.v. proberen om
-    // Paged.js-fragmenten te matchen -- elke pagina heeft nu gewoon een eigen, natuurlijke
-    // hoogte div, dus dit kan nooit meer een tabel/koptekst verkeerd opknippen.
-    '  var volledigeBreedte = document.documentElement.scrollWidth;' +
-    '  var volledigeHoogte = document.documentElement.scrollHeight;' +
+    // BELANGRIJK: hier bewust GEEN windowWidth/windowHeight-truc meer gebruiken. Dat leek
+    // nodig om inhoud buiten het zichtbare scherm mee te renderen, maar html2canvas heeft
+    // een bekend, veelgemeld probleem (zie html2canvas GitHub issues #489/#1609/#3146):
+    // bij herhaaldelijk aanroepen op dezelfde pagina met die windowWidth/windowHeight-optie
+    // werkt alleen de EERSTE aanroep goed, en komt daarna structureel alles blanco --
+    // precies het "voorpagina goed, de rest leeg"-probleem. In plaats daarvan scrollen we
+    // elke pagina expliciet in beeld en laten we html2canvas 'm heel normaal vastleggen,
+    // met een korte opruimstap ertussen tegen restjes van de vorige aanroep.
+    '  function ruimHtml2canvasRestjesOp() {' +
+    '    document.querySelectorAll(".html2canvas-container").forEach(function(el){ try { el.remove(); } catch(e){} });' +
+    '    document.querySelectorAll("[data-html2canvas-node]").forEach(function(el){ el.removeAttribute("data-html2canvas-node"); });' +
+    '  }' +
     '  for (var i = 0; i < pages.length; i++) {' +
     '    if (status) status.innerHTML = "PDF genereren&hellip; pagina " + (i+1) + " van " + pages.length;' +
-    '    var rect = pages[i].getBoundingClientRect();' +
-    '    var canvas = await html2canvas(pages[i], {' +
-    '      scale: 2.2, useCORS: true, backgroundColor: "#ffffff",' +
-    '      windowWidth: volledigeBreedte, windowHeight: volledigeHoogte,' +
-    '      x: rect.left + window.scrollX, y: rect.top + window.scrollY' +
-    '    });' +
+    '    ruimHtml2canvasRestjesOp();' +
+    '    pages[i].scrollIntoView({ block: "start", behavior: "instant" });' +
+    '    await new Promise(function(r){ setTimeout(r, 60); });' +
+    '    var canvas = await html2canvas(pages[i], { scale: 2.2, useCORS: true, backgroundColor: "#ffffff" });' +
+    '    ruimHtml2canvasRestjesOp();' +
     '    var imgData = canvas.toDataURL("image/jpeg", 0.93);' +
     '    var imgWidthNatuurlijk = pageWidthMm;' +
     '    var imgHeightNatuurlijk = (canvas.height * imgWidthNatuurlijk) / canvas.width;' +
