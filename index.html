@@ -4065,7 +4065,7 @@ function buildScope12Body() {
       oHtml += stdMetingTabel("Zi-metingen (lusimpedantie, &Omega;)", o2.ziMetingen, true);
       oHtml += stdMetingTabel("Riso-metingen (isolatieweerstand, M&Omega;, testspanning " + esc(o2.testspanningRiso||"500") + " V DC)", o2.risoMetingen, false);
       if (o2.strengen && o2.strengen.length > 0) {
-        oHtml += '<div class="doc-sub">Strengen (DC-metingen)</div>';
+        oHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Strengen (DC-metingen) &mdash; Omvormer ' + (oi+1) + '</div>';
         oHtml += '<table class="std-table meet-table"><thead><tr><th style="width:23%;">Streng</th><th style="width:18%;">Panelen</th><th style="width:16%;text-align:right;">Voc (V)</th><th style="width:16%;text-align:right;">Isc (A)</th><th style="width:15%;text-align:right;">Riso (M&Omega;)</th><th style="width:12%;text-align:center;">Polariteit</th></tr></thead><tbody>';
         o2.strengen.forEach(function(s){ oHtml += '<tr><td style="width:23%;">' + esc(s.naam||"—") + '</td><td style="width:18%;">' + esc(s.aantalPanelen||"—") + '</td><td style="width:16%;text-align:right;">' + esc(s.voc||"—") + '</td><td style="width:16%;text-align:right;">' + esc(s.isc||"—") + '</td><td style="width:15%;text-align:right;">' + esc(s.riso||"—") + '</td><td style="width:12%;text-align:center;">' + (s.polariteit==="fout"?'<span class="badge" style="background:#DC3B2E;">Fout</span>':'<span class="badge" style="background:#2F7D3A;">Goed</span>') + '</td></tr>'; });
         oHtml += '</tbody></table>';
@@ -4075,7 +4075,7 @@ function buildScope12Body() {
       }
       oHtml += stdMetingTabel("RLo-metingen (doorgangsweerstand, &Omega;)", (o2.rloMetingen||[]).map(function(m){ return { circuit:m.omschrijving, waarde:m.waarde, classificatie:m.classificatie, opmerking:m.opmerking, fotos:m.fotos, norm:m.norm }; }), false);
       if (o2.aardlekAanwezig === "Ja") {
-        oHtml += '<div class="doc-sub">Aardlekschakelaar</div>' + constateringenIndicator({classificatie:o2.aardlekClassificatie});
+        oHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Aardlekschakelaar &mdash; Omvormer ' + (oi+1) + '</div>' + constateringenIndicator({classificatie:o2.aardlekClassificatie});
         oHtml += dlTable([["Soort", o2.aardlekSoort], ["Type", o2.aardlekType], ["Amperage", o2.aardlekAmperage], ["Uitschakelstroom", metEenheid(o2.aardlekUitschakelstroom, "mA")], ["Uitschakeltijd", metEenheid(o2.aardlekUitschakeltijd, "ms")], ["Testknop", o2.aardlekTestknop]]);
         if (o2.aardlekClassificatie !== "goed") oHtml += docConstatering(null, o2.aardlekClassificatie, o2.aardlekOpmerking, o2.aardlekFotos, "");
       }
@@ -4286,7 +4286,7 @@ function buildNen1010Body() {
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
       vHtml += docPhotos(v.fotos, 220);
       if ((v.afgaandeGroepen||[]).length > 0) {
-        vHtml += '<div class="doc-sub">Afgaande groepen</div>';
+        vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Afgaande groepen &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:30%;">Groep</th><th style="width:14%;text-align:right;">Zs max (&Omega;)</th><th style="width:14%;text-align:right;">Zi max (&Omega;)</th><th style="width:12%;text-align:right;">Riso (M&Omega;)</th><th style="width:15%;text-align:right;">Uitschakeltijd/-stroom</th><th style="width:15%;text-align:center;">Testknop</th></tr></thead><tbody>';
         v.afgaandeGroepen.forEach(function(g){
           vHtml += '<tr><td>' + esc(g.naam||"—") + '</td><td style="text-align:right;">' + esc(g.zsMax||"—") + '</td><td style="text-align:right;">' + esc(g.ziMax||"—") + '</td><td style="text-align:right;">' + esc(g.riso||"—") + '</td>' +
@@ -4296,7 +4296,7 @@ function buildNen1010Body() {
         vHtml += '</tbody></table>';
       }
       if ((v.aardlekschakelaars||[]).length > 0) {
-        vHtml += '<div class="doc-sub">Aardlekschakelaars</div>';
+        vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Aardlekschakelaars &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:22%;">Soort</th><th style="width:10%;text-align:center;">Type</th><th style="width:14%;text-align:center;">Amperage</th><th style="width:18%;text-align:right;">Uitschakelstroom</th><th style="width:18%;text-align:right;">Uitschakeltijd</th><th style="width:18%;text-align:center;">Testknop</th></tr></thead><tbody>';
         v.aardlekschakelaars.forEach(function(a){
           vHtml += '<tr><td>' + esc(a.soort||"—") + '</td><td style="text-align:center;">' + esc(a.type||"—") + '</td><td style="text-align:center;">' + esc(a.amperage||"—") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakelstroom,"mA") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakeltijd,"ms") + '</td><td style="text-align:center;">' + esc(a.testknop||"—") + '</td></tr>';
@@ -4543,14 +4543,31 @@ function openPagedReport(body, css, filename, label) {
     '      x: rect.left + window.scrollX, y: rect.top + window.scrollY' +
     '    });' +
     '    var imgData = canvas.toDataURL("image/jpeg", 0.93);' +
-    '    var imgWidth = pageWidthMm;' +
-    '    var imgHeight = (canvas.height * imgWidth) / canvas.width;' +
-    // Nooit uitrekken: als de inhoud iets hoger is dan één A4-pagina, verkleinen we het
-    // geheel proportioneel (net als de boekhoud-app) i.p.v. te vervormen of af te kappen.
-    '    if (imgHeight > pageHeightMm) { imgHeight = pageHeightMm; imgWidth = (canvas.width * imgHeight) / canvas.height; }' +
+    '    var imgWidthNatuurlijk = pageWidthMm;' +
+    '    var imgHeightNatuurlijk = (canvas.height * imgWidthNatuurlijk) / canvas.width;' +
     '    if (i > 0) pdf.addPage("a4", "portrait");' +
-    '    var xOffset = Math.max(0, (pageWidthMm - imgWidth) / 2);' +
-    '    pdf.addImage(imgData, "JPEG", xOffset, 0, imgWidth, imgHeight, undefined, "FAST");' +
+    // Vangnet: als een pagina (bijv. door heel veel data in één sectie) toch nog langer is dan
+    // één A4-pagina, knippen we 'm voortaan op in nette, LEESBARE stukken van elk max. 1 pagina
+    // hoog -- in plaats van de hele pagina keihard te verkleinen tot een onleesbaar wit streepje.
+    '    if (imgHeightNatuurlijk <= pageHeightMm + 0.5) {' +
+    '      var xOffset = Math.max(0, (pageWidthMm - imgWidthNatuurlijk) / 2);' +
+    '      pdf.addImage(imgData, "JPEG", xOffset, 0, imgWidthNatuurlijk, imgHeightNatuurlijk, undefined, "FAST");' +
+    '    } else {' +
+    '      var pxPerMm = canvas.width / pageWidthMm;' +
+    '      var sliceHoogtePx = Math.floor(pageHeightMm * pxPerMm);' +
+    '      var sy = 0, eersteSlice = true;' +
+    '      while (sy < canvas.height) {' +
+    '        var huidigeSliceHoogtePx = Math.min(sliceHoogtePx, canvas.height - sy);' +
+    '        var sliceCanvas = document.createElement("canvas");' +
+    '        sliceCanvas.width = canvas.width; sliceCanvas.height = huidigeSliceHoogtePx;' +
+    '        sliceCanvas.getContext("2d").drawImage(canvas, 0, sy, canvas.width, huidigeSliceHoogtePx, 0, 0, canvas.width, huidigeSliceHoogtePx);' +
+    '        var sliceImgData = sliceCanvas.toDataURL("image/jpeg", 0.93);' +
+    '        var sliceHoogteMm = huidigeSliceHoogtePx / pxPerMm;' +
+    '        if (!eersteSlice) pdf.addPage("a4", "portrait");' +
+    '        pdf.addImage(sliceImgData, "JPEG", 0, 0, pageWidthMm, sliceHoogteMm, undefined, "FAST");' +
+    '        sy += huidigeSliceHoogtePx; eersteSlice = false;' +
+    '      }' +
+    '    }' +
     '  }' +
     '  return pdf;' +
     '}' +
