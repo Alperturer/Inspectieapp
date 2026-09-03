@@ -4633,7 +4633,7 @@ function stdMetingTabel(titel, lijst, toonKortsluitstroom, eenheid) {
   var h = '<div class="doc-sub" style="margin-top:8px;">' + titel + '</div>';
   h += '<table class="std-table meet-table"><thead><tr><th style="width:' + wCircuit + ';">Circuit</th><th style="width:' + wWaarde + ';text-align:right;">Waarde</th>' + (toonKortsluitstroom ? '<th style="width:' + wIk + ';text-align:right;">I&#8342; (A)</th>' : '') + '<th style="width:' + wClass + ';text-align:center;">Classificatie</th></tr></thead><tbody>';
   lijst.forEach(function(m){
-    h += '<tr><td style="width:' + wCircuit + ';">' + esc(m.circuit||"—") + '</td><td style="width:' + wWaarde + ';text-align:right;">' + (m.waarde ? esc(m.waarde) + (eenheid ? ' ' + eenheid : '') : "—") + '</td>' + (toonKortsluitstroom ? '<td style="width:' + wIk + ';text-align:right;">' + (m.kortsluitstroom ? esc(m.kortsluitstroom) : "—") + '</td>' : '') + '<td style="width:' + wClass + ';text-align:center;">' + beoordelingBadge(m.classificatie) + '</td></tr>';
+    h += '<tr><td style="width:' + wCircuit + ';">' + esc(m.circuit||"—") + '</td><td style="width:' + wWaarde + ';text-align:right;">' + (m.waarde ? esc(m.waarde) + (eenheid ? ' ' + eenheid : '') : "—") + '</td>' + (toonKortsluitstroom ? '<td style="width:' + wIk + ';text-align:right;">' + (m.kortsluitstroom ? esc(m.kortsluitstroom) + ' A' : "—") + '</td>' : '') + '<td style="width:' + wClass + ';text-align:center;">' + beoordelingBadge(m.classificatie) + '</td></tr>';
   });
   h += '</tbody></table>';
   lijst.forEach(function(m){
