@@ -4233,13 +4233,13 @@ function buildScope12Body() {
   }
 
   // PAGINA 19 — CONSTATERINGEN OVERIGE INSTALLATIEDELEN
-  var overigHtml = "", overigTeller = 0;
+  // Geen geforceerde paginabreak meer per N stuks -- dat liet pagina's met een foto onnodig
+  // leeg eindigen terwijl kortere constateringen (zonder foto) naar de volgende pagina sprongen.
+  // Het algemene, hoogte-gebaseerde opdeelsysteem (met wees-kopje-bescherming) pakt dit nu
+  // vanzelf goed op, net als bij de rest van het rapport.
+  var overigHtml = "";
   state.constateringen.forEach(function(c){
-    if (c.classificatie !== "goed") {
-      overigHtml += docConstatering(nummerVoorItem(c), c.classificatie, c.omschrijving, c.fotos, c.norm);
-      overigTeller++;
-      if (overigTeller >= 5) { overigHtml += PAGE_BREAK_MARK; overigTeller = 0; }
-    }
+    if (c.classificatie !== "goed") overigHtml += docConstatering(nummerVoorItem(c), c.classificatie, c.omschrijving, c.fotos, c.norm);
   });
   h += docSec("Constateringen overige installatiedelen", overigHtml || '<p class="doc-p">Er zijn geen constateringen bij overige installatiedelen.</p>', !!overigHtml);
 
@@ -4499,13 +4499,13 @@ function buildNen1010Body() {
   }
 
   // PAGINA — BEVINDINGEN OVERIGE INSTALLATIEDELEN
+  // Zelfde reden als bij Scope 12: geen geforceerde paginabreak meer per N stuks, laat het
+  // hoogte-gebaseerde opdeelsysteem dit natuurlijk afhandelen.
   var overigHtml = '<div class="doc-sub" style="margin-top:0;">Conclusie overige installatiedelen</div>';
-  var overigConst = "", overigTeller2 = 0;
+  var overigConst = "";
   state.constateringen.forEach(function(c){
     if (c.classificatie !== "goed") {
       overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130,95) + '</div></div>';
-      overigTeller2++;
-      if (overigTeller2 >= 5) { overigConst += PAGE_BREAK_MARK; overigTeller2 = 0; }
     }
   });
   overigHtml += overigConst ? ('<p class="doc-p">Er zijn afwijkingen geconstateerd:</p>' + overigConst) : '<p class="doc-p">Er zijn geen afwijkingen geconstateerd.</p>';
@@ -4559,19 +4559,15 @@ function buildNen1010Body() {
   }
 
   // PAGINA — OPSOMMING CONSTATERINGEN
-  var opsomHtml = "", opsomTeller = 0;
+  var opsomHtml = "";
   state.verdelers.forEach(function(v){
     if (v.classificatie !== "goed") {
       opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(nummerVoorItem(v)).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,130,95) + '</div></div>';
-      opsomTeller++;
-      if (opsomTeller >= 5) { opsomHtml += PAGE_BREAK_MARK; opsomTeller = 0; }
     }
   });
   state.constateringen.forEach(function(c){
     if (c.classificatie !== "goed") {
       opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,130,95) + '</div></div>';
-      opsomTeller++;
-      if (opsomTeller >= 5) { opsomHtml += PAGE_BREAK_MARK; opsomTeller = 0; }
     }
   });
   h += docSec("Opsomming constateringen", opsomHtml || '<p class="doc-p">Geen constateringen.</p>', !!opsomHtml);
