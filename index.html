@@ -4516,8 +4516,141 @@ function openPagedReport(body, css, filename, label) {
     'var cssText = ' + JSON.stringify(css).replace(/<\/script/gi, "<\\/script") + ';' +
     'var style = document.createElement("style"); style.textContent = cssText; document.head.appendChild(style);' +
     'document.getElementById("report-target").innerHTML = ' + JSON.stringify(body).replace(/<\/script/gi, "<\\/script") + ';' +
-    'var totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
-    'document.getElementById("statusLabel").innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Wachten op PDF-onderdelen&hellip;";' +
+    'var totaalPaginas = 0;' +
+    // ===================================================================
+    // AUTOMATISCHE HERPAGINERING OP WERKELIJKE HOOGTE
+    // Elke sectie (Gegevens, Methode van classificatie, meetstaten, etc.) kan
+    // meer inhoud bevatten dan op één A4-pagina past. Vroeger werd zo\u0027n te
+    // lange pagina pas bij het PDF-exporteren ontdekt en dan blind in vaste
+    // pixel-repen "geknipt" (los van waar tabellen/secties eindigen) -- dat
+    // gaf halverwege-afgesneden tabellen en zelfs dubbel gerenderde stukken
+    // tekst. Nu meten we, VOORDAT er iets naar PDF/canvas gaat, de echte
+    // gerenderde hoogte van elke .doc-page en knippen we -- als dat nodig is
+    // -- netjes tussen complete onderdelen (of tussen tabelrijen, met
+    // herhaalde kop) in losse, nieuwe .doc-page\u0027s. Koptekst en
+    // paginanummering worden daarna over ALLE (ook nieuw ontstane) pagina\u0027s
+    // opnieuw en consistent gezet.
+    'function pxPerMmMeting() {' +
+    '  var d = document.createElement("div");' +
+    '  d.style.cssText = "position:absolute;visibility:hidden;top:-9999px;left:-9999px;width:100mm;height:0;";' +
+    '  document.body.appendChild(d);' +
+    '  var w = d.getBoundingClientRect().width / 100;' +
+    '  document.body.removeChild(d);' +
+    '  return w || 3.7795275591;' +
+    '}' +
+    'function wachtOpAfbeeldingen(container) {' +
+    '  var imgs = Array.prototype.slice.call(container.querySelectorAll("img"));' +
+    '  var beloftes = imgs.map(function(img) {' +
+    '    if (img.complete) return Promise.resolve();' +
+    '    return new Promise(function(res) { img.addEventListener("load", res); img.addEventListener("error", res); });' +
+    '  });' +
+    '  return Promise.all(beloftes);' +
+    '}' +
+    'function splitsTabelOpHoogte(tabel, maxHoogtePx) {' +
+    '  if (tabel.getBoundingClientRect().height <= maxHoogtePx) return [tabel];' +
+    '  var thead = tabel.querySelector("thead");' +
+    '  var tbody = tabel.querySelector("tbody");' +
+    '  if (!tbody || tbody.children.length <= 1) return [tabel];' +
+    '  var rijen = Array.prototype.slice.call(tbody.children);' +
+    '  var theadHoogte = thead ? thead.getBoundingClientRect().height : 0;' +
+    '  var groepen = [[]]; var hoogtes = [theadHoogte];' +
+    '  rijen.forEach(function(rij) {' +
+    '    var h = rij.getBoundingClientRect().height;' +
+    '    var gi = groepen.length - 1;' +
+    '    if (groepen[gi].length > 0 && hoogtes[gi] + h > maxHoogtePx) { groepen.push([]); hoogtes.push(theadHoogte); gi++; }' +
+    '    groepen[gi].push(rij); hoogtes[gi] += h;' +
+    '  });' +
+    '  if (groepen.length <= 1) return [tabel];' +
+    '  return groepen.map(function(rijenGroep) {' +
+    '    var kloon = tabel.cloneNode(false);' +
+    '    if (thead) kloon.appendChild(thead.cloneNode(true));' +
+    '    var nieuweTbody = document.createElement("tbody");' +
+    '    rijenGroep.forEach(function(r) { nieuweTbody.appendChild(r); });' +
+    '    kloon.appendChild(nieuweTbody);' +
+    '    return kloon;' +
+    '  });' +
+    '}' +
+    'function splitsPaginaOpHoogte(pageEl, maxBodyPx) {' +
+    '  var bodyEl = pageEl.querySelector(".doc-page-body");' +
+    '  if (!bodyEl || bodyEl.getBoundingClientRect().height <= maxBodyPx) return [];' +
+    '  Array.prototype.slice.call(bodyEl.children).forEach(function(kind) {' +
+    '    if (kind.tagName === "TABLE" && kind.getBoundingClientRect().height > maxBodyPx) {' +
+    '      var vervangers = splitsTabelOpHoogte(kind, maxBodyPx);' +
+    '      if (vervangers.length > 1) {' +
+    '        vervangers.forEach(function(v) { bodyEl.insertBefore(v, kind); });' +
+    '        bodyEl.removeChild(kind);' +
+    '      }' +
+    '    }' +
+    '  });' +
+    '  var kids = Array.prototype.slice.call(bodyEl.childNodes);' +
+    '  var hoogtes = kids.map(function(n) { return n.nodeType === 1 ? n.getBoundingClientRect().height : 0; });' +
+    '  var chunks = [[]]; var chunkH = [0];' +
+    '  kids.forEach(function(node, idx) {' +
+    '    var h = hoogtes[idx];' +
+    '    var ci = chunks.length - 1;' +
+    '    if (node.nodeType === 1 && chunkH[ci] > 0 && chunkH[ci] + h > maxBodyPx) { chunks.push([]); chunkH.push(0); ci++; }' +
+    '    chunks[ci].push(node); chunkH[ci] += h;' +
+    '  });' +
+    '  if (chunks.length <= 1) return [];' +
+    '  bodyEl.innerHTML = "";' +
+    '  chunks[0].forEach(function(n) { bodyEl.appendChild(n); });' +
+    '  var nieuwePaginas = []; var vorige = pageEl;' +
+    '  for (var c = 1; c < chunks.length; c++) {' +
+    '    var npage = document.createElement("div"); npage.className = "doc-page";' +
+    '    var nbody = document.createElement("div"); nbody.className = "doc-page-body";' +
+    '    chunks[c].forEach(function(n) { nbody.appendChild(n); });' +
+    '    npage.appendChild(nbody);' +
+    '    vorige.parentNode.insertBefore(npage, vorige.nextSibling);' +
+    '    nieuwePaginas.push(npage);' +
+    '    vorige = npage;' +
+    '  }' +
+    '  return nieuwePaginas;' +
+    '}' +
+    'function herpagineerRapport(container) {' +
+    '  var origPaginas = Array.prototype.slice.call(container.querySelectorAll(".doc-page"));' +
+    '  if (!origPaginas.length) return 0;' +
+    '  var pxPerMmVal = pxPerMmMeting();' +
+    '  var maxPaginaHoogtePx = (297 - 3) * pxPerMmVal;' +
+    '  var headerBron = null, footerBron = null;' +
+    '  origPaginas.forEach(function(p) {' +
+    '    if (!headerBron) { var hh = p.querySelector(":scope > .doc-page-header"); if (hh) headerBron = hh; }' +
+    '    if (!footerBron) { var ff = p.querySelector(":scope > .doc-page-footer"); if (ff) footerBron = ff; }' +
+    '  });' +
+    '  var headerHoogte = headerBron ? headerBron.getBoundingClientRect().height : 0;' +
+    '  var footerHoogte = footerBron ? footerBron.getBoundingClientRect().height : 0;' +
+    '  var refPagina = origPaginas.filter(function(p) { return p.querySelector(":scope > .doc-page-header") && p.querySelector(":scope > .doc-page-footer"); })[0] || origPaginas[origPaginas.length - 1];' +
+    '  var refBody = refPagina.querySelector(".doc-page-body");' +
+    '  var paddingOverhead = refPagina.getBoundingClientRect().height - refBody.getBoundingClientRect().height - headerHoogte - footerHoogte;' +
+    '  if (paddingOverhead < 0) paddingOverhead = 0;' +
+    '  var maxBodyMetHeader = maxPaginaHoogtePx - paddingOverhead - footerHoogte - headerHoogte;' +
+    '  var maxBodyZonderHeader = maxPaginaHoogtePx - paddingOverhead - footerHoogte;' +
+    '  var wachtrij = origPaginas.slice();' +
+    '  var isEersteOoit = true;' +
+    '  var teller = 0;' +
+    '  while (wachtrij.length && teller < 500) {' +
+    '    teller++;' +
+    '    var p = wachtrij.shift();' +
+    '    var budget = isEersteOoit ? maxBodyZonderHeader : maxBodyMetHeader;' +
+    '    isEersteOoit = false;' +
+    '    var nieuw = splitsPaginaOpHoogte(p, budget);' +
+    '    if (nieuw.length) wachtrij = nieuw.concat(wachtrij);' +
+    '  }' +
+    '  var alle = Array.prototype.slice.call(container.querySelectorAll(".doc-page"));' +
+    '  var totaal = alle.length;' +
+    '  alle.forEach(function(p, i) {' +
+    '    var oudeKop = p.querySelector(":scope > .doc-page-header"); if (oudeKop) oudeKop.remove();' +
+    '    var oudeVoet = p.querySelector(":scope > .doc-page-footer"); if (oudeVoet) oudeVoet.remove();' +
+    '    var body = p.querySelector(".doc-page-body");' +
+    '    if (i > 0 && headerBron) p.insertBefore(headerBron.cloneNode(true), body);' +
+    '    if (footerBron) {' +
+    '      var voetKloon = footerBron.cloneNode(true);' +
+    '      var nrEl = voetKloon.querySelector(".run-page-num");' +
+    '      if (nrEl) nrEl.textContent = (i + 1) + " / " + totaal;' +
+    '      p.appendChild(voetKloon);' +
+    '    }' +
+    '  });' +
+    '  return alle.length;' +
+    '}' +
     'function wachtOpPdfLibs(pogingen) {' +
     '  if (typeof html2canvas !== "undefined" && ((window.jspdf && window.jspdf.jsPDF) || window.jsPDF)) {' +
     '    ["printBtn","exportBtn","mailBtn"].forEach(function(id){ var b = document.getElementById(id); b.disabled = false; b.style.cursor = "pointer"; if (id !== "mailBtn") b.style.background = "#fff"; });' +
@@ -4528,7 +4661,12 @@ function openPagedReport(body, css, filename, label) {
     '  if (pogingen > 100) { document.getElementById("statusLabel").innerHTML = "PDF-onderdelen konden niet laden (controleer je internetverbinding). Het rapport is wel zichtbaar."; return; }' +
     '  setTimeout(function(){ wachtOpPdfLibs(pogingen+1); }, 100);' +
     '}' +
-    'wachtOpPdfLibs(0);' +
+    'wachtOpAfbeeldingen(document.getElementById("report-target")).then(function(){' +
+    '  herpagineerRapport(document.getElementById("report-target"));' +
+    '  totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
+    '  document.getElementById("statusLabel").innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Wachten op PDF-onderdelen&hellip;";' +
+    '  wachtOpPdfLibs(0);' +
+    '});' +
     'async function genereerPdfObject(status) {' +
     '  var pages = document.querySelectorAll("#report-target .doc-page");' +
     '  if (!pages.length) return null;' +
