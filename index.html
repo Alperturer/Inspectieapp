@@ -4824,6 +4824,17 @@ function openPagedReport(body, css, filename, label) {
     '  fixeerVoettekstOnderaan(document.getElementById("report-target"));' +
     '  totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
     '  document.getElementById("statusLabel").innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Wachten op PDF-onderdelen&hellip;";' +
+    // Extra vangnet: zelfs na het wachten op lettertype en foto's hierboven kan een browser
+    // een fractie later nog een laatste keer herberekenen (bijv. door lettertype-varianten
+    // die pas ná de eerste meting alsnog inladen). Daarom herhalen we de hele opdeel- en
+    // opschoonstap hier nog één keer, na een korte pauze, zodat zo'n late verschuiving nooit
+    // tot een verkeerd geplaatste voettekst of een lege pagina kan leiden. Dit is veilig om te
+    // herhalen: pagina's die al goed staan, worden gewoon ongewijzigd gelaten.
+    '  setTimeout(function(){' +
+    '    herpagineerRapport(document.getElementById("report-target"));' +
+    '    fixeerVoettekstOnderaan(document.getElementById("report-target"));' +
+    '    totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
+    '  }, 350);' +
     '  wachtOpPdfLibs(0);' +
     '});' +
     'async function genereerPdfObject(status) {' +
