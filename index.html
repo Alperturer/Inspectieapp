@@ -4739,6 +4739,28 @@ function openPagedReport(body, css, filename, label) {
     '  });' +
     '  return alle.length;' +
     '}' +
+    // Elke .doc-page kreeg tot nu toe alleen zoveel hoogte als de inhoud nodig had --
+    // daardoor stond de voettekst (groene lijn + paginanummer) direct ONDER de laatste
+    // regel tekst in plaats van onderaan de fysieke pagina, wat er per pagina anders (en
+    // dus slordig) uitzag. herpagineerRapport() heeft de inhoud al gegarandeerd binnen één
+    // A4-hoogte laten passen; hierna zetten we elke pagina daarom op de vaste 297mm-hoogte
+    // van een A4-pagina en laten we een flex-layout de voettekst naar de onderkant duwen,
+    // ongeacht hoeveel inhoud die specifieke pagina heeft.
+    'function fixeerVoettekstOnderaan(container) {' +
+    '  var pxPerMmVal = pxPerMmMeting();' +
+    '  var doelHoogtePx = 297 * pxPerMmVal;' +
+    '  Array.prototype.slice.call(container.querySelectorAll(".doc-page")).forEach(function(p) {' +
+    '    p.style.height = doelHoogtePx + "px";' +
+    '    p.style.display = "flex";' +
+    '    p.style.flexDirection = "column";' +
+    '    var kop = p.querySelector(":scope > .doc-page-header");' +
+    '    var body = p.querySelector(":scope > .doc-page-body");' +
+    '    var voet = p.querySelector(":scope > .doc-page-footer");' +
+    '    if (kop) { kop.style.flex = "none"; }' +
+    '    if (body) { body.style.flex = "1 0 auto"; body.style.minHeight = "0"; }' +
+    '    if (voet) { voet.style.flex = "none"; voet.style.marginTop = "auto"; }' +
+    '  });' +
+    '}' +
     'function wachtOpPdfLibs(pogingen) {' +
     '  if (typeof html2canvas !== "undefined" && ((window.jspdf && window.jspdf.jsPDF) || window.jsPDF)) {' +
     '    ["printBtn","exportBtn","mailBtn"].forEach(function(id){ var b = document.getElementById(id); b.disabled = false; b.style.cursor = "pointer"; if (id !== "mailBtn") b.style.background = "#fff"; });' +
@@ -4751,6 +4773,7 @@ function openPagedReport(body, css, filename, label) {
     '}' +
     'wachtOpAfbeeldingen(document.getElementById("report-target")).then(function(){' +
     '  herpagineerRapport(document.getElementById("report-target"));' +
+    '  fixeerVoettekstOnderaan(document.getElementById("report-target"));' +
     '  totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
     '  document.getElementById("statusLabel").innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Wachten op PDF-onderdelen&hellip;";' +
     '  wachtOpPdfLibs(0);' +
