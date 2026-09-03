@@ -4635,6 +4635,24 @@ function openPagedReport(body, css, filename, label) {
     '}' +
     // Groepeert de (dankzij plattVoorAf al passend gemaakte) kinderen van \u0027element\u0027
     // in nieuwe kloon-wrappers van elk maximaal maxHoogtePx.
+    // Een kopje (.doc-h / .doc-sub) mag nooit als allerlaatste element van een pagina/groep
+    // achterblijven terwijl de bijbehorende inhoud (de tabel/tekst erna) pas op de volgende
+    // pagina start -- dat gaf precies de "wees kopjes onderaan een verder lege pagina"-fout.
+    // Deze helper schuift zo'n kopje (en eventueel meerdere opeenvolgende kopjes) alsnog naar
+    // het begin van de volgende groep, zodat een kopje altijd samen met zijn eigen inhoud
+    // verschijnt. Bewust ook toegestaan dat een groep hierdoor helemaal leeg wordt (bijv. als
+    // een groep alleen uit het kopje zelf bestond) -- de aanroeper filtert lege groepen weg.
+    'function verplaatsWeesKopjes(groepen) {' +
+    '  for (var gi = 0; gi < groepen.length - 1; gi++) {' +
+    '    var huidige = groepen[gi];' +
+    '    var laatste = huidige[huidige.length - 1];' +
+    '    while (huidige.length > 0 && laatste && laatste.nodeType === 1 && /(^|\\s)(doc-h|doc-sub)(\\s|$)/.test(laatste.className || "")) {' +
+    '      huidige.pop();' +
+    '      groepen[gi + 1].unshift(laatste);' +
+    '      laatste = huidige[huidige.length - 1];' +
+    '    }' +
+    '  }' +
+    '}' +
     'function groepeerEnWrap(element, maxHoogtePx) {' +
     '  if (element.getBoundingClientRect().height <= maxHoogtePx) return [element];' +
     '  var kids = Array.prototype.slice.call(element.childNodes);' +
@@ -4647,6 +4665,9 @@ function openPagedReport(body, css, filename, label) {
     '    if (k.nodeType === 1 && groepH[gi] > 0 && groepH[gi] + h > maxHoogtePx) { groepen.push([]); groepH.push(0); gi++; }' +
     '    groepen[gi].push(k); groepH[gi] += h;' +
     '  });' +
+    '  if (groepen.length <= 1) return [element];' +
+    '  verplaatsWeesKopjes(groepen);' +
+    '  groepen = groepen.filter(function(g) { return g.length > 0; });' +
     '  if (groepen.length <= 1) return [element];' +
     '  return groepen.map(function(groep) {' +
     '    var kloon = element.cloneNode(false);' +
@@ -4686,6 +4707,9 @@ function openPagedReport(body, css, filename, label) {
     '    if (node.nodeType === 1 && chunkH[ci] > 0 && chunkH[ci] + h > maxBodyPx) { chunks.push([]); chunkH.push(0); ci++; }' +
     '    chunks[ci].push(node); chunkH[ci] += h;' +
     '  });' +
+    '  if (chunks.length <= 1) return [];' +
+    '  verplaatsWeesKopjes(chunks);' +
+    '  chunks = chunks.filter(function(c) { return c.length > 0; });' +
     '  if (chunks.length <= 1) return [];' +
     '  bodyEl.innerHTML = "";' +
     '  chunks[0].forEach(function(n) { bodyEl.appendChild(n); });' +
