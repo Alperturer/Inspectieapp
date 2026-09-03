@@ -4541,6 +4541,15 @@ function openPagedReport(body, css, filename, label) {
     '<button id="mailBtn" onclick="verstuurAlsMail()" disabled style="background:#E8952E;color:#fff;border:none;border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:not-allowed;margin-right:8px;" title="Opent het deelmenu van je toestel, met de PDF als bijlage">&#128231; Verstuur via mail</button>' +
     '<button onclick="window.close()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:7px;padding:8px 14px;font-weight:700;font-size:12.5px;cursor:pointer;">Sluiten</button></span></div>' +
     '<div id="report-target"></div>' +
+    // Rustig, dekkend laadscherm: de PDF-voorbereiding scrolt op de achtergrond razendsnel door
+    // elke pagina heen (nodig om elke pagina apart te kunnen "fotograferen" voor de PDF) -- dat
+    // was zichtbaar en gaf een onrustig, verwarrend "trippy" gevoel. Dit scherm dekt dat scrollen
+    // gewoon af met een simpele, stilstaande melding, zodat het rapport zelf rustig blijft staan.
+    '<div id="pdfVoorbereidenScherm" style="display:none;position:fixed;inset:0;background:#F5F3EC;z-index:2000;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:sans-serif;">' +
+    '<div style="width:34px;height:34px;border:4px solid #E0DDD3;border-top-color:#0B3B3C;border-radius:50%;animation:pdfspin 0.9s linear infinite;"></div>' +
+    '<div style="font-size:13px;font-weight:700;color:#0B3B3C;">Rapport wordt voorbereid&hellip;</div>' +
+    '<style>@keyframes pdfspin { to { transform: rotate(360deg); } }</style>' +
+    '</div>' +
     '<script>' +
     'var bestandsnaam = ' + JSON.stringify(filename) + ';' +
     'window.onerror = function(msg){' +
@@ -4737,10 +4746,16 @@ function openPagedReport(body, css, filename, label) {
     '  });' +
     '  var headerHoogte = headerBron ? headerBron.getBoundingClientRect().height : 0;' +
     '  var footerHoogte = footerBron ? footerBron.getBoundingClientRect().height : 0;' +
-    '  var refPagina = origPaginas.filter(function(p) { return p.querySelector(":scope > .doc-page-header") && p.querySelector(":scope > .doc-page-footer"); })[0] || origPaginas[origPaginas.length - 1];' +
-    '  var refBody = refPagina.querySelector(".doc-page-body");' +
-    '  var paddingOverhead = refPagina.getBoundingClientRect().height - refBody.getBoundingClientRect().height - headerHoogte - footerHoogte;' +
-    '  if (paddingOverhead < 0) paddingOverhead = 0;' +
+    // BELANGRIJK: de marge (padding-boven + padding-onder van .doc-page) wordt hier NIET meer
+    // "gemeten" via een willekeurige referentiepagina -- dat leek robuust, maar zodra
+    // fixeerVoettekstOnderaan() een pagina al een keer op min-height:297mm heeft gezet (bij de
+    // vertraagde herhaalronde hieronder), was zo\u0027n referentiepagina zelf al kunstmatig
+    // opgerekt, en werd al die extra (nep-)ruimte foutief meegeteld als "marge" -- met als
+    // gevolg een veel te kleine beschikbare hoogte per pagina, en dus onnodig veel splitsingen
+    // (zelfs een simpel inhoudsopgavelijstje werd daardoor geknipt). In plaats daarvan gebruiken
+    // we hier gewoon de vaste, bekende waarde uit de eigen .doc-page CSS-regel (padding:18mm
+    // boven + 15mm onder) -- die staat vast en kan nooit vervuild raken.
+    '  var paddingOverhead = (18 + 15) * pxPerMmVal;' +
     '  var maxBodyMetHeader = maxPaginaHoogtePx - paddingOverhead - footerHoogte - headerHoogte;' +
     '  var maxBodyZonderHeader = maxPaginaHoogtePx - paddingOverhead - footerHoogte;' +
     // BELANGRIJK: de allereerste pagina (de voorpagina, met logo/titel/foto/gegevenstabel) mag
@@ -4871,6 +4886,10 @@ function openPagedReport(body, css, filename, label) {
     'async function genereerPdfObject(status) {' +
     '  var pages = document.querySelectorAll("#report-target .doc-page");' +
     '  if (!pages.length) return null;' +
+    '  var scherm = document.getElementById("pdfVoorbereidenScherm");' +
+    '  var scrollPositieVooraf = window.scrollY;' +
+    '  if (scherm) scherm.style.display = "flex";' +
+    '  try {' +
     '  var jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;' +
     '  var pdf = new jsPDFCtor({ unit: "mm", format: "a4", orientation: "portrait" });' +
     '  var pageWidthMm = 210, pageHeightMm = 297;' +
@@ -4921,6 +4940,10 @@ function openPagedReport(body, css, filename, label) {
     '    }' +
     '  }' +
     '  return pdf;' +
+    '  } finally {' +
+    '    if (scherm) scherm.style.display = "none";' +
+    '    window.scrollTo(0, scrollPositieVooraf);' +
+    '  }' +
     '}' +
     'var cachedPdfPromise = null;' +
     'function getPdf(status) {' +
