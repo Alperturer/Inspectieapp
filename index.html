@@ -4730,6 +4730,19 @@ function openPagedReport(body, css, filename, label) {
     '    var nieuw = splitsPaginaOpHoogte(p, budget);' +
     '    if (nieuw.length) wachtrij = nieuw.concat(wachtrij);' +
     '  }' +
+    // Vangnet tegen lege pagina's: verwijder elke .doc-page waarvan de inhoud, na alle
+    // splitsingen hierboven, geen enkele letter tekst en geen enkele foto bevat (puur lege
+    // restjes die door een onvoorziene combinatie van secties/pagina-einden kunnen ontstaan).
+    // We laten er altijd minimaal 1 pagina staan, ook als die toevallig ook leeg zou zijn.
+    '  var kandidaten = Array.prototype.slice.call(container.querySelectorAll(".doc-page"));' +
+    '  kandidaten.forEach(function(p) {' +
+    '    if (container.querySelectorAll(".doc-page").length <= 1) return;' +
+    '    var lichaam = p.querySelector(".doc-page-body");' +
+    '    if (!lichaam) return;' +
+    '    var heeftAfbeelding = !!lichaam.querySelector("img");' +
+    '    var tekst = (lichaam.textContent || "").replace(/[\\s\\u00a0]+/g, "");' +
+    '    if (!heeftAfbeelding && tekst.length === 0) p.remove();' +
+    '  });' +
     '  var alle = Array.prototype.slice.call(container.querySelectorAll(".doc-page"));' +
     '  var totaal = alle.length;' +
     '  alle.forEach(function(p, i) {' +
@@ -4797,7 +4810,16 @@ function openPagedReport(body, css, filename, label) {
     '  if (pogingen > 100) { document.getElementById("statusLabel").innerHTML = "PDF-onderdelen konden niet laden (controleer je internetverbinding). Het rapport is wel zichtbaar."; return; }' +
     '  setTimeout(function(){ wachtOpPdfLibs(pogingen+1); }, 100);' +
     '}' +
-    'wachtOpAfbeeldingen(document.getElementById("report-target")).then(function(){' +
+    // BELANGRIJK: naast op foto's moeten we hier ook wachten tot het (via Google Fonts geladen)
+    // lettertype daadwerkelijk klaar is. herpagineerRapport() meet de ECHTE gerenderde hoogte
+    // van elk stuk tekst om te bepalen waar een pagina moet knippen; als dat lettertype nog niet
+    // geladen is, meet de browser tijdelijk met een vervangend systeemlettertype (net iets
+    // smaller/breder), knippen we de pagina's dus op de VERKEERDE plek, en springt de tekst
+    // daarna -- zodra het echte lettertype alsnog inlaadt -- naar een andere hoogte dan waarop
+    // net geknipt is. Dat gaf precies dit soort onvoorspelbare fouten (voettekst niet op de
+    // juiste plek, een pagina die ineens vrijwel leeg lijkt).
+    'var __fontsKlaar = (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(function(){}) : Promise.resolve();' +
+    'Promise.all([wachtOpAfbeeldingen(document.getElementById("report-target")), __fontsKlaar]).then(function(){' +
     '  herpagineerRapport(document.getElementById("report-target"));' +
     '  fixeerVoettekstOnderaan(document.getElementById("report-target"));' +
     '  totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
