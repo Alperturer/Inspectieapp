@@ -4737,27 +4737,46 @@ function openPagedReport(body, css, filename, label) {
     '      p.appendChild(voetKloon);' +
     '    }' +
     '  });' +
+    // Vangnet: dit zou na de vorige stap altijd al moeten kloppen, maar we controleren
+    // hier expliciet dat ELKE pagina daadwerkelijk een voettekst heeft (en die als allerlaatste
+    // kind, dus onderaan) staan -- zodat er nooit een pagina zonder paginanummer/lijn kan
+    // overblijven, ongeacht welke onvoorziene situatie zich tijdens het splitsen voordeed.
+    '  alle.forEach(function(p, i) {' +
+    '    var voetNu = p.querySelector(":scope > .doc-page-footer");' +
+    '    if (!voetNu && footerBron) {' +
+    '      voetNu = footerBron.cloneNode(true);' +
+    '      p.appendChild(voetNu);' +
+    '    }' +
+    '    if (voetNu && p.lastElementChild !== voetNu) p.appendChild(voetNu);' +
+    '    if (voetNu) {' +
+    '      var nrEl2 = voetNu.querySelector(".run-page-num");' +
+    '      if (nrEl2) nrEl2.textContent = (i + 1) + " / " + totaal;' +
+    '    }' +
+    '  });' +
     '  return alle.length;' +
     '}' +
     // Elke .doc-page kreeg tot nu toe alleen zoveel hoogte als de inhoud nodig had --
     // daardoor stond de voettekst (groene lijn + paginanummer) direct ONDER de laatste
     // regel tekst in plaats van onderaan de fysieke pagina, wat er per pagina anders (en
     // dus slordig) uitzag. herpagineerRapport() heeft de inhoud al gegarandeerd binnen één
-    // A4-hoogte laten passen; hierna zetten we elke pagina daarom op de vaste 297mm-hoogte
-    // van een A4-pagina en laten we een flex-layout de voettekst naar de onderkant duwen,
-    // ongeacht hoeveel inhoud die specifieke pagina heeft.
+    // A4-hoogte laten passen; hierna zetten we elke pagina daarom op MINIMAAL de 297mm-hoogte
+    // van een A4-pagina (bewust min-height, GEEN vaste height: als de inhoud van een krap
+    // volgepropte pagina door een piepklein afrondingsverschil ooit net iets te hoog uitvalt,
+    // groeit de pagina in dat geval gewoon een fractie mee in plaats van dat de voettekst buiten
+    // de vaste hoogte verdwijnt en onzichtbaar wordt) en laten we een flex-layout de voettekst
+    // naar de onderkant duwen, ongeacht hoeveel inhoud die specifieke pagina heeft.
     'function fixeerVoettekstOnderaan(container) {' +
     '  var pxPerMmVal = pxPerMmMeting();' +
     '  var doelHoogtePx = 297 * pxPerMmVal;' +
     '  Array.prototype.slice.call(container.querySelectorAll(".doc-page")).forEach(function(p) {' +
-    '    p.style.height = doelHoogtePx + "px";' +
+    '    p.style.minHeight = doelHoogtePx + "px";' +
     '    p.style.display = "flex";' +
     '    p.style.flexDirection = "column";' +
     '    var kop = p.querySelector(":scope > .doc-page-header");' +
     '    var body = p.querySelector(":scope > .doc-page-body");' +
     '    var voet = p.querySelector(":scope > .doc-page-footer");' +
     '    if (kop) { kop.style.flex = "none"; }' +
-    '    if (body) { body.style.flex = "1 0 auto"; body.style.minHeight = "0"; }' +
+    '    if (body) { body.style.flex = "1 0 auto"; }' +
     '    if (voet) { voet.style.flex = "none"; voet.style.marginTop = "auto"; }' +
     '  });' +
     '}' +
