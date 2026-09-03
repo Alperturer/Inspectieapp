@@ -4705,7 +4705,7 @@ function openPagedReport(body, css, filename, label) {
     '  var origPaginas = Array.prototype.slice.call(container.querySelectorAll(".doc-page"));' +
     '  if (!origPaginas.length) return 0;' +
     '  var pxPerMmVal = pxPerMmMeting();' +
-    '  var maxPaginaHoogtePx = (297 - 10) * pxPerMmVal;' +
+    '  var maxPaginaHoogtePx = (297 - 3) * pxPerMmVal;' +
     '  var headerBron = null, footerBron = null;' +
     '  origPaginas.forEach(function(p) {' +
     '    if (!headerBron) { var hh = p.querySelector(":scope > .doc-page-header"); if (hh) headerBron = hh; }' +
@@ -4719,8 +4719,13 @@ function openPagedReport(body, css, filename, label) {
     '  if (paddingOverhead < 0) paddingOverhead = 0;' +
     '  var maxBodyMetHeader = maxPaginaHoogtePx - paddingOverhead - footerHoogte - headerHoogte;' +
     '  var maxBodyZonderHeader = maxPaginaHoogtePx - paddingOverhead - footerHoogte;' +
-    '  var wachtrij = origPaginas.slice();' +
-    '  var isEersteOoit = true;' +
+    // BELANGRIJK: de allereerste pagina (de voorpagina, met logo/titel/foto/gegevenstabel) mag
+    // NOOIT automatisch opgeknipt worden. Die pagina is bewust als één geheel ontworpen; als de
+    // inhoud daarvan (door een strengere marge, een grote foto, etc.) een fractie hoger uitvalt
+    // dan één A4-pagina, moet 'm gewoon een fractie hoger wórden -- niet in 2 of 3 rare,
+    // grotendeels lege pagina's uiteenvallen zoals eerder gebeurde.
+    '  var wachtrij = origPaginas.slice(1);' +
+    '  var isEersteOoit = false;' +
     '  var teller = 0;' +
     '  while (wachtrij.length && teller < 500) {' +
     '    teller++;' +
@@ -4834,6 +4839,8 @@ function openPagedReport(body, css, filename, label) {
     '    herpagineerRapport(document.getElementById("report-target"));' +
     '    fixeerVoettekstOnderaan(document.getElementById("report-target"));' +
     '    totaalPaginas = document.querySelectorAll("#report-target .doc-page").length;' +
+    '    var statusEl = document.getElementById("statusLabel");' +
+    '    if (statusEl && statusEl.innerHTML.indexOf("Klaar") === 0) statusEl.innerHTML = "Klaar — " + totaalPaginas + " pagina\\u0027s. Wachten op PDF-onderdelen&hellip;";' +
     '  }, 350);' +
     '  wachtOpPdfLibs(0);' +
     '});' +
