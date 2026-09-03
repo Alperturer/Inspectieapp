@@ -433,8 +433,112 @@ function filesToDataUrls(files, callback) {
 }
 function esc(s) { var d = document.createElement("div"); d.innerText = s == null ? "" : s; return d.innerHTML; }
 
+// ===========================================================================
+// FOTO-OPSLAG IN INDEXEDDB (i.p.v. rechtstreeks in localStorage)
+// ---------------------------------------------------------------------------
+// localStorage heeft in de browser maar een paar MB ruimte (meestal 5-10MB) --
+// bij een keuring met genoeg foto's (zelfs na compressie) zit dat al bij ÉÉN
+// keuring vol. IndexedDB heeft veel meer ruimte (typisch honderden MB's). We
+// halen daarom alle "fotos"-arrays (overal in de boom, ongeacht op welk
+// niveau ze voorkomen) uit het object vlak vóórdat het naar localStorage
+// geschreven wordt, bewaren die apart in IndexedDB, en vullen ze bij het
+// laden weer op hun oorspronkelijke plek terug. De rest van de app (render,
+// rapportopbouw, state) blijft precies hetzelfde werken -- fotos staan in
+// het geheugen gewoon nog steeds als normale data-URL's in de fotos-arrays.
+// ===========================================================================
+var IDB_NAAM = "keuringen_fotos_db";
+var IDB_STORE = "fotomaps";
+var IDB_DRAFT_KEY = "draft";
+function idbOpen(callback) {
+  if (!window.indexedDB) { callback(null); return; }
+  try {
+    var req = indexedDB.open(IDB_NAAM, 1);
+    req.onupgradeneeded = function(e) { try { e.target.result.createObjectStore(IDB_STORE); } catch(err){} };
+    req.onsuccess = function(e) { callback(e.target.result); };
+    req.onerror = function() { callback(null); };
+  } catch(e) { callback(null); }
+}
+function idbBewaarFotoMap(key, fotoMap) {
+  idbOpen(function(db) {
+    if (!db) return;
+    try { db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put(fotoMap, key); } catch(e) {}
+  });
+}
+function idbHaalFotoMap(key, callback) {
+  idbOpen(function(db) {
+    if (!db) { callback({}); return; }
+    try {
+      var req = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get(key);
+      req.onsuccess = function(e) { callback(e.target.result || {}); };
+      req.onerror = function() { callback({}); };
+    } catch(e) { callback({}); }
+  });
+}
+function idbVerwijder(key) {
+  idbOpen(function(db) {
+    if (!db) return;
+    try { db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).delete(key); } catch(e) {}
+  });
+}
+// Loopt recursief door het object; elk array-veld genaamd "fotos" dat data-URL's
+// bevat wordt eruit gehaald (en bewaard in fotoMap onder zijn eigen "pad"), en
+// vervangen door lege placeholders van dezelfde lengte -- zodat de vorm van het
+// object (en dus alle andere code die ernaar kijkt) ongewijzigd blijft.
+function stripFotosDiep(obj, fotoMap, pad) {
+  if (Array.isArray(obj)) return obj.map(function(item, i){ return stripFotosDiep(item, fotoMap, pad + "." + i); });
+  if (obj && typeof obj === "object") {
+    var kopie = {};
+    Object.keys(obj).forEach(function(k){
+      var v = obj[k];
+      if (/[Ff]otos$/.test(k) && Array.isArray(v) && v.length > 0 && v.some(function(f){ return typeof f === "string" && f.indexOf("data:") === 0; })) {
+        fotoMap[pad + "." + k] = v;
+        kopie[k] = v.map(function(){ return ""; });
+      } else {
+        kopie[k] = stripFotosDiep(v, fotoMap, pad + "." + k);
+      }
+    });
+    return kopie;
+  }
+  return obj;
+}
+// Spiegelbeeld van stripFotosDiep: vult de fotos-arrays weer aan met de
+// bewaarde data-URL's uit fotoMap, op basis van hetzelfde pad.
+function vulFotosDiep(obj, fotoMap, pad) {
+  if (Array.isArray(obj)) return obj.map(function(item, i){ return vulFotosDiep(item, fotoMap, pad + "." + i); });
+  if (obj && typeof obj === "object") {
+    var kopie = {};
+    Object.keys(obj).forEach(function(k){
+      if (/[Ff]otos$/.test(k) && fotoMap && fotoMap[pad + "." + k]) kopie[k] = fotoMap[pad + "." + k];
+      else kopie[k] = vulFotosDiep(obj[k], fotoMap, pad + "." + k);
+    });
+    return kopie;
+  }
+  return obj;
+}
 function loadSaved() { try { return JSON.parse(localStorage.getItem(STORAGE_SAVED) || "[]"); } catch(e) { return []; } }
-function persistSaved(list) { try { localStorage.setItem(STORAGE_SAVED, JSON.stringify(list)); return true; } catch(e) { return false; } }
+// Slaat de lijst met opgeslagen keuringen op. Zelfde IndexedDB-aanpak als bij het concept,
+// maar nu PER RECORD (elke opgeslagen keuring heeft zijn eigen sleutel "saved:<id>") -- zo
+// blijven de foto's van eerder opgeslagen keuringen gewoon intact staan wanneer je een NIEUWE
+// keuring opslaat, in plaats van dat één gedeelde opslagplek steeds wordt overschreven.
+function persistSaved(list) {
+  try {
+    var lichteLijst = list.map(function(record){
+      var fotoMap = {};
+      var licht = stripFotosDiep(record, fotoMap, "");
+      if (Object.keys(fotoMap).length > 0) idbBewaarFotoMap("saved:" + record.id, fotoMap);
+      return licht;
+    });
+    localStorage.setItem(STORAGE_SAVED, JSON.stringify(lichteLijst));
+    return true;
+  } catch(e) { return false; }
+}
+// Haalt één specifieke opgeslagen keuring (incl. al zijn foto's) op -- gebruikt wanneer een
+// keuring lokaal (dus niet uit de cloud) geopend wordt om verder te bewerken.
+function loadSavedRecordMetFotos(id, callback) {
+  var lokaal = loadSaved().find(function(x){ return x.id === id; });
+  if (!lokaal) { callback(null); return; }
+  idbHaalFotoMap("saved:" + id, function(fotoMap){ callback(vulFotosDiep(lokaal, fotoMap, "")); });
+}
 function loadBedrijfsgegevens() { try { return JSON.parse(localStorage.getItem(STORAGE_BEDRIJF) || "{}"); } catch(e) { return {}; } }
 function persistBedrijfsgegevens() {
   try {
@@ -464,20 +568,34 @@ function laadBedrijfsgegevensUitCloud(callback) {
   }).catch(function(){ callback(); });
 }
 function persistDraft() {
+  if (!state.type) { try { localStorage.removeItem(STORAGE_DRAFT); } catch(e){} idbVerwijder(IDB_DRAFT_KEY); return; }
+  var volledig = { view: state.view, laatsteWerkStap: state.laatsteWerkStap, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen, savedId: state.savedId };
+  var fotoMap = {};
+  var licht = stripFotosDiep(volledig, fotoMap, "");
   try {
-    if (state.type) {
-      localStorage.setItem(STORAGE_DRAFT, JSON.stringify({ view: state.view, laatsteWerkStap: state.laatsteWerkStap, type: state.type, object: state.object, items: state.items, verdelers: state.verdelers, omvormers: state.omvormers, constateringen: state.constateringen, savedId: state.savedId }));
-    } else { localStorage.removeItem(STORAGE_DRAFT); }
+    localStorage.setItem(STORAGE_DRAFT, JSON.stringify(licht));
   } catch(e) {
-    // Opslagruimte van de browser vol (bijv. door veel foto's) — dit gebeurt bij elke
-    // wijziging, dus waarschuw maar één keer per sessie in plaats van steeds opnieuw.
+    // Opslagruimte van de browser vol -- dit gebeurt bij elke wijziging, dus waarschuw maar
+    // één keer per sessie in plaats van steeds opnieuw. De foto's zelf gaan hieronder nog
+    // gewoon (async) naar IndexedDB, dat een veel grotere opslaglimiet heeft dan localStorage
+    // -- dus zelfs als deze (foto-vrije) localStorage-schrijfactie faalt, is de kans klein dat
+    // dit nog voorkomt zodra IndexedDB de foto's overneemt.
     if (!state.draftOpslagWaarschuwingGetoond) {
       state.draftOpslagWaarschuwingGetoond = true;
       alert("Let op: de opslagruimte van je browser zit vol, waardoor wijzigingen niet meer lokaal worden bewaard. Klik zo snel mogelijk op 'Opslaan' om te proberen naar de cloud te synchroniseren, en verwijder daarna oude keuringen die je niet meer nodig hebt.");
     }
   }
+  idbBewaarFotoMap(IDB_DRAFT_KEY, fotoMap);
 }
-function loadDraft() { try { var raw = localStorage.getItem(STORAGE_DRAFT); return raw ? JSON.parse(raw) : null; } catch(e) { return null; } }
+// Laadt het concept asynchroon: het lichte (foto-vrije) deel komt synchroon uit localStorage,
+// de foto's zelf komen uit IndexedDB en worden er daarna weer bovenop gevuld. callback(null) als
+// er geen concept is.
+function loadDraftAsync(callback) {
+  var raw; try { raw = localStorage.getItem(STORAGE_DRAFT); } catch(e) { raw = null; }
+  var licht; try { licht = raw ? JSON.parse(raw) : null; } catch(e) { licht = null; }
+  if (!licht) { callback(null); return; }
+  idbHaalFotoMap(IDB_DRAFT_KEY, function(fotoMap){ callback(vulFotosDiep(licht, fotoMap, "")); });
+}
 
 // ---------------------------------------------------------------------
 // STATE
@@ -1289,16 +1407,17 @@ function renderBeheer() {
   return h;
 }
 function ververConceptUitDraft() {
-  var draft = loadDraft();
-  if (draft && draft.type) {
-    var hersteldeStap = draft.laatsteWerkStap || draft.view || "gegevens";
-    state.view = hersteldeStap;
-    state.laatsteWerkStap = hersteldeStap;
-    state.type = draft.type; state.object = Object.assign(state.object, draft.object); state.items = draft.items;
-    state.verdelers = draft.verdelers || []; state.omvormers = draft.omvormers || []; state.constateringen = draft.constateringen || []; state.savedId = draft.savedId || null;
-    normalizeState();
-    render();
-  }
+  loadDraftAsync(function(draft) {
+    if (draft && draft.type) {
+      var hersteldeStap = draft.laatsteWerkStap || draft.view || "gegevens";
+      state.view = hersteldeStap;
+      state.laatsteWerkStap = hersteldeStap;
+      state.type = draft.type; state.object = Object.assign(state.object, draft.object); state.items = draft.items;
+      state.verdelers = draft.verdelers || []; state.omvormers = draft.omvormers || []; state.constateringen = draft.constateringen || []; state.savedId = draft.savedId || null;
+      normalizeState();
+      render();
+    }
+  });
 }
 function doLogin(email, wachtwoord) {
   if (!supabaseClient) return;
@@ -1871,8 +1990,14 @@ function keuringenVanKlant(k) {
   });
 }
 function openSaved(id) {
-  var r = state.cloudKeuringen.find(function(x){return x.id===id;}) || loadSaved().find(function(x){return x.id===id;});
-  if (!r) return;
+  var r = state.cloudKeuringen.find(function(x){return x.id===id;});
+  if (r) { openSavedRecordInState(r); return; }
+  loadSavedRecordMetFotos(id, function(lokaal){
+    if (!lokaal) return;
+    openSavedRecordInState(lokaal);
+  });
+}
+function openSavedRecordInState(r) {
   state.type = r.type; state.object = r.object; state.items = r.items;
   state.verdelers = r.verdelers || []; state.omvormers = r.omvormers || []; state.constateringen = r.constateringen || []; state.savedId = r.id;
   normalizeState();
@@ -1885,6 +2010,7 @@ function deleteSaved(id, ev) {
   if (ev) ev.stopPropagation();
   vraagBevestiging("Deze opgeslagen keuring definitief verwijderen? Dit verwijdert 'm ook uit de cloud.", function(){
     persistSaved(loadSaved().filter(function(r){return r.id!==id;}));
+    idbVerwijder("saved:" + id);
     state.cloudKeuringen = state.cloudKeuringen.filter(function(r){return r.id!==id;});
     render();
     if (supabaseClient && state.user) {
