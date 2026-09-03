@@ -3708,17 +3708,25 @@ var PAGE_BREAK_MARK = "\u0000PAGEBREAK\u0000";
 var __pagBuf = null;
 function nieuwRapportOpbouw() { __pagBuf = []; }
 function docSec(title, inner, brk) {
-  var content = '<div class="doc-sec"><h2 class="doc-h">' + esc(title) + '</h2>' + inner + '</div>';
-  var stukken = content.split(PAGE_BREAK_MARK);
+  // BELANGRIJK: elk stuk (tussen PAGE_BREAK_MARK's) wordt HIER als eigen, volledig
+  // gebalanceerde HTML-brok opgebouwd (eigen open én sluit-tag van .doc-sec). Vroeger werd
+  // ÉÉN grote HTML-string (met de .doc-sec-wrapper alleen aan het begin en einde) achteraf
+  // in stukken gesplitst -- daardoor had elk tussenliggend stuk een niet-gesloten <div>,
+  // wat de voettekst van die pagina in de pagina-inhoud liet nesten (en de pagina daardoor
+  // ook smaller liet renderen, genest binnen een vorige pagina). Door ieder stuk hier zelf
+  // meteen af te sluiten kan zoiets niet meer gebeuren, ongeacht hoeveel PAGE_BREAK_MARK's
+  // een sectie bevat.
+  var stukken = inner.split(PAGE_BREAK_MARK);
   stukken.forEach(function(stuk, i){
-    // Als er toevallig een marker vlak vóór het einde van de inhoud staat (bijv. omdat een lijst
-    // exact op een afrondingsgetal eindigt), zou dat een compleet LEGE pagina opleveren -- alleen
-    // restjes afsluitende HTML, geen echte inhoud. Zo'n leeg restje voegen we altijd bij de vorige
-    // pagina i.p.v. er een nieuwe (blanco) pagina van te maken.
-    var isLeegRestant = /^(<\/div>\s*)*$/.test(stuk.trim());
-    if (isLeegRestant && __pagBuf.length > 0) { __pagBuf[__pagBuf.length - 1] += stuk; return; }
-    if (__pagBuf.length === 0 || (i === 0 && brk) || i > 0) __pagBuf.push(stuk);
-    else __pagBuf[__pagBuf.length - 1] += stuk;
+    // Een lege staart (bijv. omdat een lijst exact op een afrondingsgetal eindigt en de
+    // marker toevallig het allerlaatste teken is) levert geen echte inhoud op -- die slaan
+    // we gewoon over in plaats van er een lege pagina van te maken.
+    if (i > 0 && stuk.trim() === "") return;
+    var content = (i === 0)
+      ? ('<div class="doc-sec"><h2 class="doc-h">' + esc(title) + '</h2>' + stuk + '</div>')
+      : ('<div class="doc-sec">' + stuk + '</div>');
+    if (__pagBuf.length === 0 || (i === 0 && brk) || i > 0) __pagBuf.push(content);
+    else __pagBuf[__pagBuf.length - 1] += content;
   });
   return "";
 }
@@ -4317,7 +4325,7 @@ function buildNen1010Body() {
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
       vHtml += docPhotos(v.fotos, 220);
       if ((v.afgaandeGroepen||[]).length > 0) {
-        vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Afgaande groepen &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+        vHtml += '</div>' + PAGE_BREAK_MARK + '<div class="item-block-wrap"><div class="doc-sub" style="margin-top:0;">Afgaande groepen &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:30%;">Groep</th><th style="width:14%;text-align:right;">Zs max (&Omega;)</th><th style="width:14%;text-align:right;">Zi max (&Omega;)</th><th style="width:12%;text-align:right;">Riso (M&Omega;)</th><th style="width:15%;text-align:right;">Uitschakeltijd/-stroom</th><th style="width:15%;text-align:center;">Testknop</th></tr></thead><tbody>';
         v.afgaandeGroepen.forEach(function(g){
           vHtml += '<tr><td>' + esc(g.naam||"—") + '</td><td style="text-align:right;">' + esc(g.zsMax||"—") + '</td><td style="text-align:right;">' + esc(g.ziMax||"—") + '</td><td style="text-align:right;">' + esc(g.riso||"—") + '</td>' +
@@ -4327,7 +4335,7 @@ function buildNen1010Body() {
         vHtml += '</tbody></table>';
       }
       if ((v.aardlekschakelaars||[]).length > 0) {
-        vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Aardlekschakelaars &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+        vHtml += '</div>' + PAGE_BREAK_MARK + '<div class="item-block-wrap"><div class="doc-sub" style="margin-top:0;">Aardlekschakelaars &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:22%;">Soort</th><th style="width:10%;text-align:center;">Type</th><th style="width:14%;text-align:center;">Amperage</th><th style="width:18%;text-align:right;">Uitschakelstroom</th><th style="width:18%;text-align:right;">Uitschakeltijd</th><th style="width:18%;text-align:center;">Testknop</th></tr></thead><tbody>';
         v.aardlekschakelaars.forEach(function(a){
           vHtml += '<tr><td>' + esc(a.soort||"—") + '</td><td style="text-align:center;">' + esc(a.type||"—") + '</td><td style="text-align:center;">' + esc(a.amperage||"—") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakelstroom,"mA") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakeltijd,"ms") + '</td><td style="text-align:center;">' + esc(a.testknop||"—") + '</td></tr>';
