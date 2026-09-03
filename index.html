@@ -3740,19 +3740,26 @@ function assembleerPaginas(headerHtml, footerHtmlFn) {
     return '<div class="doc-page">' + kop + '<div class="doc-page-body">' + inhoud + '</div>' + voet + '</div>';
   }).join("");
 }
-function docPhotos(fotos, w) {
+function docPhotos(fotos, w, h) {
   if (!fotos || fotos.length === 0) return "";
-  var h = '<div class="doc-photos">';
-  fotos.forEach(function(src){ h += '<img src="' + src + '" style="width:' + (w||220) + 'px;height:auto;" />'; });
-  h += '</div>';
-  return h;
+  // BELANGRIJK: zowel breedte ALS hoogte vast zetten (met object-fit:cover) -- met alleen
+  // een vaste breedte en height:auto (zoals voorheen) bepaalde de eigen verhouding van elke
+  // foto zijn hoogte, waardoor foto's binnen dezelfde constatering in verschillende maten
+  // getoond werden. Nu krijgt elke foto exact hetzelfde blokformaat, en wordt 'm daarbinnen
+  // netjes bijgesneden (niet uitgerekt).
+  var breedte = w || 220;
+  var hoogte = h || Math.round(breedte * 0.72);
+  var html = '<div class="doc-photos">';
+  fotos.forEach(function(src){ html += '<img src="' + src + '" style="width:' + breedte + 'px;height:' + hoogte + 'px;object-fit:cover;" />'; });
+  html += '</div>';
+  return html;
 }
 function docConstatering(idx, classificatie, omschrijving, fotos, norm) {
   if (classificatie === "goed" && (!fotos || fotos.length===0) && !omschrijving) return "";
   if (classificatie === "goed") {
     var h2 = '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #F0EEE7;">';
     h2 += '<div style="flex:1;min-width:0;font-size:11.5px;">' + (omschrijving ? esc(omschrijving) : "") + '</div>';
-    h2 += docPhotos(fotos, 64).replace('class="doc-photos"', 'class="doc-photos" style="gap:4px;flex-shrink:0;"').replace(/height:auto;/g, "height:64px;object-fit:cover;border-radius:6px;");
+    h2 += docPhotos(fotos, 64, 64).replace('class="doc-photos"', 'class="doc-photos" style="gap:4px;flex-shrink:0;"').replace(/object-fit:cover;/g, "object-fit:cover;border-radius:6px;");
     h2 += beoordelingBadge(classificatie);
     h2 += '</div>';
     return h2;
@@ -3760,7 +3767,7 @@ function docConstatering(idx, classificatie, omschrijving, fotos, norm) {
   var h = '<div class="doc-constatering"><div class="doc-constatering-head"><span>Constatering' + (idx!=null ? ": " + String(idx).padStart(2,"0") : "") + (norm ? " &mdash; " + esc(norm) : "") + '</span>' + beoordelingBadge(classificatie) + '</div>';
   h += '<div class="doc-constatering-body">';
   h += '<b>Omschrijving:</b><br/>' + esc(omschrijving || "—");
-  h += docPhotos(fotos, 220);
+  h += docPhotos(fotos, 220, 155);
   h += '</div></div>';
   return h;
 }
@@ -4054,7 +4061,7 @@ function buildScope12Body() {
     state.verdelers.forEach(function(v, vi){
       vHtml += (vi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
       vHtml += dlTable([["Verdeelinrichting", v.naam || "Verdeler " + (vi+1)], ["Locatie", v.locatie], ["Type zekering", v.typeZekering], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
-      vHtml += docPhotos(v.fotos, 260);
+      vHtml += docPhotos(v.fotos, 260, 190);
       vHtml += '</div>';
     });
     vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">Het hoofdstuk "Volledige meetstaat" is toegevoegd, hierin zijn alle (afwijkende) metingen gedocumenteerd.</p>';
@@ -4071,7 +4078,7 @@ function buildScope12Body() {
     state.omvormers.forEach(function(o2, oi){
       oHtml += (oi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (oi===0?' style="margin-top:0;"':'') + '>Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>';
       oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer omvormer", o2.serienummer], ["Werkschakelaar toegepast", o2.werkschakelaarToegepast], ["Voorbeveiliging", o2.voorbeveiliging], ["Aardlekbeveiliging toegepast", o2.aardlekAanwezig], ["Max DC-spanning", metEenheid(o2.maxDcSpanning, "V")], ["Nominaal vermogen AC", metEenheid(o2.vermogen, "kW")], ["Nominale stroom AC", metEenheid(o2.imax, "A")]]);
-      oHtml += docPhotos(o2.fotos, 260);
+      oHtml += docPhotos(o2.fotos, 260, 190);
       oHtml += '</div>';
     });
     oHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (omvormer)</div><p class="doc-p">Het hoofdstuk "Volledige meetstaat" is toegevoegd, hierin zijn alle (afwijkende) metingen gedocumenteerd.</p>';
@@ -4323,7 +4330,7 @@ function buildNen1010Body() {
       vHtml += '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse],
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
-      vHtml += docPhotos(v.fotos, 220);
+      vHtml += docPhotos(v.fotos, 220, 160);
       if ((v.afgaandeGroepen||[]).length > 0) {
         vHtml += '</div>' + PAGE_BREAK_MARK + '<div class="item-block-wrap"><div class="doc-sub" style="margin-top:0;">Afgaande groepen &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:30%;">Groep</th><th style="width:14%;text-align:right;">Zs max (&Omega;)</th><th style="width:14%;text-align:right;">Zi max (&Omega;)</th><th style="width:12%;text-align:right;">Riso (M&Omega;)</th><th style="width:15%;text-align:right;">Uitschakeltijd/-stroom</th><th style="width:15%;text-align:center;">Testknop</th></tr></thead><tbody>';
@@ -4349,9 +4356,9 @@ function buildNen1010Body() {
     vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie visuele controle (verdeelinrichting)</div>';
     var vConstateringen = "", vNr = 0, vConstTeller = 0;
     state.verdelers.forEach(function(v){
-      if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
+      if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220,160) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
       (v.afgaandeGroepen||[]).forEach(function(g){
-        if (g.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Afgaande groep: ' + esc(g.naam||"") + ' (' + esc(v.naam||"") + ')</span>' + beoordelingBadge(g.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(g.opmerking||"—") + docPhotos(g.fotos,220) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
+        if (g.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Afgaande groep: ' + esc(g.naam||"") + ' (' + esc(v.naam||"") + ')</span>' + beoordelingBadge(g.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(g.opmerking||"—") + docPhotos(g.fotos,220,160) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
       });
     });
     vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
@@ -4363,7 +4370,7 @@ function buildNen1010Body() {
   var overigConst = "", overigTeller2 = 0;
   state.constateringen.forEach(function(c){
     if (c.classificatie !== "goed") {
-      overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130) + '</div></div>';
+      overigConst += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(c.omschrijving||"—") + docPhotos(c.fotos,130,95) + '</div></div>';
       overigTeller2++;
       if (overigTeller2 >= 5) { overigConst += PAGE_BREAK_MARK; overigTeller2 = 0; }
     }
@@ -4422,14 +4429,14 @@ function buildNen1010Body() {
   var opsomHtml = "", opsomTeller = 0;
   state.verdelers.forEach(function(v){
     if (v.classificatie !== "goed") {
-      opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(nummerVoorItem(v)).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,130) + '</div></div>';
+      opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(nummerVoorItem(v)).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Naam", v.naam], ["Locatie", v.locatie], ["Omschrijving", v.opmerking]]) + docPhotos(v.fotos,130,95) + '</div></div>';
       opsomTeller++;
       if (opsomTeller >= 5) { opsomHtml += PAGE_BREAK_MARK; opsomTeller = 0; }
     }
   });
   state.constateringen.forEach(function(c){
     if (c.classificatie !== "goed") {
-      opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,130) + '</div></div>';
+      opsomHtml += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(nummerVoorItem(c)).padStart(2,"0") + ' &mdash; Overig installatiedeel</span>' + beoordelingBadge(c.classificatie) + '</div><div class="doc-constatering-body">' + dlTable([["Omschrijving", c.omschrijving]]) + docPhotos(c.fotos,130,95) + '</div></div>';
       opsomTeller++;
       if (opsomTeller >= 5) { opsomHtml += PAGE_BREAK_MARK; opsomTeller = 0; }
     }
@@ -4698,7 +4705,7 @@ function openPagedReport(body, css, filename, label) {
     '  var origPaginas = Array.prototype.slice.call(container.querySelectorAll(".doc-page"));' +
     '  if (!origPaginas.length) return 0;' +
     '  var pxPerMmVal = pxPerMmMeting();' +
-    '  var maxPaginaHoogtePx = (297 - 3) * pxPerMmVal;' +
+    '  var maxPaginaHoogtePx = (297 - 10) * pxPerMmVal;' +
     '  var headerBron = null, footerBron = null;' +
     '  origPaginas.forEach(function(p) {' +
     '    if (!headerBron) { var hh = p.querySelector(":scope > .doc-page-header"); if (hh) headerBron = hh; }' +
@@ -4758,26 +4765,26 @@ function openPagedReport(body, css, filename, label) {
     // Elke .doc-page kreeg tot nu toe alleen zoveel hoogte als de inhoud nodig had --
     // daardoor stond de voettekst (groene lijn + paginanummer) direct ONDER de laatste
     // regel tekst in plaats van onderaan de fysieke pagina, wat er per pagina anders (en
-    // dus slordig) uitzag. herpagineerRapport() heeft de inhoud al gegarandeerd binnen één
-    // A4-hoogte laten passen; hierna zetten we elke pagina daarom op MINIMAAL de 297mm-hoogte
-    // van een A4-pagina (bewust min-height, GEEN vaste height: als de inhoud van een krap
-    // volgepropte pagina door een piepklein afrondingsverschil ooit net iets te hoog uitvalt,
-    // groeit de pagina in dat geval gewoon een fractie mee in plaats van dat de voettekst buiten
-    // de vaste hoogte verdwijnt en onzichtbaar wordt) en laten we een flex-layout de voettekst
-    // naar de onderkant duwen, ongeacht hoeveel inhoud die specifieke pagina heeft.
+    // dus slordig) uitzag. De eerdere flex-gebaseerde aanpak duwde de voettekst weliswaar
+    // naar onderen, maar kon nog steeds een fractie verschuiven zodra een pagina net te vol
+    // was. Om de voettekst GEGARANDEERD op exact dezelfde plek te krijgen -- ongeacht hoeveel
+    // inhoud een pagina heeft -- positioneren we 'm nu absoluut op een vaste afstand (18mm
+    // links/rechts, 15mm onder, gelijk aan de bestaande paginamarges) vanaf de ONDERKANT van
+    // elke pagina. Dat is volledig onafhankelijk van de inhoud: de voettekst kan hierdoor nooit
+    // meer verschuiven, ook niet als een pagina een keer wat meer inhoud bevat dan gepland.
     'function fixeerVoettekstOnderaan(container) {' +
-    '  var pxPerMmVal = pxPerMmMeting();' +
-    '  var doelHoogtePx = 297 * pxPerMmVal;' +
     '  Array.prototype.slice.call(container.querySelectorAll(".doc-page")).forEach(function(p) {' +
-    '    p.style.minHeight = doelHoogtePx + "px";' +
-    '    p.style.display = "flex";' +
-    '    p.style.flexDirection = "column";' +
-    '    var kop = p.querySelector(":scope > .doc-page-header");' +
-    '    var body = p.querySelector(":scope > .doc-page-body");' +
+    '    p.style.position = "relative";' +
+    '    p.style.minHeight = "297mm";' +
     '    var voet = p.querySelector(":scope > .doc-page-footer");' +
-    '    if (kop) { kop.style.flex = "none"; }' +
-    '    if (body) { body.style.flex = "1 0 auto"; }' +
-    '    if (voet) { voet.style.flex = "none"; voet.style.marginTop = "auto"; }' +
+    '    if (voet) {' +
+    '      voet.style.position = "absolute";' +
+    '      voet.style.left = "18mm";' +
+    '      voet.style.right = "18mm";' +
+    '      voet.style.bottom = "15mm";' +
+    '      voet.style.margin = "0";' +
+    '      voet.style.background = "#fff";' +
+    '    }' +
     '  });' +
     '}' +
     'function wachtOpPdfLibs(pogingen) {' +
