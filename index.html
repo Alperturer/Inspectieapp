@@ -3965,17 +3965,20 @@ function buildScope12Body() {
     "conform-constateringen": "De inspectie is volledig conform het opgestelde inspectieplan uitgevoerd; tijdens de inspectie zijn constateringen vastgesteld.",
     "niet-conform": "De inspectie is niet volledig conform het opgestelde inspectieplan uitgevoerd.",
   }[o.beoordelingInstallatie || "conform-constateringen"];
-  h += docSec("Conclusie", '<p class="doc-p">' + conclusieIntro + '</p>' +
+  h += docSec("Conclusie", '<div style="display:flex;flex-direction:column;min-height:200mm;">' +
+    '<div><p class="doc-p">' + conclusieIntro + '</p>' +
     '<div class="doc-sub">Beoordeling installatie:</div>' +
     '<p class="doc-p">' + esc(BEOORDELING_OPTIES[o.beoordelingInstallatie || "conform-constateringen"]) + '</p>' +
     '<p class="doc-p">' + beoordelingTekst + '</p>' +
     (o.conclusieTekst ? '<p class="doc-p">' + esc(o.conclusieTekst) + '</p>' : '') +
     (o.vervolgactieTekst ? '<p class="doc-p">&mdash; ' + esc(o.vervolgactieTekst) + '</p>' : '') +
+    '</div>' +
+    '<div style="margin-top:auto;">' +
     '<div class="doc-sub" style="margin-top:22px;">Akkoordverklaring</div>' +
     '<div class="doc-sig-grid">' +
     '<div><div class="doc-sig-box">Ondertekening opsteller<br/><b>' + esc(o.inspecteur || "—") + '</b></div></div>' +
     '<div><div class="doc-sig-box">Ondertekening installatie-eigenaar<br/><b>' + esc(o.eigenaarNaam || o.klant || "—") + '</b></div></div>' +
-    '</div>', true);
+    '</div></div></div>', true);
 
   // PAGINA 3 — INHOUDSOPGAVE
   var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Constatering documentatie","6. Constateringen verdeelinrichtingen","7. Constateringen omvormers","8. Gegevens panelen en onderconstructie","9. Constatering overige installatiedelen","10. Controlepunten","11. Volledige meetstaat","12. Bijlage –"];
@@ -4219,16 +4222,19 @@ function buildNen1010Body() {
 
   // PAGINA 2 — CONCLUSIE
   var conclusieIntro = "Deze inspectie van de elektrische installatie is uitsluitend uitgevoerd om vast te stellen of de betreffende elektrische installatie voldoet aan de veiligheidseisen uit de daarop van toepassing zijnde normen. De inspectie is uitgevoerd volgens de NEN 1010, geheel onafhankelijk.";
-  h += docSec("Conclusie", '<p class="doc-p">' + conclusieIntro + '</p>' +
+  h += docSec("Conclusie", '<div style="display:flex;flex-direction:column;min-height:200mm;">' +
+    '<div><p class="doc-p">' + conclusieIntro + '</p>' +
     '<div class="doc-sub">Beoordeling installatie:</div>' +
     '<p class="doc-p">' + (NEN1010_BEOORDELING_TEKST[o.beoordelingInstallatie || "voldoet"]) + '</p>' +
     (o.conclusieTekst ? '<p class="doc-p">' + esc(o.conclusieTekst) + '</p>' : '') +
     (o.vervolgactieTekst ? '<p class="doc-p">&mdash; ' + esc(o.vervolgactieTekst) + '</p>' : '') +
+    '</div>' +
+    '<div style="margin-top:auto;">' +
     '<div class="doc-sub" style="margin-top:22px;">Akkoordverklaring</div>' +
     '<div class="doc-sig-grid">' +
     '<div><div class="doc-sig-box">Ondertekening opsteller<br/><b>' + esc(o.inspecteur || "—") + '</b></div></div>' +
     '<div><div class="doc-sig-box">Ondertekening installatie-eigenaar<br/><b>' + esc(o.eigenaarNaam || o.klant || "—") + '</b></div></div>' +
-    '</div>', true);
+    '</div></div></div>', true);
 
   // PAGINA 3 — INHOUDSOPGAVE
   var tocItems = ["1. Gegevens","2. Methode van classificatie","3. Samenvatting","4. Inspectieomvang","5. Documentatie","6. Bevindingen verdeelinrichtingen","7. Bevindingen overige installatiedelen","8. Controlepunten","9. Volledige meetstaat"];
