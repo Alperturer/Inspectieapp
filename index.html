@@ -3983,14 +3983,14 @@ function buildScope12Body() {
 
   // PAGINA 4-5 — GEGEVENS
   var gegevensHtml = '<div class="doc-sub">Installatie (object)</div>' + dlTable([
-    ["Naam", o.klant], ["Adres", o.adres + (o.postcode||o.plaats?("\n"+(o.postcode||"")+" "+(o.plaats||""))+ "\n"+(o.land||"") : "")],
+    ["Naam", o.klant], ["Adres", o.adres + (o.postcode||o.plaats?(", "+(o.postcode||"")+" "+(o.plaats||"")) : "") + (o.land?(", "+o.land):"")],
     ["Telefoonnummer", o.telefoonInstallatie], ["E-mailadres", o.emailInstallatie], ["Stroomstelsel", o.stroomstelsel], ["Netspanning", o.netspanning],
     ["Netaansluiting", o.netaansluiting], ["Jaar van aanleg", o.jaarVanAanleg], ["Opmerkingen", o.installatieOpmerkingen]
   ]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (installatie)</div>' + dlTable([["Naam", o.contactNaam], ["Telefoonnummer", o.contactTel], ["E-mailadres", o.contactEmail]]);
-  gegevensHtml += '<div class="doc-sub">Eigenaar</div>' + dlTable([["Naam", o.eigenaarNaam], ["Adres", o.eigenaarAdres + ((o.eigenaarPostcode||o.eigenaarPlaats) ? ("\n" + (o.eigenaarPostcode||"") + " " + (o.eigenaarPlaats||"")) : "")], ["Telefoonnummer", o.eigenaarTel]]);
+  gegevensHtml += '<div class="doc-sub">Eigenaar</div>' + dlTable([["Naam", o.eigenaarNaam], ["Adres", o.eigenaarAdres + ((o.eigenaarPostcode||o.eigenaarPlaats) ? (", " + (o.eigenaarPostcode||"") + " " + (o.eigenaarPlaats||"")) : "")], ["Telefoonnummer", o.eigenaarTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (eigenaar)</div>' + dlTable([["Naam", o.eigenaarContactNaam], ["Telefoonnummer", o.eigenaarContactTel], ["E-mailadres", o.eigenaarContactEmail]]);
-  gegevensHtml += '<div class="doc-sub">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
+  gegevensHtml += '<div class="doc-sub">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? (", " + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
   gegevensHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Inspectiebedrijf</div>' + dlTable([
     ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail], ["Bedrijfscertificaat Scope 12", o.bedrijfCertScope12], ["Opsteller inspectierapport", o.inspecteur + (o.inspecteurCertificaat ? (" (" + o.inspecteurCertificaat + ")") : "")]
@@ -4239,14 +4239,14 @@ function buildNen1010Body() {
 
   // PAGINA 4-5 — GEGEVENS
   var gegevensHtml = '<div class="doc-sub">Installatie (object)</div>' + dlTable([
-    ["Naam", o.klant], ["Adres", o.adres + (o.postcode||o.plaats?("\n"+(o.postcode||"")+" "+(o.plaats||""))+ "\n"+(o.land||"") : "")],
+    ["Naam", o.klant], ["Adres", o.adres + (o.postcode||o.plaats?(", "+(o.postcode||"")+" "+(o.plaats||"")) : "") + (o.land?(", "+o.land):"")],
     ["Telefoonnummer", o.telefoonInstallatie], ["E-mailadres", o.emailInstallatie], ["BAG-ID", o.bagId], ["Stroomstelsel", o.stroomstelsel], ["Netspanning", o.netspanning],
     ["Netaansluiting", o.netaansluiting], ["Jaar van aanleg", o.jaarVanAanleg], ["Opmerkingen", o.installatieOpmerkingen]
   ]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (installatie)</div>' + dlTable([["Naam", o.contactNaam], ["Telefoonnummer", o.contactTel], ["E-mailadres", o.contactEmail]]);
-  gegevensHtml += '<div class="doc-sub">Eigenaar</div>' + dlTable([["Naam", o.eigenaarNaam], ["Adres", o.eigenaarAdres + ((o.eigenaarPostcode||o.eigenaarPlaats) ? ("\n" + (o.eigenaarPostcode||"") + " " + (o.eigenaarPlaats||"")) : "")], ["Telefoonnummer", o.eigenaarTel]]);
+  gegevensHtml += '<div class="doc-sub">Eigenaar</div>' + dlTable([["Naam", o.eigenaarNaam], ["Adres", o.eigenaarAdres + ((o.eigenaarPostcode||o.eigenaarPlaats) ? (", " + (o.eigenaarPostcode||"") + " " + (o.eigenaarPlaats||"")) : "")], ["Telefoonnummer", o.eigenaarTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (eigenaar)</div>' + dlTable([["Naam", o.eigenaarContactNaam], ["Telefoonnummer", o.eigenaarContactTel], ["E-mailadres", o.eigenaarContactEmail]]);
-  gegevensHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? ("\n" + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
+  gegevensHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Opdrachtgever</div>' + dlTable([["Naam", o.opdrachtgeverNaam], ["Adres", o.opdrachtgeverAdres + ((o.opdrachtgeverPostcode||o.opdrachtgeverPlaats) ? (", " + (o.opdrachtgeverPostcode||"") + " " + (o.opdrachtgeverPlaats||"")) : "")], ["Telefoonnummer", o.opdrachtgeverTel]]);
   gegevensHtml += '<div class="doc-sub">Contactpersoon (opdrachtgever)</div>' + dlTable([["Naam", o.opdrachtgeverContactNaam], ["Telefoonnummer", o.opdrachtgeverContactTel], ["E-mailadres", o.opdrachtgeverContactEmail]]);
   gegevensHtml += '<div class="doc-sub">Inspectiebedrijf</div>' + dlTable([
     ["Naam", o.bedrijfNaam], ["Adres", o.bedrijfAdres], ["Postcode", o.bedrijfPostcode], ["Plaats", o.bedrijfPlaats], ["Telefoonnummer", o.bedrijfTel], ["E-mailadres", o.bedrijfEmail],
@@ -4326,15 +4326,18 @@ function buildNen1010Body() {
   h += docSec("Documentatie", docHtml, true);
 
   // PAGINA — BEVINDINGEN VERDEELINRICHTINGEN
+  // Zelfde compacte opzet als Scope 12: foto (groter, bovenaan) -> gegevens -> eventuele
+  // afgaande groepen/aardlekschakelaars -> conclusie metingen -> conclusie visuele controle,
+  // allemaal direct bij elkaar per verdeler.
   if (state.verdelers.length > 0) {
     var vHtml = '<p class="doc-p">Er is middels visuele controle, metingen en beproevingen gecontroleerd of de verdeelinrichting(en) voldoen aan de daarvoor gestelde eisen.</p>';
     state.verdelers.forEach(function(v, vi){
-      vHtml += '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>' + constateringenIndicator(v);
+      vHtml += (vi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+      vHtml += docPhotos(v.fotos, 300, 220);
       vHtml += dlTable([["Locatie", v.locatie], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse],
         ["Uitwendige invloeden", v.uitwendigeInvloeden], ["Aanwezigheid van stof", v.ipStof], ["Aanwezigheid van water", v.ipWater]]);
-      vHtml += docPhotos(v.fotos, 220, 160);
       if ((v.afgaandeGroepen||[]).length > 0) {
-        vHtml += '</div>' + PAGE_BREAK_MARK + '<div class="item-block-wrap"><div class="doc-sub" style="margin-top:0;">Afgaande groepen &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+        vHtml += '<div class="doc-sub" style="margin-top:14px;">Afgaande groepen &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:30%;">Groep</th><th style="width:14%;text-align:right;">Zs max (&Omega;)</th><th style="width:14%;text-align:right;">Zi max (&Omega;)</th><th style="width:12%;text-align:right;">Riso (M&Omega;)</th><th style="width:15%;text-align:right;">Uitschakeltijd/-stroom</th><th style="width:15%;text-align:center;">Testknop</th></tr></thead><tbody>';
         v.afgaandeGroepen.forEach(function(g){
           vHtml += '<tr><td>' + esc(g.naam||"—") + '</td><td style="text-align:right;">' + esc(g.zsMax||"—") + '</td><td style="text-align:right;">' + esc(g.ziMax||"—") + '</td><td style="text-align:right;">' + esc(g.riso||"—") + '</td>' +
@@ -4344,26 +4347,22 @@ function buildNen1010Body() {
         vHtml += '</tbody></table>';
       }
       if ((v.aardlekschakelaars||[]).length > 0) {
-        vHtml += '</div>' + PAGE_BREAK_MARK + '<div class="item-block-wrap"><div class="doc-sub" style="margin-top:0;">Aardlekschakelaars &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+        vHtml += '<div class="doc-sub" style="margin-top:14px;">Aardlekschakelaars &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
         vHtml += '<table class="std-table meet-table"><thead><tr><th style="width:22%;">Soort</th><th style="width:10%;text-align:center;">Type</th><th style="width:14%;text-align:center;">Amperage</th><th style="width:18%;text-align:right;">Uitschakelstroom</th><th style="width:18%;text-align:right;">Uitschakeltijd</th><th style="width:18%;text-align:center;">Testknop</th></tr></thead><tbody>';
         v.aardlekschakelaars.forEach(function(a){
           vHtml += '<tr><td>' + esc(a.soort||"—") + '</td><td style="text-align:center;">' + esc(a.type||"—") + '</td><td style="text-align:center;">' + esc(a.amperage||"—") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakelstroom,"mA") + '</td><td style="text-align:right;">' + metEenheid(a.uitschakeltijd,"ms") + '</td><td style="text-align:center;">' + esc(a.testknop||"—") + '</td></tr>';
         });
         vHtml += '</tbody></table>';
-        v.aardlekschakelaars.forEach(function(a){ if (a.classificatie !== "goed") vHtml += docConstatering(nummerVoorItem(a), a.classificatie, a.opmerking, a.fotos, a.norm); });
       }
+      vHtml += '<div class="doc-sub" style="margin-top:14px;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
+      vHtml += '<div class="doc-sub">Conclusie visuele controle (verdeelinrichting)</div>';
+      var itemVConst = "";
+      if (v.classificatie !== "goed") itemVConst += docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, v.fotos, v.norm);
+      (v.afgaandeGroepen||[]).forEach(function(g){ if (g.classificatie !== "goed") itemVConst += docConstatering(nummerVoorItem(g), g.classificatie, (g.naam?g.naam+": ":"")+g.opmerking, g.fotos, g.norm); });
+      (v.aardlekschakelaars||[]).forEach(function(a){ if (a.classificatie !== "goed") itemVConst += docConstatering(nummerVoorItem(a), a.classificatie, a.opmerking, a.fotos, a.norm); });
+      vHtml += itemVConst || '<p class="doc-p">Geen visuele afwijkingen vastgesteld.</p>';
       vHtml += '</div>';
     });
-    vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">De volledige meetstaat met alle metingen is opgenomen in het hoofdstuk "Volledige meetstaat".</p>';
-    vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie visuele controle (verdeelinrichting)</div>';
-    var vConstateringen = "", vNr = 0, vConstTeller = 0;
-    state.verdelers.forEach(function(v){
-      if (v.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Visuele afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Verdeelinrichting: ' + esc(v.naam||"") + '</span>' + beoordelingBadge(v.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(v.opmerking||"—") + docPhotos(v.fotos,220,160) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
-      (v.afgaandeGroepen||[]).forEach(function(g){
-        if (g.classificatie !== "goed") { vNr++; vConstateringen += '<div class="doc-constatering"><div class="doc-constatering-head"><span>Afwijking: ' + String(vNr).padStart(2,"0") + ' &mdash; Afgaande groep: ' + esc(g.naam||"") + ' (' + esc(v.naam||"") + ')</span>' + beoordelingBadge(g.classificatie) + '</div><div class="doc-constatering-body"><b>Omschrijving:</b><br/>' + esc(g.opmerking||"—") + docPhotos(g.fotos,220,160) + '</div></div>'; vConstTeller++; if (vConstTeller >= 4) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } }
-      });
-    });
-    vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele afwijkingen in de verdeelinrichting(en) geconstateerd.</p>';
     h += docSec("Bevindingen verdeelinrichtingen", vHtml, true);
   }
 
