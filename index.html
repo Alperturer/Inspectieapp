@@ -4056,40 +4056,42 @@ function buildScope12Body() {
   h += docSec("Constateringen documentatie", docIntro + docTable, true);
 
   // PAGINA 13-14 — CONSTATERINGEN VERDEELINRICHTINGEN
+  // Compacte opzet: foto (groter, bovenaan) -> gegevens -> conclusie metingen -> conclusie
+  // visuele controle, allemaal direct bij elkaar per verdeler op (zo veel mogelijk) 1 pagina,
+  // in plaats van de conclusies pas na alle verdelers apart te verzamelen.
   if (state.verdelers.length > 0) {
     var vHtml = '<p class="doc-p">Er is middels visuele controle, metingen en beproevingen gecontroleerd of de verdeelinrichting(en) voldoen aan de daarvoor gestelde eisen.</p>';
     state.verdelers.forEach(function(v, vi){
       vHtml += (vi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (vi===0?' style="margin-top:0;"':'') + '>Verdeelinrichting &mdash; ' + esc(v.naam || "Verdeler " + (vi+1)) + '</div>';
+      vHtml += docPhotos(v.fotos, 300, 220);
       vHtml += dlTable([["Verdeelinrichting", v.naam || "Verdeler " + (vi+1)], ["Locatie", v.locatie], ["Type zekering", v.typeZekering], ["Voorbeveiliging", v.voorbeveiliging], ["Hoofdschakelaar", v.hoofdschakelaar], ["Klasse", v.klasse]]);
-      vHtml += docPhotos(v.fotos, 260, 190);
+      vHtml += '<div class="doc-sub" style="margin-top:14px;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">Het hoofdstuk "Volledige meetstaat" is toegevoegd, hierin zijn alle (afwijkende) metingen gedocumenteerd.</p>';
+      vHtml += '<div class="doc-sub">Conclusie visuele controle (verdeelinrichting)</div>';
+      vHtml += (v.classificatie !== "goed") ? docConstatering(nummerVoorItem(v), v.classificatie, v.opmerking, v.fotos, v.norm) : '<p class="doc-p">Geen visuele constateringen vastgesteld.</p>';
       vHtml += '</div>';
     });
-    vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (verdeelinrichting)</div><p class="doc-p">Het hoofdstuk "Volledige meetstaat" is toegevoegd, hierin zijn alle (afwijkende) metingen gedocumenteerd.</p>';
-    vHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie visuele controle (verdeelinrichting)</div>';
-    var vConstateringen = "", vConstTeller = 0;
-    state.verdelers.forEach(function(v){ if (v.classificatie !== "goed") { vConstateringen += docConstatering(nummerVoorItem(v), v.classificatie, (v.naam?v.naam+": ":"")+v.opmerking, v.fotos, v.norm); vConstTeller++; if (vConstTeller >= 5) { vConstateringen += PAGE_BREAK_MARK; vConstTeller = 0; } } });
-    vHtml += vConstateringen || '<p class="doc-p">Er zijn geen visuele constateringen in de verdeelinrichting(en) geconstateerd.</p>';
     h += docSec("Constateringen verdeelinrichtingen", vHtml, true);
   }
 
   // PAGINA 16-18 — CONSTATERINGEN OMVORMERS
+  // Zelfde compacte opzet: foto (groter, bovenaan) -> gegevens -> conclusie metingen ->
+  // conclusie visuele controle (incl. eigen strengen en aardlekbeveiliging), per omvormer bij
+  // elkaar op (zo veel mogelijk) 1 pagina.
   if (state.omvormers.length > 0) {
     var oHtml = '<p class="doc-p">Er is middels visuele controle, metingen en beproevingen gecontroleerd of de omvormers voldoen aan de daarvoor gestelde eisen.</p>';
     state.omvormers.forEach(function(o2, oi){
       oHtml += (oi>0 ? PAGE_BREAK_MARK : "") + '<div class="item-block-wrap"><div class="doc-sub"' + (oi===0?' style="margin-top:0;"':'') + '>Omvormer ' + (oi+1) + ' &mdash; ' + esc(o2.naam || "") + '</div>';
+      oHtml += docPhotos(o2.fotos, 300, 220);
       oHtml += dlTable([["Naam omvormer", o2.naam], ["Locatie", o2.locatie], ["Merk", o2.merk], ["Type", o2.type], ["Serienummer omvormer", o2.serienummer], ["Werkschakelaar toegepast", o2.werkschakelaarToegepast], ["Voorbeveiliging", o2.voorbeveiliging], ["Aardlekbeveiliging toegepast", o2.aardlekAanwezig], ["Max DC-spanning", metEenheid(o2.maxDcSpanning, "V")], ["Nominaal vermogen AC", metEenheid(o2.vermogen, "kW")], ["Nominale stroom AC", metEenheid(o2.imax, "A")]]);
-      oHtml += docPhotos(o2.fotos, 260, 190);
+      oHtml += '<div class="doc-sub" style="margin-top:14px;">Conclusie metingen (omvormer)</div><p class="doc-p">Het hoofdstuk "Volledige meetstaat" is toegevoegd, hierin zijn alle (afwijkende) metingen gedocumenteerd.</p>';
+      oHtml += '<div class="doc-sub">Conclusie visuele controle (omvormer)</div>';
+      var itemConst = "";
+      if (o2.classificatie !== "goed") itemConst += docConstatering(nummerVoorItem(o2), o2.classificatie, o2.opmerking, o2.fotos, o2.norm);
+      (o2.strengen||[]).forEach(function(s){ if (s.classificatie !== "goed") itemConst += docConstatering(nummerVoorItem(s), s.classificatie, (s.naam?s.naam+": ":"")+s.opmerking, s.fotos, s.norm); });
+      if (o2.aardlekAanwezig === "Ja" && o2.aardlekClassificatie !== "goed") itemConst += docConstatering(null, o2.aardlekClassificatie, "Aardlekbeveiliging: " + (o2.aardlekOpmerking||""), o2.aardlekFotos, "");
+      oHtml += itemConst || '<p class="doc-p">Geen visuele constateringen vastgesteld.</p>';
       oHtml += '</div>';
     });
-    oHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie metingen (omvormer)</div><p class="doc-p">Het hoofdstuk "Volledige meetstaat" is toegevoegd, hierin zijn alle (afwijkende) metingen gedocumenteerd.</p>';
-    oHtml += PAGE_BREAK_MARK + '<div class="doc-sub" style="margin-top:0;">Conclusie visuele controle (omvormer)</div>';
-    var oConstateringen = "", oConstTeller = 0;
-    state.omvormers.forEach(function(o2){
-      if (o2.classificatie !== "goed") { oConstateringen += docConstatering(nummerVoorItem(o2), o2.classificatie, (o2.naam?o2.naam+": ":"")+o2.opmerking, o2.fotos, o2.norm); oConstTeller++; if (oConstTeller >= 5) { oConstateringen += PAGE_BREAK_MARK; oConstTeller = 0; } }
-      (o2.strengen||[]).forEach(function(s){ if (s.classificatie !== "goed") { oConstateringen += docConstatering(nummerVoorItem(s), s.classificatie, (s.naam?s.naam+": ":"")+s.opmerking, s.fotos, s.norm); oConstTeller++; if (oConstTeller >= 5) { oConstateringen += PAGE_BREAK_MARK; oConstTeller = 0; } } });
-      if (o2.aardlekAanwezig === "Ja" && o2.aardlekClassificatie !== "goed") { oConstateringen += docConstatering(null, o2.aardlekClassificatie, (o2.naam?o2.naam+" (aardlekbeveiliging): ":"")+o2.aardlekOpmerking, o2.aardlekFotos, ""); oConstTeller++; if (oConstTeller >= 5) { oConstateringen += PAGE_BREAK_MARK; oConstTeller = 0; } }
-    });
-    oHtml += oConstateringen || '<p class="doc-p">Er zijn geen visuele constateringen bij de omvormers geconstateerd.</p>';
     h += docSec("Constateringen omvormers", oHtml, true);
 
     // PAGINA — GEGEVENS PANELEN EN ONDERCONSTRUCTIE, eigen pagina
